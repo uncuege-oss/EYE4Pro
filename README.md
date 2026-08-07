@@ -3,6 +3,8 @@
 EYE4PRO; akustik, elektrik, bina geometrisi, mimari, arazi, peyzaj ve metraj
 modullerini ayni .NET/Avalonia cozumunde gelistiren masaustu uygulamasidir.
 
+Ozel GitHub deposu: https://github.com/uncuege-oss/EYE4Pro
+
 ## Gereksinimler
 
 - .NET SDK 10.0.300 (kokteki `global.json` surumu sabitler)
@@ -13,9 +15,13 @@ modullerini ayni .NET/Avalonia cozumunde gelistiren masaustu uygulamasidir.
 Windows'ta depoyu OneDrive disinda, kisa bir yola klonlamak onerilir:
 
 ```powershell
-git clone <depo-adresi> C:\dev\EYE4Pro
+git clone https://github.com/uncuege-oss/EYE4Pro.git C:\dev\EYE4Pro
 cd C:\dev\EYE4Pro
 ```
+
+Flash bellekteki `eye4pro_yedek` klasoru yalnizca kurtarma yedegidir. Gelistirme
+dogrudan flash bellek uzerinde yapilmaz; her bilgisayarda yerel disk ve GitHub
+deposu kullanilir.
 
 ## Derleme ve Calistirma
 
