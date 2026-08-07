@@ -1,0 +1,1145 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Electric.ZayifAkimTekHat"
+        xmlns:controls="using:Kst.Acoustics.App.Electric.ZayifAkimTekHat"
+        x:Class="Kst.Acoustics.App.Electric.ZayifAkimTekHat.ZayifAkimTekHatWindow"
+        x:DataType="vm:ZayifAkimTekHatViewModel"
+        x:CompileBindings="False"
+        Title="{Binding PencereBasligi}"
+        Width="1400" Height="800"
+        Background="#080F0A"
+        CanResize="True">
+
+  <Window.Resources>
+    <vm:YanginCihazSimgeConverter x:Key="YanginCihazSimge" />
+  </Window.Resources>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.sectionTitle">
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="#C8E4B0"/>
+      <Setter Property="Margin" Value="0,4,0,2"/>
+    </Style>
+    <Style Selector="TextBlock.labelText">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Foreground" Value="#7AA060"/>
+    </Style>
+    <Style Selector="TextBlock.valueText">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="#E0F0D0"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="#101C10"/>
+      <Setter Property="Foreground" Value="#D0E8C0"/>
+      <Setter Property="BorderBrush" Value="#2A4A20"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="6,4"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="MinHeight" Value="28"/>
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="Background" Value="#101C10"/>
+      <Setter Property="Foreground" Value="#D0E8C0"/>
+      <Setter Property="BorderBrush" Value="#2A4A20"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="MinHeight" Value="28"/>
+    </Style>
+    <Style Selector="AutoCompleteBox">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="MinHeight" Value="28"/>
+    </Style>
+    <Style Selector="AutoCompleteBox /template/ TextBox">
+      <Setter Property="Background" Value="#101C10"/>
+      <Setter Property="Foreground" Value="#D0E8C0"/>
+      <Setter Property="BorderBrush" Value="#2A4A20"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="6,4"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="MinHeight" Value="28"/>
+    </Style>
+    <Style Selector="NumericUpDown">
+      <Setter Property="Background" Value="#101C10"/>
+      <Setter Property="Foreground" Value="#D0E8C0"/>
+      <Setter Property="BorderBrush" Value="#2A4A20"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="MinHeight" Value="28"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#162A10"/>
+      <Setter Property="Foreground" Value="#A0C888"/>
+      <Setter Property="BorderBrush" Value="#2A4A20"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="Padding" Value="10,5"/>
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="#254A1B"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#4A8C30"/>
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="#3A7A18"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderBrush" Value="#4EA632"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.primary:pointerover">
+      <Setter Property="Background" Value="#4A9A20"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#6ED030"/>
+    </Style>
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="#5A1A1A"/>
+      <Setter Property="Foreground" Value="#F8D8D8"/>
+      <Setter Property="BorderBrush" Value="#8A2A2A"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="Padding" Value="10,5"/>
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+    <Style Selector="Button.danger:pointerover">
+      <Setter Property="Background" Value="#8A2525"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#D84A4A"/>
+    </Style>
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="#101C10"/>
+      <Setter Property="BorderBrush" Value="#2A4A20"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#9AB88A"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#162A10"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2A5A18"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*" ColumnDefinitions="280,5,*,5,330">
+
+    <!-- Üst Bar -->
+    <Border Grid.Row="0" Grid.ColumnSpan="5" Background="#0B180D" BorderBrush="#1E3A20" BorderThickness="0,0,0,1" Padding="8">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Ana Menüye Dön" Click="AnaMenuyeDon_OnClick" />
+        <Button Content="Yeni" Command="{Binding YeniProjeCommand}" />
+        <Button Content="Aç" Command="{Binding ProjeAcCommand}" />
+        <Button Content="Kaydet" Command="{Binding ProjeKaydetCommand}" />
+        <Button Content="Farklı Kaydet" Command="{Binding ProjeFarkliKaydetCommand}" />
+        <Button Content="M12'den İçe Aktar" Command="{Binding M12denIceAktarCommand}" Classes="primary" />
+        <Button Content="Kat Düzenle" Click="KatDuzenle_OnClick" />
+        <Button Content="DXF Çıktı" Command="{Binding DxfCiktiAlCommand}" />
+        <Button Content="SVG Çıktı" Command="{Binding SvgCiktiAlCommand}" />
+        <Button Content="PNG Çıktı" Click="PngCiktiAl_OnClick" />
+        <Button Content="Data" Command="{Binding SistemSecCommand}" CommandParameter="Data" />
+        <Button Content="Kamera" Command="{Binding SistemSecCommand}" CommandParameter="Kamera" />
+        <Button Content="Acil Anons" Command="{Binding SistemSecCommand}" CommandParameter="Anons" />
+        <Button Content="TV" Command="{Binding SistemSecCommand}" CommandParameter="Tv" />
+        <Button Content="Yangın" Command="{Binding SistemSecCommand}" CommandParameter="Yangin" />
+        <Button Content="Telefon" Command="{Binding SistemSecCommand}" CommandParameter="Telefon" />
+        <Button Content="Diafon" Command="{Binding SistemSecCommand}" CommandParameter="Diafon" />
+        <TextBlock Text="{Binding DurumMesaji}" VerticalAlignment="Center" Foreground="#8CDA50" FontWeight="SemiBold" Margin="12,0,0,0" />
+      </StackPanel>
+    </Border>
+
+    <!-- Sol Panel — Ana Merkez + Rack Kabinler -->
+    <Border Grid.Row="1" Grid.Column="0" Background="#0C1610" BorderThickness="0,0,1,0" BorderBrush="#1A3020">
+      <Grid Margin="12">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="2*" MinHeight="90" />
+          <RowDefinition Height="5" />
+          <RowDefinition Height="*" MinHeight="90" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="{Binding SistemBaslik}" Classes="sectionTitle" />
+
+        <Button Grid.Row="1" Content="{Binding MerkezButonMetni}" Command="{Binding MerkeziSecCommand}"
+                Classes="primary" HorizontalAlignment="Stretch" Margin="0,2,0,8" />
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding ToplayiciBaslik}" Classes="sectionTitle" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="{Binding ToplayiciSayacText}"
+                     Foreground="#7AA060" FontSize="10" VerticalAlignment="Center" />
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="6" Margin="0,4"
+                    IsVisible="{Binding RackIslemleriGorunur}">
+          <Button Content="{Binding RackEkleMetni}" Click="RackEkle_OnClick" />
+          <Button Content="Sil" Command="{Binding RackSilCommand}" Classes="danger" />
+        </StackPanel>
+
+        <Grid Grid.Row="4" RowDefinitions="*,Auto,Auto" IsVisible="{Binding StandartRackListesiGorunur}">
+          <ListBox Grid.Row="0" ItemsSource="{Binding RackKabinler}"
+                   SelectedItem="{Binding SeciliRack}" Margin="0,4">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border Padding="4,3">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Ad}" FontSize="12" FontWeight="SemiBold" Foreground="#D8F0C8" />
+                    <TextBlock FontSize="10" Foreground="#7FB893">
+                      <TextBlock.Text>
+                        <MultiBinding StringFormat="Data: {0}  Kamera: {1}  WiFi: {2}  Ek: {3}  •  {4} cihaz">
+                          <Binding Path="DataHatSayisi" />
+                          <Binding Path="KameraSayisi" />
+                          <Binding Path="WirelessSayisi" />
+                          <Binding Path="DataEkUcSayisi" />
+                          <Binding Path="Cihazlar.Count" />
+                        </MultiBinding>
+                      </TextBlock.Text>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="0,5,0,2"
+                IsVisible="{Binding CctvIzlemeNoktalariGorunur}">
+            <TextBlock Text="İZLEME NOKTALARI" Classes="sectionTitle" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="+ Ekle" Command="{Binding CctvIzlemeNoktasiEkleCommand}" Margin="4,0" />
+            <Button Grid.Column="2" Content="Sil" Command="{Binding CctvIzlemeNoktasiSilCommand}" Classes="danger" />
+          </Grid>
+          <ListBox Grid.Row="2" ItemsSource="{Binding CctvIzlemeNoktalari}"
+                   SelectedItem="{Binding SeciliCctvIzlemeNoktasi}" MaxHeight="130"
+                   IsVisible="{Binding CctvIzlemeNoktalariGorunur}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border Padding="4,3">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Ad}" FontSize="12" FontWeight="SemiBold" Foreground="#BFE7FF" />
+                    <TextBlock FontSize="10" Foreground="#72B7D8">
+                      <TextBlock.Text>
+                        <MultiBinding StringFormat="Kat: {0} • {1} cihaz • {2} m">
+                          <Binding Path="KatAdi" />
+                          <Binding Path="Cihazlar.Count" />
+                          <Binding Path="BaglantiKabloMetraj" />
+                        </MultiBinding>
+                      </TextBlock.Text>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+
+        <ListBox Grid.Row="4" ItemsSource="{Binding AnalogAnonsZonlari}"
+                 SelectedItem="{Binding SeciliAnalogAnonsZonu}" Margin="0,4"
+                 IsVisible="{Binding AnalogAnonsZonListesiGorunur}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border Padding="4,3">
+                <StackPanel>
+                  <TextBlock Text="{Binding Ad}" FontSize="12" FontWeight="SemiBold" Foreground="#FFE0B0" />
+                  <TextBlock FontSize="10" Foreground="#C8A870">
+                    <TextBlock.Text>
+                      <MultiBinding StringFormat="Kat: {0} • {1} hoparlör • {2} W">
+                        <Binding Path="KatAdi" />
+                        <Binding Path="ToplamHoparlor" />
+                        <Binding Path="ToplamGucW" />
+                      </MultiBinding>
+                    </TextBlock.Text>
+                  </TextBlock>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <ListBox Grid.Row="4" ItemsSource="{Binding YanginKatLoopGruplari}"
+                 SelectedItem="{Binding SeciliYanginKatLoopGrubu}" Margin="0,4"
+                 IsVisible="{Binding YanginListesiGorunur}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border Padding="4,3">
+                <StackPanel>
+                  <TextBlock Text="{Binding Ad}" FontSize="12" FontWeight="SemiBold" Foreground="#F0D8D8" />
+                  <TextBlock FontSize="10" Foreground="#C89090">
+                    <TextBlock.Text>
+                      <MultiBinding StringFormat="Loop: {0}  Cihaz: {1}  •  {2}">
+                        <Binding Path="LoopSayisi" />
+                        <Binding Path="ToplamCihaz" />
+                        <Binding Path="KatAdi" />
+                      </MultiBinding>
+                    </TextBlock.Text>
+                  </TextBlock>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <GridSplitter Grid.Row="5" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"
+                      Background="#1A3020" Cursor="SizeNorthSouth" Margin="0,1" />
+
+        <ScrollViewer Grid.Row="6" VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
+          <StackPanel Spacing="4">
+            <TextBlock Text="GENEL BİLGİLER" Classes="sectionTitle" />
+            <TextBlock Text="{Binding ToplamBirincilText}" Foreground="#88B870" FontSize="11" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ToplamIkincilText}" IsVisible="{Binding IkincilSayacGorunur}" Foreground="#88B870" FontSize="11" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ToplamMerkezKabloText}" IsVisible="{Binding ToplamMerkezKabloGorunur}" Foreground="#88B870" FontSize="11" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ToplamHatMetrajText}" Foreground="#88B870" FontSize="11" TextWrapping="Wrap" />
+          </StackPanel>
+        </ScrollViewer>
+
+        <Button Grid.Row="7" Content="Kütüphane" Click="Kutuphane_OnClick"
+                Classes="primary" HorizontalAlignment="Stretch" Margin="0,8,0,0" />
+      </Grid>
+    </Border>
+
+    <GridSplitter Grid.Row="1" Grid.Column="1"
+                  ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                  Background="#1A3020" Cursor="SizeWestEast" />
+
+    <!-- Orta Panel — Sistem şeması + Yangın loop zinciri editörü -->
+    <Border Grid.Row="1" Grid.Column="2" BorderThickness="1,0,1,0" BorderBrush="#1A3020">
+      <Grid RowDefinitions="*,Auto">
+        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+          <controls:ElvDataSemaControl x:Name="SemaControl"
+                                       DataSistemi="{Binding DataSistemi}"
+                                       KameraSistemi="{Binding KameraSistemi}"
+                                       AnonsSistemi="{Binding AnonsSistemi}"
+                                       TvSistemi="{Binding TvSistemi}"
+                                       YanginSistemi="{Binding YanginSistemi}"
+                                       TelefonSistemi="{Binding TelefonSistemi}"
+                                       DiafonSistemi="{Binding DiafonSistemi}"
+                                       SistemTuru="{Binding AktifSistem}"
+                                       Katlar="{Binding Katlar}"
+                                       Revizyon="{Binding SemaRevizyon}"
+                                       SecimIstendi="SemaControl_OnSecimIstendi" />
+        </ScrollViewer>
+
+        <Border Grid.Row="1" IsVisible="{Binding YanginLoopEditorGorunur}"
+                Background="#120D0D" BorderBrush="#5A2828" BorderThickness="0,1,0,0"
+                Padding="10" MinHeight="230" MaxHeight="330">
+          <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding YanginLoopEditorBaslik}" Foreground="#FFD0D0"
+                         FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Content="Seçili Cihazı Sil"
+                      Command="{Binding YanginLoopCihaziSilCommand}" Classes="danger" />
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Command="{Binding YanginLoopCihaziEkleCommand}" CommandParameter="DumanDedektoru" ToolTip.Tip="Duman Dedektörü"><StackPanel><TextBlock Text="◉" FontSize="22" HorizontalAlignment="Center"/><TextBlock Text="Duman"/></StackPanel></Button>
+                <Button Command="{Binding YanginLoopCihaziEkleCommand}" CommandParameter="IsiDedektoru" ToolTip.Tip="Isı Dedektörü"><StackPanel><TextBlock Text="◉" FontSize="22" Foreground="#FF9070" HorizontalAlignment="Center"/><TextBlock Text="Isı"/></StackPanel></Button>
+                <Button Command="{Binding YanginLoopCihaziEkleCommand}" CommandParameter="KombineDedektor" ToolTip.Tip="Kombine Dedektör"><StackPanel><TextBlock Text="◎" FontSize="22" HorizontalAlignment="Center"/><TextBlock Text="Kombine"/></StackPanel></Button>
+                <Button Command="{Binding YanginLoopCihaziEkleCommand}" CommandParameter="AsmaTavanDedektoru" ToolTip.Tip="Asma Tavan Dedektör Grubu"><StackPanel><TextBlock Text="⊙" FontSize="22" HorizontalAlignment="Center"/><TextBlock Text="Asma Tavan"/></StackPanel></Button>
+                <Button Command="{Binding YanginLoopCihaziEkleCommand}" CommandParameter="YanginButonu" ToolTip.Tip="Yangın İhbar Butonu"><StackPanel><TextBlock Text="▣" FontSize="22" Foreground="#FF5050" HorizontalAlignment="Center"/><TextBlock Text="Buton"/></StackPanel></Button>
+                <Button Command="{Binding YanginLoopCihaziEkleCommand}" CommandParameter="Siren" ToolTip.Tip="Yangın Sireni"><StackPanel><TextBlock Text="◖))" FontSize="20" HorizontalAlignment="Center"/><TextBlock Text="Siren"/></StackPanel></Button>
+                <Button Command="{Binding YanginLoopCihaziEkleCommand}" CommandParameter="Flasor" ToolTip.Tip="Flaşör"><StackPanel><TextBlock Text="✦" FontSize="22" Foreground="#FFD050" HorizontalAlignment="Center"/><TextBlock Text="Flaşör"/></StackPanel></Button>
+              </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding SeciliYanginLoopCihazlari}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="0" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                      <StackPanel Width="92" Spacing="2">
+                        <TextBlock Text="Kablo (m)" FontSize="9" Foreground="#C89090" HorizontalAlignment="Center" />
+                        <TextBox Text="{Binding OncekiCihazaMesafeMetre, Mode=OneWay}"
+                                 TextChanged="YanginKabloMetraji_OnTextChanged"
+                                 HorizontalContentAlignment="Center" />
+                        <Border Height="2" Background="#D84A4A" Margin="0,5,0,0" />
+                      </StackPanel>
+                      <Button Width="100" MinHeight="72" Padding="6" Background="#291414"
+                              BorderBrush="#8A3535" BorderThickness="1" CornerRadius="6"
+                              Command="{Binding DataContext.YanginLoopCihaziSecCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                              CommandParameter="{Binding}">
+                        <StackPanel VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Tip, Converter={StaticResource YanginCihazSimge}}"
+                                     FontSize="20" Foreground="#FF6A6A" HorizontalAlignment="Center" />
+                          <TextBlock Text="{Binding Ad}" FontSize="10" Foreground="#FFE0E0"
+                                     TextWrapping="Wrap" TextAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+      </Grid>
+    </Border>
+
+    <GridSplitter Grid.Row="1" Grid.Column="3"
+                  ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                  Background="#1A3020" Cursor="SizeWestEast" />
+
+    <!-- Sağ Panel — Düzenleyici -->
+    <Border Grid.Row="1" Grid.Column="4" Background="#0C1610">
+      <ScrollViewer>
+        <StackPanel Margin="12" Spacing="8">
+          <TextBlock Text="{Binding DuzenleyiciBaslik}" Classes="sectionTitle" />
+
+          <StackPanel Spacing="4" IsVisible="{Binding AnonsTeknolojisiGorunur}">
+            <TextBlock Text="Anons Sistem Teknolojisi" Classes="labelText" />
+            <ComboBox x:Name="AnonsTeknolojiCombo"
+                      ItemsSource="{Binding AnonsTeknolojileri}"
+                      SelectedItem="{Binding SeciliAnonsTeknolojisi, Mode=OneWay}"
+                      SelectionChanged="AnonsTeknoloji_OnSelectionChanged" />
+          </StackPanel>
+
+          <StackPanel Spacing="4" IsVisible="{Binding TvTeknolojisiGorunur}">
+            <TextBlock Text="TV Dağıtım Teknolojisi" Classes="labelText" />
+            <ComboBox ItemsSource="{Binding TvTeknolojileri}"
+                      SelectedItem="{Binding SeciliTvTeknolojisi}" />
+          </StackPanel>
+
+          <!-- Ana merkez alanları -->
+          <StackPanel Spacing="6" IsVisible="{Binding MerkezSecili}">
+            <TextBlock Text="Ana Merkez Kat No" Classes="labelText" />
+            <NumericUpDown Value="{Binding AnaMerkezKatNo}" Increment="1" />
+
+            <StackPanel Spacing="4" IsVisible="{Binding AnalogAnonsAktif}">
+              <TextBlock Text="ANALOG AMPLİFİKATÖRLER" Classes="sectionTitle" />
+              <ComboBox ItemsSource="{Binding AnalogAmplifikatorKatalogu}"
+                        SelectedValueBinding="{Binding Kod}" SelectedValue="{Binding YeniAnalogAmplifikatorKodu}">
+                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <CheckBox Content="Yedek amplifikatör" IsChecked="{Binding YeniAnalogAmplifikatorYedek}" Foreground="#D0E8C0" />
+              <Button Content="Amplifikatör Ekle" Command="{Binding AnalogAmplifikatorEkleCommand}" />
+              <DataGrid ItemsSource="{Binding AnonsSistemi.AnalogAmplifikatorler}"
+                        SelectedItem="{Binding SeciliAnalogAmplifikator}"
+                        AutoGenerateColumns="False" MinHeight="120" MaxHeight="200">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Amplifikatör" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="W" Binding="{Binding NominalGucW}" Width="60" />
+                  <DataGridCheckBoxColumn Header="Yedek" Binding="{Binding Yedek}" Width="55" />
+                </DataGrid.Columns>
+              </DataGrid>
+              <Button Content="Seçili Amplifikatörü Sil" Command="{Binding AnalogAmplifikatorSilCommand}" Classes="danger" />
+              <TextBlock Text="{Binding AnalogGucOzeti}" Foreground="#E8C078" TextWrapping="Wrap" />
+
+              <TextBlock Text="EN 54-4 GÜÇ KAYNAĞI / AKÜ" Classes="sectionTitle" />
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+                <StackPanel Grid.Row="0" Grid.Column="0">
+                  <TextBlock Text="Bekleme Akımı (A)" Classes="labelText" />
+                  <NumericUpDown Value="{Binding AnalogGucKaynagi.BeklemeAkimiA}" Minimum="0" Increment="0.1" LostFocus="Alan_LostFocus" />
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="1">
+                  <TextBlock Text="Bekleme Süresi (saat)" Classes="labelText" />
+                  <NumericUpDown Value="{Binding AnalogGucKaynagi.BeklemeSuresiSaat}" Minimum="0" Increment="1" LostFocus="Alan_LostFocus" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,4,0,0">
+                  <TextBlock Text="Alarm Süresi (dk)" Classes="labelText" />
+                  <NumericUpDown Value="{Binding AnalogGucKaynagi.AlarmSuresiDakika}" Minimum="0" Increment="5" LostFocus="Alan_LostFocus" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,4,0,0">
+                  <TextBlock Text="Nominal Gerilim (V)" Classes="labelText" />
+                  <NumericUpDown Value="{Binding AnalogGucKaynagi.NominalGerilimV}" Minimum="12" Increment="12" LostFocus="Alan_LostFocus" />
+                </StackPanel>
+                <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,4,0,0">
+                  <TextBlock Text="Akü Kapasitesi (Ah)" Classes="labelText" />
+                  <NumericUpDown Value="{Binding AnalogGucKaynagi.AkuKapasitesiAh}" Minimum="0" Increment="1" LostFocus="Alan_LostFocus" />
+                </StackPanel>
+                <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,4,0,0">
+                  <TextBlock Text="Akü Adedi (12 V)" Classes="labelText" />
+                  <NumericUpDown Value="{Binding AnalogGucKaynagi.AkuAdedi}" Minimum="0" Increment="2" LostFocus="Alan_LostFocus" />
+                </StackPanel>
+              </Grid>
+              <CheckBox Content="EN 54-4 uygunluğu onaylı" IsChecked="{Binding AnalogGucKaynagi.En54_4Uygun}" Foreground="#D0E8C0" />
+              <TextBlock Text="{Binding AnalogAkuOzeti}" Foreground="#E8C078" TextWrapping="Wrap" />
+
+              <TextBlock Text="MESAJ SENARYOLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding AnonsSistemi.AnalogMesajSenaryolari}"
+                        SelectedItem="{Binding SeciliAnalogMesajSenaryosu}"
+                        AutoGenerateColumns="False" MinHeight="100" MaxHeight="180"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Senaryo" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Önc." Binding="{Binding Oncelik}" Width="48" />
+                  <DataGridTextColumn Header="Mesaj" Binding="{Binding MesajAdi}" Width="*" />
+                  <DataGridTextColumn Header="Yangın Tetik" Binding="{Binding YanginPaneliTetikAdi}" Width="*" />
+                  <DataGridTextColumn Header="Zon" Binding="{Binding ZonIds.Count}" Width="46" IsReadOnly="True" />
+                </DataGrid.Columns>
+              </DataGrid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Button Content="+ Senaryo Ekle" Command="{Binding AnalogMesajSenaryosuEkleCommand}" Classes="primary" HorizontalAlignment="Stretch" />
+                <Button Grid.Column="1" Content="Sil" Command="{Binding AnalogMesajSenaryosuSilCommand}" Classes="danger" />
+              </Grid>
+              <Button Content="Seçili Senaryoya Tüm Zonları Ata" Command="{Binding AnalogSenaryoyaTumZonlariAtaCommand}" />
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding TvCatiHatlariGorunur}">
+              <TextBlock Text="Merkezi Sistem Tipi" Classes="labelText" />
+              <ComboBox ItemsSource="{Binding TvMerkeziSantralTipleri}"
+                        SelectedItem="{Binding TvSistemi.MerkeziSantralTipi}" />
+              <TextBlock Text="Çatı Uydu Sayısı" Classes="labelText" />
+              <NumericUpDown Value="{Binding TvCatiUyduSayisi}" Minimum="1" Increment="1" />
+              <TextBlock Text="ÇATI UYDU HATLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding TvSistemi.CatiHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="120" MaxHeight="220"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Uydu/Anten" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="110" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="5" IsVisible="{Binding TvDirektAktif}">
+              <TextBlock Text="DİREKT LNB SİSTEMİ" Classes="sectionTitle" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <StackPanel><TextBlock Text="Çanak Adı" Classes="labelText"/><TextBox Text="{Binding TvSistemi.DirektLnb.CanakAdi}" LostFocus="Alan_LostFocus"/></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="Uydu Pozisyonu" Classes="labelText"/><TextBox Text="{Binding TvSistemi.DirektLnb.UyduPozisyonu}" LostFocus="Alan_LostFocus"/></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,90,90" ColumnSpacing="8">
+                <StackPanel><TextBlock Text="LNB Tipi" Classes="labelText"/><ComboBox ItemsSource="{Binding CihazKatalogu}" SelectedItem="{Binding TvSistemi.DirektLnb.LnbTipi}"/></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="LNB Adedi" Classes="labelText"/><NumericUpDown Value="{Binding TvSistemi.DirektLnb.LnbSayisi}" Minimum="1"/></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="Çıkış/LNB" Classes="labelText"/><NumericUpDown Value="{Binding TvSistemi.DirektLnb.LnbCikisSayisi}" Minimum="1"/></StackPanel>
+              </Grid>
+              <TextBlock Text="TV Ucu / Tuner Sayısı" Classes="labelText" />
+              <NumericUpDown Value="{Binding DirektTvUcSayisi}" Minimum="0" />
+              <DataGrid ItemsSource="{Binding TvSistemi.DirektLnb.Hatlar}" AutoGenerateColumns="False"
+                        MinHeight="170" MaxHeight="300" CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="38" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="LNB Çıkış" Binding="{Binding LnbCikisNo}" Width="75"/>
+                  <DataGridCheckBoxColumn Header="DiSEqC" Binding="{Binding DiseqcVar}" Width="55"/>
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="105"/>
+                  <DataGridTextColumn Header="m" Binding="{Binding Metraj}" Width="55"/>
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="5" IsVisible="{Binding TvIpAktif}">
+              <TextBlock Text="IP-TV AĞ AYARLARI" Classes="sectionTitle" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <StackPanel><TextBlock Text="VLAN ID" Classes="labelText"/><NumericUpDown Value="{Binding TvSistemi.IpTv.AgAyarlari.VlanId}" Minimum="1" Maximum="4094"/></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="IGMP Sürümü" Classes="labelText"/><NumericUpDown Value="{Binding TvSistemi.IpTv.AgAyarlari.IgmpSurumu}" Minimum="2" Maximum="3"/></StackPanel>
+              </Grid>
+              <CheckBox Content="Multicast dağıtım" IsChecked="{Binding TvSistemi.IpTv.AgAyarlari.Multicast}" Foreground="#D0E8C0"/>
+              <CheckBox Content="IGMP Snooping" IsChecked="{Binding TvSistemi.IpTv.AgAyarlari.IgmpSnooping}" Foreground="#D0E8C0"/>
+              <CheckBox Content="IGMP Querier / Multicast Router mevcut" IsChecked="{Binding TvSistemi.IpTv.AgAyarlari.IgmpQuerier}" Foreground="#D0E8C0"/>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <StackPanel><TextBlock Text="Kanal Sayısı" Classes="labelText"/><NumericUpDown Value="{Binding TvSistemi.IpTv.AgAyarlari.KanalSayisi}" Minimum="1"/></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="Eşzamanlı Benzersiz Kanal" Classes="labelText"/><NumericUpDown Value="{Binding TvSistemi.IpTv.AgAyarlari.EszamanliBenzersizKanal}" Minimum="1"/></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <StackPanel><TextBlock Text="Ort. Bitrate (Mbps)" Classes="labelText"/><NumericUpDown Value="{Binding TvSistemi.IpTv.AgAyarlari.OrtalamaKanalBitrateMbps}" Minimum="0" Increment="1"/></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="Rezerv (%)" Classes="labelText"/><NumericUpDown Value="{Binding TvSistemi.IpTv.AgAyarlari.KapasiteRezervYuzde}" Minimum="0" Increment="5"/></StackPanel>
+              </Grid>
+              <TextBlock Text="{Binding TvIpBantGenisligiOzeti}" Classes="valueText" TextWrapping="Wrap"/>
+              <TextBlock Text="KANAL VE AKIŞLAR" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding IpTvAkislari}" SelectedItem="{Binding SeciliIpTvAkisi}"
+                        AutoGenerateColumns="False" MinHeight="150" MaxHeight="260" CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Kanal" Binding="{Binding KanalAdi}" Width="*"/>
+                  <DataGridTextColumn Header="Grup IP" Binding="{Binding MulticastGrupIp}" Width="100"/>
+                  <DataGridTextColumn Header="Port" Binding="{Binding Port}" Width="55"/>
+                  <DataGridTextColumn Header="Codec" Binding="{Binding Codec}" Width="60"/>
+                  <DataGridTextColumn Header="Mbps" Binding="{Binding BitrateMbps}" Width="55"/>
+                </DataGrid.Columns>
+              </DataGrid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Button Content="+ Kanal/Akış Ekle" Command="{Binding IpTvAkisiEkleCommand}" Classes="primary"/>
+                <Button Grid.Column="1" Content="Sil" Command="{Binding IpTvAkisiSilCommand}" Classes="danger"/>
+              </Grid>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Yangın loop grubu alanları -->
+          <StackPanel Spacing="6" IsVisible="{Binding YanginKatDuzenlenebilir}">
+            <TextBlock Text="Loop Grubu Adı" Classes="labelText" />
+            <TextBox Text="{Binding SeciliYanginKatLoopGrubu.Ad}" LostFocus="Alan_LostFocus" />
+
+            <TextBlock Text="Loop Sayısı" Classes="labelText" />
+            <NumericUpDown Value="{Binding SeciliYanginLoopSayisi}" Minimum="0" Increment="1" />
+
+            <StackPanel Spacing="4" IsVisible="{Binding YanginLooplariGorunur}">
+              <TextBlock Text="YANGIN LOOPLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliYanginKatLoopGrubu.Looplar}"
+                        SelectedItem="{Binding SeciliYanginLoop}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="160" MaxHeight="280"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding LoopNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Loop" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Cihaz" Binding="{Binding CihazSayisi}" Width="60" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="130" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" IsReadOnly="True" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- CCTV izleme noktası alanları -->
+          <StackPanel Spacing="6" IsVisible="{Binding CctvIzlemeNoktasiDuzenlenebilir}">
+            <TextBlock Text="İzleme Noktası Adı" Classes="labelText" />
+            <TextBox Text="{Binding SeciliCctvIzlemeNoktasi.Ad}" LostFocus="Alan_LostFocus" />
+
+            <TextBlock Text="Kat No" Classes="labelText" />
+            <NumericUpDown Value="{Binding SeciliCctvIzlemeKatNo}" Increment="1" />
+
+            <TextBlock Text="Bağlandığı Kabin" Classes="sectionTitle" />
+            <ComboBox ItemsSource="{Binding CctvIzlemeBaglantiSecenekleri}"
+                      SelectedValueBinding="{Binding Id}"
+                      SelectedValue="{Binding SeciliCctvIzlemeBaglantiId}"
+                      SelectionChanged="CctvIzlemeBaglanti_OnSelectionChanged">
+              <ComboBox.ItemTemplate>
+                <DataTemplate><TextBlock Text="{Binding Ad}" /></DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="Bağlantı Kablosu" Classes="sectionTitle" />
+            <Grid ColumnDefinitions="*,90" ColumnSpacing="8">
+              <StackPanel>
+                <TextBlock Text="Tip" Classes="labelText" />
+                <AutoCompleteBox Text="{Binding SeciliCctvIzlemeNoktasi.BaglantiKabloTipi}"
+                                 ItemsSource="{Binding KabloKatalogu}"
+                                 MinimumPrefixLength="0" FilterMode="Contains"
+                                 PlaceholderText="Kütüphaneden seç veya yaz"
+                                 LostFocus="Alan_LostFocus" />
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Metraj (m)" Classes="labelText" />
+                <TextBox Text="{Binding SeciliCctvIzlemeNoktasi.BaglantiKabloMetraj}"
+                         LostFocus="Alan_LostFocus" />
+              </StackPanel>
+            </Grid>
+            <Rectangle Height="1" Fill="#1E3A20" Margin="0,2" />
+          </StackPanel>
+
+          <!-- Rack alanları -->
+          <StackPanel Spacing="6" IsVisible="{Binding RackDuzenlenebilir}">
+            <TextBlock Text="Rack Adı" Classes="labelText" />
+            <TextBox Text="{Binding SeciliRack.Ad}" LostFocus="Alan_LostFocus" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding StandartRackSayaclariGorunur}">
+              <StackPanel>
+                <TextBlock Text="{Binding BirincilSayacBaslik}" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackBirincilSayac}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" IsVisible="{Binding IkincilSayacGorunur}">
+                <TextBlock Text="{Binding IkincilSayacBaslik}" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackIkincilSayac}" Minimum="0" Increment="1" />
+              </StackPanel>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8"
+                  IsVisible="{Binding DijitalAnonsUclariGorunur}">
+              <StackPanel Grid.Row="0" Grid.Column="0">
+                <TextBlock Text="IP Tavan Hoparlörü" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackIpTavanHoparlorSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Row="0" Grid.Column="1">
+                <TextBlock Text="IP Duvar/Kabin Hoparlörü" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackIpDuvarHoparlorSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,4,0,0">
+                <TextBlock Text="IP Horn Hoparlör" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackIpHornHoparlorSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,4,0,0">
+                <TextBlock Text="IP Projektör Hoparlör" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackIpProjektorHoparlorSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,4,0,0">
+                <TextBlock Text="IP Anons Terminali" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackIpAnonsTerminaliSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" IsVisible="{Binding KameraTipSayaclariGorunur}">
+              <StackPanel>
+                <TextBlock Text="Dahili Kamera" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackDahiliKameraSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Harici Kamera" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackHariciKameraSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Text="PTZ Kamera" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackPtzKameraSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+            </Grid>
+
+            <!-- Data ek uç birimleri (IP telefon, yazıcı, erişim/PDKS, diafon/IP ses) -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" IsVisible="{Binding DataEkHatlarGorunur}">
+              <StackPanel Grid.Row="0" Grid.Column="0">
+                <TextBlock Text="IP Telefon Sayısı" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackIpTelefonSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Row="0" Grid.Column="1">
+                <TextBlock Text="Ağ Yazıcısı Sayısı" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackYaziciSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,4,0,0">
+                <TextBlock Text="Erişim/PDKS Sayısı" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackErisimKontrolSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,4,0,0">
+                <TextBlock Text="Diafon/IP Ses Sayısı" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliRackDiafonSayisi}" Minimum="0" Increment="1" />
+              </StackPanel>
+            </Grid>
+
+            <Rectangle Height="1" Fill="#1E3A20" Margin="0,2" />
+            <TextBlock Text="{Binding KatIciKabloBaslik}" Classes="sectionTitle" />
+            <Grid ColumnDefinitions="*,90" ColumnSpacing="8">
+              <StackPanel>
+                <TextBlock Text="Tip" Classes="labelText" />
+                <AutoCompleteBox Text="{Binding SeciliRack.KatIciKabloTipi}"
+                                 ItemsSource="{Binding KabloKatalogu}"
+                                 MinimumPrefixLength="0" FilterMode="Contains"
+                                 PlaceholderText="Kütüphaneden seç veya yaz"
+                                 LostFocus="Alan_LostFocus" />
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Toplam (m)" Classes="labelText" />
+                <Border Background="#101C10" BorderBrush="#2A4A20" BorderThickness="1"
+                        CornerRadius="4" MinHeight="28" Padding="6,4">
+                  <TextBlock Text="{Binding SeciliRackKatIciKabloMetraj, StringFormat={}{0:0.#}}"
+                             Classes="valueText" VerticalAlignment="Center" />
+                </Border>
+              </StackPanel>
+            </Grid>
+
+            <StackPanel IsVisible="{Binding UstBaglantiGorunur}">
+              <TextBlock Text="Bağlantı (Üst)" Classes="sectionTitle" />
+              <ComboBox x:Name="UstBaglantiCombo"
+                        ItemsSource="{Binding UstBaglantiSecenekleri}"
+                        SelectedValueBinding="{Binding Id}"
+                        SelectedValue="{Binding SeciliUstRackId}"
+                        SelectionChanged="UstBaglanti_OnSelectionChanged"
+                        HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Ad}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+
+            <TextBlock Text="Merkeze Kablo" Classes="sectionTitle" />
+            <Grid ColumnDefinitions="*,90" ColumnSpacing="8">
+              <StackPanel>
+                <TextBlock Text="Tip" Classes="labelText" />
+                <AutoCompleteBox Text="{Binding SeciliRack.MerkezeKabloTipi}"
+                                 ItemsSource="{Binding KabloKatalogu}"
+                                 MinimumPrefixLength="0" FilterMode="Contains"
+                                 PlaceholderText="Kütüphaneden seç veya yaz"
+                                 LostFocus="Alan_LostFocus" />
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Metraj (m)" Classes="labelText" />
+                <TextBox Text="{Binding SeciliRack.MerkezeKabloMetraj, Mode=OneWay, StringFormat={}{0:0.##}}"
+                         TextChanged="MerkezeKabloMetraj_OnTextChanged" />
+              </StackPanel>
+            </Grid>
+
+            <Rectangle Height="1" Fill="#1E3A20" Margin="0,2" />
+
+            <StackPanel Spacing="4" IsVisible="{Binding DataHatMetrajGorunur}">
+              <TextBlock Text="DATA HAT METRAJLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.DataHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="120" MaxHeight="190"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="90" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding WirelessHatMetrajGorunur}">
+              <TextBlock Text="WIRELESS HAT METRAJLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.WirelessHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="100" MaxHeight="170"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="90" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding IpTelefonHatMetrajGorunur}">
+              <TextBlock Text="IP TELEFON HAT METRAJLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.IpTelefonHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="100" MaxHeight="170"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="90" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding YaziciHatMetrajGorunur}">
+              <TextBlock Text="AĞ YAZICISI HAT METRAJLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.YaziciHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="100" MaxHeight="170"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="90" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding ErisimKontrolHatMetrajGorunur}">
+              <TextBlock Text="ERİŞİM/PDKS HAT METRAJLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.ErisimKontrolHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="100" MaxHeight="170"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="90" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding DiafonHatMetrajGorunur}">
+              <TextBlock Text="DİAFON/IP SES HAT METRAJLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.DiafonHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="100" MaxHeight="170"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="90" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding KameraHatMetrajGorunur}">
+              <TextBlock Text="KAMERA HAT METRAJLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.KameraHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="120" MaxHeight="220"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="90" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding AnonsHatlariGorunur}">
+              <TextBlock Text="ANONS HATLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.AnonsHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="140" MaxHeight="240"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Hop." Binding="{Binding HoparlorSayisi}" Width="58" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="100" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding DijitalAnonsUclariGorunur}">
+              <TextBlock Text="DİJİTAL ANONS UÇLARI — HER UCA AYRI CAT HATTI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.DijitalAnonsUclari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="180" MaxHeight="320"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Uç Cihaz" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="125" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding TelefonHatMetrajGorunur}">
+              <TextBlock Text="TELEFON HATLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.TelefonHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="120" MaxHeight="220"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="140" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding DiafonUniteHatMetrajGorunur}">
+              <TextBlock Text="DİAFON ÜNİTE HATLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.DiafonUniteHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="120" MaxHeight="220"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Ünite" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="140" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+
+            <StackPanel Spacing="4" IsVisible="{Binding TvHatMetrajGorunur}">
+              <TextBlock Text="TV KOAKSİYEL HATLARI" Classes="sectionTitle" />
+              <DataGrid ItemsSource="{Binding SeciliRack.TvHatlari}"
+                        AutoGenerateColumns="False" CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                        MinHeight="120" MaxHeight="220"
+                        CellEditEnded="Cihaz_CellEditEnded">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="No" Binding="{Binding HatNo}" Width="42" IsReadOnly="True" />
+                  <DataGridTextColumn Header="Hat" Binding="{Binding Ad}" Width="*" />
+                  <DataGridTextColumn Header="Kablo" Binding="{Binding KabloTipi}" Width="110" />
+                  <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="7" IsVisible="{Binding AnalogAnonsZonDuzenlenebilir}">
+            <TextBlock Text="ANALOG TAHLİYE ZONU" Classes="sectionTitle" />
+            <TextBlock Text="Zon Adı" Classes="labelText" />
+            <TextBox Text="{Binding SeciliAnalogAnonsZonu.Ad}" LostFocus="Alan_LostFocus" />
+            <CheckBox Content="A/B çift hat" IsChecked="{Binding SeciliAnalogCiftHat}" Foreground="#D0E8C0" />
+
+            <TextBlock Text="AMPLİFİKATÖR ATAMASI" Classes="sectionTitle" />
+            <TextBlock Text="Hat A Amplifikatörü" Classes="labelText" />
+            <ComboBox ItemsSource="{Binding AnalogAmplifikatorSecenekleri}"
+                      SelectedValueBinding="{Binding Id}" SelectedValue="{Binding SeciliHatAAmplifikatorId}"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <StackPanel Spacing="4" IsVisible="{Binding SeciliAnalogCiftHat}">
+              <TextBlock Text="Hat B Amplifikatörü" Classes="labelText" />
+              <ComboBox ItemsSource="{Binding AnalogAmplifikatorSecenekleri}"
+                        SelectedValueBinding="{Binding Id}" SelectedValue="{Binding SeciliHatBAmplifikatorId}"
+                        HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <TextBlock Text="Amplifikatörler Ana Merkez panelinden (Acil Anons Merkezi) eklenir."
+                       Foreground="#8FAE96" FontSize="10" TextWrapping="Wrap" />
+
+            <TextBlock Text="HOPARLÖR EKLE" Classes="sectionTitle" />
+            <ComboBox ItemsSource="{Binding AnalogHoparlorKatalogu}"
+                      SelectedValueBinding="{Binding Kod}" SelectedValue="{Binding YeniAnalogHoparlorKodu}">
+              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <StackPanel><TextBlock Text="Adet" Classes="labelText"/><NumericUpDown Value="{Binding YeniAnalogHoparlorAdedi}" Minimum="1"/></StackPanel>
+              <StackPanel Grid.Column="1"><TextBlock Text="Tap (W)" Classes="labelText"/><NumericUpDown Value="{Binding YeniAnalogHoparlorTapGucu}" Minimum="0" Increment="0.5"/></StackPanel>
+            </Grid>
+            <Button Content="A/B Hatlarına Dengeli Ekle" Command="{Binding AnalogHoparlorEkleCommand}" Classes="primary" />
+
+            <TextBlock Text="HAT A" Classes="sectionTitle" />
+            <DataGrid ItemsSource="{Binding SeciliAnalogAnonsZonu.HatA.HoparlorGruplari}"
+                      SelectedItem="{Binding SeciliAnalogHatAGrubu}" AutoGenerateColumns="False"
+                      MinHeight="110" MaxHeight="180" CellEditEnded="Cihaz_CellEditEnded">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Hoparlör" Binding="{Binding HoparlorTipi}" Width="*" />
+                <DataGridTextColumn Header="Adet" Binding="{Binding Adet}" Width="55" />
+                <DataGridTextColumn Header="Tap" Binding="{Binding TapGucuW}" Width="55" />
+                <DataGridTextColumn Header="W" Binding="{Binding ToplamGucW}" Width="55" IsReadOnly="True" />
+                <DataGridCheckBoxColumn Header="EN54" Binding="{Binding En54_24Uygun}" Width="55" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <Button Content="Seçili Hat A Grubunu Sil" Command="{Binding AnalogHatAGrubuSilCommand}" Classes="danger" />
+            <TextBlock Text="HAT A KABLO PARÇALARI" Classes="sectionTitle" />
+            <DataGrid ItemsSource="{Binding SeciliAnalogAnonsZonu.HatA.KabloSegmentleri}" AutoGenerateColumns="False"
+                      MinHeight="120" MaxHeight="220" CellEditEnded="Cihaz_CellEditEnded">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="No" Binding="{Binding SiraNo}" Width="42" IsReadOnly="True" />
+                <DataGridTextColumn Header="Başlangıç" Binding="{Binding Baslangic}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Bitiş" Binding="{Binding Bitis}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <Expander Header="Hat A Denetimi (EOL / Pilot Ton / Empedans)">
+              <StackPanel Spacing="4" Margin="4">
+                <TextBlock Text="Denetim Yöntemi" Classes="labelText" />
+                <ComboBox ItemsSource="{Binding HatDenetimYontemleri}"
+                          SelectedValueBinding="{Binding Deger}"
+                          SelectedValue="{Binding SeciliAnalogAnonsZonu.HatA.DenetimYontemi}"
+                          HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel>
+                    <TextBlock Text="Dal Sayısı" Classes="labelText" />
+                    <NumericUpDown Value="{Binding SeciliAnalogAnonsZonu.HatA.DalSayisi}" Minimum="1" Increment="1" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="EOL Modül Adedi" Classes="labelText" />
+                    <NumericUpDown Value="{Binding SeciliAnalogAnonsZonu.HatA.EolModulAdedi}" Minimum="0" Increment="1" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Text="Pilot Ton Frekansı (Hz)" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliAnalogAnonsZonu.HatA.PilotTonFrekansiHz}" Minimum="0" Increment="1000" />
+                <TextBlock Text="Güzergâh Kodu" Classes="labelText" />
+                <TextBox Text="{Binding SeciliAnalogAnonsZonu.HatA.GuzergahKodu}" LostFocus="Alan_LostFocus" />
+                <CheckBox Content="Kısa devre izolatörü var" Foreground="#D0E8C0"
+                          IsChecked="{Binding SeciliAnalogAnonsZonu.HatA.KisaDevreIzolatoruVar}" />
+              </StackPanel>
+            </Expander>
+            <TextBlock Text="HAT B" Classes="sectionTitle" IsVisible="{Binding SeciliAnalogCiftHat}" />
+            <DataGrid ItemsSource="{Binding SeciliAnalogAnonsZonu.HatB.HoparlorGruplari}"
+                      SelectedItem="{Binding SeciliAnalogHatBGrubu}" AutoGenerateColumns="False"
+                      MinHeight="110" MaxHeight="180" IsVisible="{Binding SeciliAnalogCiftHat}" CellEditEnded="Cihaz_CellEditEnded">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Hoparlör" Binding="{Binding HoparlorTipi}" Width="*" />
+                <DataGridTextColumn Header="Adet" Binding="{Binding Adet}" Width="55" />
+                <DataGridTextColumn Header="Tap" Binding="{Binding TapGucuW}" Width="55" />
+                <DataGridTextColumn Header="W" Binding="{Binding ToplamGucW}" Width="55" IsReadOnly="True" />
+                <DataGridCheckBoxColumn Header="EN54" Binding="{Binding En54_24Uygun}" Width="55" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <Button Content="Seçili Hat B Grubunu Sil" Command="{Binding AnalogHatBGrubuSilCommand}"
+                    Classes="danger" IsVisible="{Binding SeciliAnalogCiftHat}" />
+            <TextBlock Text="HAT B KABLO PARÇALARI" Classes="sectionTitle" IsVisible="{Binding SeciliAnalogCiftHat}" />
+            <DataGrid ItemsSource="{Binding SeciliAnalogAnonsZonu.HatB.KabloSegmentleri}" AutoGenerateColumns="False"
+                      MinHeight="120" MaxHeight="220" IsVisible="{Binding SeciliAnalogCiftHat}" CellEditEnded="Cihaz_CellEditEnded">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="No" Binding="{Binding SiraNo}" Width="42" IsReadOnly="True" />
+                <DataGridTextColumn Header="Başlangıç" Binding="{Binding Baslangic}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Bitiş" Binding="{Binding Bitis}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Metraj" Binding="{Binding Metraj}" Width="70" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <Expander Header="Hat B Denetimi (EOL / Pilot Ton / Empedans)" IsVisible="{Binding SeciliAnalogCiftHat}">
+              <StackPanel Spacing="4" Margin="4">
+                <TextBlock Text="Denetim Yöntemi" Classes="labelText" />
+                <ComboBox ItemsSource="{Binding HatDenetimYontemleri}"
+                          SelectedValueBinding="{Binding Deger}"
+                          SelectedValue="{Binding SeciliAnalogAnonsZonu.HatB.DenetimYontemi}"
+                          HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel>
+                    <TextBlock Text="Dal Sayısı" Classes="labelText" />
+                    <NumericUpDown Value="{Binding SeciliAnalogAnonsZonu.HatB.DalSayisi}" Minimum="1" Increment="1" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="EOL Modül Adedi" Classes="labelText" />
+                    <NumericUpDown Value="{Binding SeciliAnalogAnonsZonu.HatB.EolModulAdedi}" Minimum="0" Increment="1" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Text="Pilot Ton Frekansı (Hz)" Classes="labelText" />
+                <NumericUpDown Value="{Binding SeciliAnalogAnonsZonu.HatB.PilotTonFrekansiHz}" Minimum="0" Increment="1000" />
+                <TextBlock Text="Güzergâh Kodu" Classes="labelText" />
+                <TextBox Text="{Binding SeciliAnalogAnonsZonu.HatB.GuzergahKodu}" LostFocus="Alan_LostFocus" />
+                <CheckBox Content="Kısa devre izolatörü var" Foreground="#D0E8C0"
+                          IsChecked="{Binding SeciliAnalogAnonsZonu.HatB.KisaDevreIzolatoruVar}" />
+              </StackPanel>
+            </Expander>
+            <Button Content="Analog Sistemi Doğrula" Command="{Binding AnalogSistemiDogrulaCommand}" Classes="primary" />
+            <ListBox ItemsSource="{Binding AnalogDogrulamaSatirlari}" MinHeight="100" MaxHeight="220">
+              <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="10" /></DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+
+          <Rectangle Height="1" Fill="#1E3A20" Margin="0,2" />
+
+          <!-- Cihazlar (rack veya merkez) -->
+          <StackPanel Spacing="6" IsVisible="{Binding CihazPanelGorunur}">
+            <TextBlock Text="İÇİNDEKİ CİHAZLAR" Classes="sectionTitle" />
+            <DataGrid x:Name="dgCihazlar" ItemsSource="{Binding SeciliCihazlar}"
+                      SelectedItem="{Binding SeciliCihaz}"
+                      AutoGenerateColumns="False" CanUserResizeColumns="True"
+                      GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                      MinHeight="160" MaxHeight="240"
+                      CellEditEnded="Cihaz_CellEditEnded">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Cihaz" Binding="{Binding Ad}" Width="*" />
+                <DataGridTextColumn Header="Adet" Binding="{Binding Adet}" Width="60" />
+              </DataGrid.Columns>
+            </DataGrid>
+
+            <TextBlock Text="Katalogdan seç veya yaz" Classes="labelText" />
+            <ComboBox ItemsSource="{Binding CihazKatalogu}" SelectedItem="{Binding YeniCihazAdi}"
+                      HorizontalAlignment="Stretch" />
+            <Grid ColumnDefinitions="*,70" ColumnSpacing="8">
+              <TextBox Text="{Binding YeniCihazAdi}" PlaceholderText="Cihaz adı" />
+              <NumericUpDown Grid.Column="1" Value="{Binding YeniCihazAdet}" Minimum="1" Increment="1" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <Button Content="+ Cihaz Ekle" Command="{Binding CihazEkleCommand}" Classes="primary" HorizontalAlignment="Stretch" />
+              <Button Grid.Column="1" Content="Sil" Command="{Binding CihazSilCommand}" Classes="danger" />
+            </Grid>
+          </StackPanel>
+
+          <!-- Port/kanal kapasite denetimi (Data ve Kamera) -->
+          <StackPanel Spacing="6" IsVisible="{Binding KapasiteDenetimGorunur}">
+            <Rectangle Height="1" Fill="#1E3A20" Margin="0,2" />
+            <Button Content="Kapasite Denetimi" Command="{Binding KapasiteDenetleCommand}" Classes="primary" />
+            <ListBox ItemsSource="{Binding KapasiteDenetimSatirlari}" MinHeight="70" MaxHeight="180">
+              <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="10" /></DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</Window>

@@ -1,0 +1,166 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Electric.KesifHazirla"
+        x:Class="Kst.Acoustics.App.Electric.KesifHazirla.PozAtamaWindow"
+        x:DataType="vm:KesifHazirlaViewModel"
+        x:CompileBindings="False"
+        Title="Poz Atama — Metraj Kalemi / Poz Eşleştirme"
+        Width="980" Height="700"
+        MinWidth="760" MinHeight="520"
+        CanResize="True"
+        Background="#071108"
+        WindowStartupLocation="CenterOwner">
+
+  <Window.Resources>
+    <vm:KontrolEdildiRenkConverter x:Key="KontrolRenk"/>
+  </Window.Resources>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.sectionTitle">
+      <Setter Property="Foreground" Value="#DFF1D9"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.subtle">
+      <Setter Property="Foreground" Value="#7FA06F"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#0E3A1A"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#168A38"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="10,6"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="#15572A"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#2AD864"/>
+    </Style>
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="#071108"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+      <Setter Property="BorderBrush" Value="#17351D"/>
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Background" Value="#0B1C0E"/>
+      <Setter Property="Foreground" Value="#DFF1D9"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,*" RowSpacing="8" Margin="16">
+
+    <!-- Header -->
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="sectionTitle" Text="Poz Atama"/>
+        <TextBlock Classes="subtle" TextWrapping="Wrap"
+                   Text="Tanımsız metraj kalemlerini poz kütüphanesindeki pozlarla eşleştirin. Eşleşme öğrenilir ve sonraki projelerde otomatik uygulanır."/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="Kapat" Click="Kapat_OnClick" VerticalAlignment="Top"/>
+    </Grid>
+
+    <!-- Atanacak poz ile metraj/eşleşme tabloları bağımsız aranır. -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+      <TextBox Text="{Binding PozAtamaAramaMetni, UpdateSourceTrigger=PropertyChanged}"
+               PlaceholderText="Atanacak poz no veya ad ara..."
+               HorizontalAlignment="Stretch"/>
+      <TextBox Grid.Column="1"
+               Text="{Binding PozAtamaKalemAramaMetni, UpdateSourceTrigger=PropertyChanged}"
+               PlaceholderText="Metraj kalemi veya tanımlı eşleşme ara..."
+               HorizontalAlignment="Stretch"/>
+    </Grid>
+
+    <!-- Poz seçim çubuğu (her iki alt bölüm için ortak) -->
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+      <TextBlock Text="Poz:" Foreground="#DFF1D9" VerticalAlignment="Center"/>
+      <ComboBox Grid.Column="1" Name="cmbPoz"
+                ItemsSource="{Binding FiltrelenmisAtamaPozlari}"
+                SelectedItem="{Binding AtanacakPoz}"
+                HorizontalAlignment="Stretch"
+                PlaceholderText="Eşlenecek pozu seçin...">
+        <ComboBox.ItemTemplate>
+          <DataTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{Binding PozNo}" FontWeight="SemiBold"/>
+              <TextBlock Text="—"/>
+              <TextBlock Text="{Binding BirimAdi}"/>
+            </StackPanel>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <Button Grid.Column="2" Content="Seçili Kaleme Poz Ata" Click="PozAta_OnClick"/>
+      <Button Grid.Column="3" Content="Eşleşmeyi Güncelle" Click="EslemeGuncelle_OnClick"/>
+      <Button Grid.Column="4" Content="Tümünü Otomatik Ata" Click="OtomatikAta_OnClick"/>
+    </Grid>
+
+    <!-- Eşlenmemiş kalemler -->
+    <DataGrid Grid.Row="3"
+              ItemsSource="{Binding FiltrelenmisEslenmemisKalemler}"
+              SelectedItem="{Binding SeciliEslenmemisKalem}"
+              AutoGenerateColumns="False"
+              CanUserSortColumns="True"
+              CanUserResizeColumns="True"
+              IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="↕ Ana Grup" Binding="{Binding AnaGrup}" SortMemberPath="AnaGrup" Width="130"/>
+        <DataGridTextColumn Header="↕ Alt Grup" Binding="{Binding AltGrup}" SortMemberPath="AltGrup" Width="150"/>
+        <DataGridTextColumn Header="↕ Teknik Özellik" Binding="{Binding TeknikOzellik}" SortMemberPath="TeknikOzellik" Width="*"/>
+        <DataGridTextColumn Header="↕ Birim" Binding="{Binding Birim}" SortMemberPath="Birim" Width="60"/>
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <Grid Grid.Row="4" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,4,0,0">
+      <TextBlock Classes="sectionTitle" FontSize="12" Text="{Binding EslenmemisKalemOzet}"/>
+      <TextBlock Grid.Column="1" Classes="subtle"
+                 Text="Bir kalem ve üstte bir poz seçip 'Seçili Kaleme Poz Ata'ya basın."/>
+    </Grid>
+
+    <TextBlock Grid.Row="5" Classes="sectionTitle" Text="{Binding TanimliEslemeOzet}" Margin="0,6,0,0"/>
+
+    <!-- Tanımlı eşleşmeler -->
+    <DataGrid Grid.Row="6"
+              ItemsSource="{Binding FiltrelenmisPozEslemeleri}"
+              SelectedItem="{Binding SeciliEsleme}"
+              AutoGenerateColumns="False"
+              CanUserSortColumns="True"
+              CanUserResizeColumns="True"
+              IsReadOnly="True">
+      <DataGrid.Styles>
+        <!-- Kontrol edilen atamalar farklı renk (yeşil) — gözden kaçan atamalar ayırt edilir. -->
+        <Style Selector="DataGridRow">
+          <Setter Property="Foreground" Value="{Binding KontrolEdildi, Converter={StaticResource KontrolRenk}}"/>
+          <Setter Property="Background" Value="{Binding KontrolEdildi, Converter={StaticResource KontrolRenk}, ConverterParameter=bg}"/>
+        </Style>
+      </DataGrid.Styles>
+      <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Kontrol" SortMemberPath="KontrolEdildi" Width="70">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <CheckBox IsChecked="{Binding KontrolEdildi, Mode=TwoWay}"
+                        Click="Kontrol_Changed"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="↕ Ana Grup" Binding="{Binding AnaGrup}" SortMemberPath="AnaGrup" Width="110"/>
+        <DataGridTextColumn Header="↕ Alt Grup" Binding="{Binding AltGrup}" SortMemberPath="AltGrup" Width="130"/>
+        <DataGridTextColumn Header="↕ Teknik Özellik" Binding="{Binding TeknikOzellik}" SortMemberPath="TeknikOzellik" Width="*"/>
+        <DataGridTextColumn Header="↕ Birim" Binding="{Binding Birim}" SortMemberPath="Birim" Width="55"/>
+        <DataGridTextColumn Header="↕ Poz No" Binding="{Binding PozNo}" SortMemberPath="PozNo" Width="100"/>
+        <DataGridTextColumn Header="↕ Poz Adı" Binding="{Binding BirimAdi}" SortMemberPath="BirimAdi" Width="160"/>
+        <DataGridTextColumn Header="↕ Güncelleme" Binding="{Binding SonGuncellemeTarihi, StringFormat={}{0:dd.MM.yyyy}}" SortMemberPath="SonGuncellemeTarihi" Width="90" IsReadOnly="True"/>
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="8"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,8">
+      <Button Content="Eşleşmeyi Sil" Click="EslemeSil_OnClick"/>
+    </StackPanel>
+  </Grid>
+</Window>

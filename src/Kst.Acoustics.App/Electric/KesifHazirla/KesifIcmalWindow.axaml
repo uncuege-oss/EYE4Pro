@@ -1,0 +1,94 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Electric.KesifHazirla"
+        x:Class="Kst.Acoustics.App.Electric.KesifHazirla.KesifIcmalWindow"
+        x:DataType="vm:KesifHazirlaViewModel"
+        x:CompileBindings="False"
+        Title="Ana İcmal ve Tablo Kırılımları"
+        Width="860" Height="650"
+        MinWidth="500" MinHeight="450"
+        CanResize="True"
+        Background="#071108">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.sectionTitle">
+      <Setter Property="Foreground" Value="#DFF1D9"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.subtle">
+      <Setter Property="Foreground" Value="#7FA06F"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#0E3A1A"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#168A38"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="10,6"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="#15572A"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#2AD864"/>
+    </Style>
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="#071108"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+      <Setter Property="BorderBrush" Value="#17351D"/>
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Background" Value="#0B1C0E"/>
+      <Setter Property="Foreground" Value="#DFF1D9"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto,180" RowSpacing="12" Margin="16">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="sectionTitle" Text="Ana İcmal"/>
+        <TextBlock Classes="subtle" Text="Tek tabloda veya birden fazla tabloda geçen bütün poz/birimler gösterilir."/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="İcmali Güncelle" Command="{Binding IcmaliGuncelleCommand}"/>
+    </Grid>
+
+    <DataGrid Grid.Row="1" Name="dgIcmal"
+              ItemsSource="{Binding IcmalSatirlari}"
+              SelectedItem="{Binding SeciliIcmalSatiri, Mode=TwoWay}"
+              SelectionChanged="IcmalGrid_SelectionChanged"
+              AutoGenerateColumns="False"
+              CanUserSortColumns="True"
+              CanUserResizeColumns="True"
+              IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="↕ Poz" Binding="{Binding PozNo}" SortMemberPath="PozNo" Width="120"/>
+        <DataGridTextColumn Header="↕ Birim Adı" Binding="{Binding BirimAdi}" SortMemberPath="BirimAdi" Width="*"/>
+        <DataGridTextColumn Header="↕ Birim" Binding="{Binding Birim}" SortMemberPath="Birim" Width="70"/>
+        <DataGridTextColumn Header="↕ Miktar" Binding="{Binding ToplamMiktar}" SortMemberPath="ToplamMiktar" Width="100"/>
+        <DataGridTextColumn Header="↕ Ort. Birim Fiyat" Binding="{Binding OrtalamaBirimFiyat, StringFormat={}{0:N2} ₺}" SortMemberPath="OrtalamaBirimFiyat" Width="130"/>
+        <DataGridTextColumn Header="↕ Tutar" Binding="{Binding ToplamTutar, StringFormat={}{0:N2} ₺}" SortMemberPath="ToplamTutar" Width="120"/>
+        <DataGridTextColumn Header="↕ Fiyat Uyarısı" Binding="{Binding BirimFiyatFarkiMetni}" SortMemberPath="BirimFiyatFarkiMetni" Width="120"/>
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <TextBlock Grid.Row="2" Classes="sectionTitle" Text="Tablo Kırılımı"/>
+
+    <DataGrid Grid.Row="3"
+              ItemsSource="{Binding SeciliIcmalKirilimlar}"
+              AutoGenerateColumns="False"
+              CanUserSortColumns="True"
+              CanUserResizeColumns="True"
+              IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="↕ Tablo" Binding="{Binding TabloAdi}" SortMemberPath="TabloAdi" Width="*"/>
+        <DataGridTextColumn Header="↕ Miktar" Binding="{Binding Miktar}" SortMemberPath="Miktar" Width="120"/>
+        <DataGridTextColumn Header="↕ Tutar" Binding="{Binding Tutar, StringFormat={}{0:N2} ₺}" SortMemberPath="Tutar" Width="140"/>
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</Window>

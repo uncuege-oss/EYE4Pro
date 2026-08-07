@@ -1,0 +1,11 @@
+[
+  { "Ad": "Toroid AT 160/5 Ø70",   "Tip": "Toroid", "PrimerA": 160,  "SekonderA": 5, "IcCapMm": 70,  "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" },
+  { "Ad": "Toroid AT 250/5 Ø70",   "Tip": "Toroid", "PrimerA": 250,  "SekonderA": 5, "IcCapMm": 70,  "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" },
+  { "Ad": "Toroid AT 400/5 Ø105",  "Tip": "Toroid", "PrimerA": 400,  "SekonderA": 5, "IcCapMm": 105, "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" },
+  { "Ad": "Toroid AT 630/5 Ø105",  "Tip": "Toroid", "PrimerA": 630,  "SekonderA": 5, "IcCapMm": 105, "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" },
+  { "Ad": "Toroid AT 1000/5 Ø140", "Tip": "Toroid", "PrimerA": 1000, "SekonderA": 5, "IcCapMm": 140, "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" },
+  { "Ad": "Toroid AT 1250/5 Ø140", "Tip": "Toroid", "PrimerA": 1250, "SekonderA": 5, "IcCapMm": 140, "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" },
+  { "Ad": "Toroid AT 1600/5 Ø210", "Tip": "Toroid", "PrimerA": 1600, "SekonderA": 5, "IcCapMm": 210, "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" },
+  { "Ad": "Toroid AT 2000/5 Ø210", "Tip": "Toroid", "PrimerA": 2000, "SekonderA": 5, "IcCapMm": 210, "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" },
+  { "Ad": "Toroid AT 2500/5 Ø300", "Tip": "Toroid", "PrimerA": 2500, "SekonderA": 5, "IcCapMm": 300, "Sinif": "RCD", "GerilimV": 400, "Aciklama": "Troid kaçak akım rölesi için" }
+]

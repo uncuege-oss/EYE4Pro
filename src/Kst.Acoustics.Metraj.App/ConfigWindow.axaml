@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Kst.Acoustics.Metraj.App"
+        x:Class="Kst.Acoustics.Metraj.App.ConfigWindow"
+        x:DataType="local:ConfigViewModel"
+        Title="Uygulama Yapılandırması"
+        Width="600" Height="250" WindowStartupLocation="CenterScreen"
+        Background="#F5F7FA">
+
+    <StackPanel Margin="20" Spacing="15">
+        <TextBlock Text="ODA File Converter Yapılandırması" FontSize="16" FontWeight="Bold"/>
+        <TextBlock Text="DWG dosyalarını işleyebilmek için ODA File Converter yolu belirtilmelidir." 
+                   Foreground="#667085" TextWrapping="Wrap"/>
+
+        <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10" Margin="0,10,0,0">
+            <TextBox Name="PathBox" Text="{Binding OdaPath}" PlaceholderText="ODAFileConverter executable yolunu seçin..."/>
+            <Button Content="Gözat..." Click="OnBrowseClick" Background="#0B547B" Foreground="White"/>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+            <Button Content="Vazgeç" Click="OnCancelClick" Padding="20,8"/>
+            <Button Content="Kaydet" Command="{Binding SaveCommand}" Click="OnSaveClick"
+                    Padding="25,8" Background="#20C3D8" Foreground="White" FontWeight="Bold"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

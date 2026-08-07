@@ -1,0 +1,322 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Kst.Acoustics.App.ViewModels"
+             xmlns:controls="clr-namespace:Kst.Acoustics.App.Controls"
+             xmlns:conv="clr-namespace:Kst.Acoustics.App.Converters"
+             xmlns:si="clr-namespace:Kst.Acoustics.Core.SoundInsulation;assembly=Kst.Acoustics.Core"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Kst.Acoustics.App.Views.SoundInsulationView"
+             x:DataType="vm:SoundInsulationViewModel">
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Toolbar/Header -->
+        <Border Grid.Row="0" Background="#091320" Padding="14,10" BorderBrush="#333" BorderThickness="0,0,0,1">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Click="BackToLauncher_OnClick"
+                            Background="#1A3050" Foreground="#90C0E8"
+                            FontWeight="SemiBold" FontSize="12"
+                            CornerRadius="6" Padding="12,6"
+                            Content="← Geri"/>
+                    <Border Width="166" Height="54"
+                            Margin="8,0,14,0"
+                            CornerRadius="7"
+                            Background="#F3F7FA"
+                            BorderBrush="#C9D7E4"
+                            BorderThickness="1"
+                            ClipToBounds="True"
+                            VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="45,*" ColumnSpacing="10" Margin="10,4">
+                        <Grid Width="45" Height="36">
+                            <Ellipse Width="38" Height="24" Stroke="#0B547B" StrokeThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="22" Height="22" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M11,18 L16,18 M20,13 L20,23 M25,10 L25,26 M30,14 L30,22 M34,18 L39,18"
+                                  Stroke="#0A4C72"
+                                  StrokeThickness="1.5"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="14" FontWeight="Bold"/>
+                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="9" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Content="📊 Excel Şablonu" Command="{Binding ExportExcelCommand}" 
+                            Background="#162E48" Foreground="#D8EEFF" FontSize="11" Padding="10,6"/>
+                    <Button Content="📥 Excelden Aktar" Command="{Binding ImportExcelCommand}" 
+                            Background="#162E48" Foreground="#D8EEFF" FontSize="11" Padding="10,6"/>
+                    <Button Content="📚 Kütüphane" Click="OpenLibrary_OnClick" 
+                            Background="#1A5898" Foreground="White" FontSize="11" FontWeight="Bold" Padding="12,6"/>
+                    <Button Content="📄 Metin Raporu" Command="{Binding ExportTextReportCommand}" 
+                            Background="#8B1A1A" Foreground="White" FontSize="11" FontWeight="Bold" Padding="12,6"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="320, *, 320" Margin="10">
+        <!-- Left: Layer Editor -->
+        <Border Grid.Column="0" BorderBrush="#444" BorderThickness="0,0,1,0" Padding="10">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Sistem Katmanları" FontWeight="Bold" FontSize="18" Foreground="#E0E0E0" Margin="0,0,0,10"/>
+                
+	                <CheckBox DockPanel.Dock="Top" Content="Sadece Favorileri Göster" 
+	                          IsChecked="{Binding ShowOnlyFavorites}" 
+	                          FontSize="11" Foreground="#90C0E8" Margin="0,0,0,10"/>
+
+                    <Border DockPanel.Dock="Top" Background="#151F2C" CornerRadius="6" Padding="8" Margin="0,0,0,10">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Bağlantı / Karkas" FontWeight="SemiBold" Foreground="#BBBBBB"/>
+                            <ComboBox ItemsSource="{Binding ConnectionTypeOptions}"
+                                      SelectedItem="{Binding ConnectionType}"
+                                      HorizontalAlignment="Stretch"/>
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Text="Dikme aralığı" Foreground="#CCCCCC" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Slider Grid.Column="1" Minimum="0" Maximum="1200" Value="{Binding StudSpacingMm}"/>
+                                <TextBlock Grid.Column="2" Text="{Binding StudSpacingMm, StringFormat='\{0:F0\} mm'}"
+                                           Width="64" TextAlignment="Right" Foreground="#00FFFF" VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                
+                <Button DockPanel.Dock="Bottom" Content="+ Katman Ekle" Command="{Binding AddLayerCommand}" 
+                        Background="#1A5898" Foreground="White" FontWeight="Bold"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" 
+                        Height="40" CornerRadius="8" Margin="0,10,0,0"/>
+
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Layers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#222" CornerRadius="4" Margin="0,0,0,8" Padding="8">
+                                    <StackPanel Spacing="5">
+	                                        <DockPanel>
+                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                                                    <Button Content="↑"
+                                                            Command="{Binding $parent[UserControl].((vm:SoundInsulationViewModel)DataContext).MoveLayerUpCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="↓"
+                                                            Command="{Binding $parent[UserControl].((vm:SoundInsulationViewModel)DataContext).MoveLayerDownCommand}"
+                                                            CommandParameter="{Binding}"/>
+	                                                <Button Content="X" Foreground="Red" 
+	                                                    Command="{Binding $parent[UserControl].((vm:SoundInsulationViewModel)DataContext).RemoveLayerCommand}"
+	                                                    CommandParameter="{Binding}"/>
+                                                </StackPanel>
+	                                            <ComboBox ItemsSource="{Binding $parent[UserControl].((vm:SoundInsulationViewModel)DataContext).FilteredMaterials}"
+	                                                      SelectedItem="{Binding Material}" HorizontalAlignment="Stretch">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid ColumnDefinitions="*, Auto">
+                                                            <TextBlock Text="{Binding Name}"/>
+                                                            <TextBlock Grid.Column="1" Text="★" Foreground="Gold" IsVisible="{Binding IsFavorite}" Margin="5,0,0,0"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </DockPanel>
+                                        
+	                                        <Grid ColumnDefinitions="Auto, *, Auto, Auto">
+	                                            <TextBlock Text="Kalınlık:" VerticalAlignment="Center" Foreground="#CCCCCC" Margin="0,0,10,0"/>
+	                                            <Slider Grid.Column="1" Minimum="1" Maximum="600" Value="{Binding ThicknessMm}"/>
+	                                            <NumericUpDown Grid.Column="2" Value="{Binding ThicknessMm}"
+	                                                           Minimum="0.1" Maximum="2000" Increment="1" FormatString="F1"
+	                                                           Width="110" Margin="8,0,4,0" VerticalAlignment="Center"
+	                                                           ToolTip.Tip="Kalınlığı mm cinsinden elle girebilirsiniz"/>
+	                                            <TextBlock Grid.Column="3" Text="mm" Foreground="#00FFFF" FontWeight="SemiBold"
+	                                                       VerticalAlignment="Center"/>
+	                                        </Grid>
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <CheckBox Content="Hava boşluğu" IsChecked="{Binding IsAirGap}" Foreground="#CCCCCC" FontSize="11"/>
+                                                <CheckBox Content="Gözenekli dolgu" IsChecked="{Binding HasPorousFill}" Foreground="#CCCCCC" FontSize="11"/>
+                                            </StackPanel>
+	                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- Middle: Visualization & Graph -->
+        <Grid Grid.Column="1" RowDefinitions="*, *">
+            <!-- Cross Section Preview -->
+            <Border Grid.Row="0" Margin="10" Background="#111" CornerRadius="8">
+                <controls:SoundInsulationCrossSectionControl Assembly="{Binding CurrentAssembly}"/>
+            </Border>
+            
+            <!-- Graph -->
+            <Border Grid.Row="1" Margin="10" Background="#111" CornerRadius="8">
+                <controls:SoundInsulationPlotControl Result="{Binding CalculationResult}"
+                                                     OverlayResult="{Binding TmmOverlayResult}"
+                                                     OverlayLabel="TMM"/>
+            </Border>
+        </Grid>
+
+	        <!-- Right: Results & Ratings -->
+	        <Border Grid.Column="2" BorderBrush="#444" BorderThickness="1,0,0,0" Padding="10">
+	            <ScrollViewer>
+	            <StackPanel Spacing="16">
+	                <TextBlock Text="Hesaplama Sonuçları" FontWeight="Bold" FontSize="18" Foreground="#E0E0E0"/>
+                
+                <Border Background="#1A2A3D" CornerRadius="8" Padding="12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="HESAP YÖNTEMİ" Foreground="#7DA3CC" FontSize="11" FontWeight="Bold"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <RadioButton Content="Empirical" GroupName="CalcMethod"
+                                         IsChecked="{Binding SelectedMethod, ConverterParameter={x:Static si:CalculationMethod.Empirical}, Converter={x:Static conv:EnumEqualsConverter.Instance}}"
+                                         Foreground="#DCE7F0"/>
+                            <RadioButton Content="TMM" GroupName="CalcMethod"
+                                         IsChecked="{Binding SelectedMethod, ConverterParameter={x:Static si:CalculationMethod.TMM}, Converter={x:Static conv:EnumEqualsConverter.Instance}}"
+                                         Foreground="#DCE7F0"/>
+                            <RadioButton Content="Hybrid" GroupName="CalcMethod"
+                                         IsChecked="{Binding SelectedMethod, ConverterParameter={x:Static si:CalculationMethod.Hybrid}, Converter={x:Static conv:EnumEqualsConverter.Instance}}"
+                                         Foreground="#DCE7F0"/>
+                        </StackPanel>
+                        <CheckBox Content="TMM eğrisini karşılaştırma için overlay göster"
+                                  IsChecked="{Binding ShowTmmOverlay}"
+                                  Foreground="#44E58A" FontSize="11"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#333" CornerRadius="8" Padding="15">
+                    <StackPanel Spacing="5" HorizontalAlignment="Center">
+                        <TextBlock Text="Rw (C; Ctr)" FontSize="15" HorizontalAlignment="Center" Foreground="#AAAAAA"/>
+                        <TextBlock Text="{Binding CalculationResult.RwRating.Rw}" FontSize="48" FontWeight="Bold" Foreground="Cyan" HorizontalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+                            <TextBlock Text="(" Foreground="#888888" FontSize="18"/>
+                            <TextBlock Text="{Binding CalculationResult.RwRating.C}" Foreground="#FFFFFF" FontSize="18"/>
+                            <TextBlock Text=";" Foreground="#888888" FontSize="18"/>
+                            <TextBlock Text="{Binding CalculationResult.RwRating.Ctr}" Foreground="#FFFFFF" FontSize="18"/>
+                            <TextBlock Text=") dB" Foreground="#888888" FontSize="18"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+	                <StackPanel Spacing="5">
+	                    <TextBlock Text="Fiziksel Özellikler" FontWeight="Bold" Foreground="#BBBBBB" Margin="0,0,0,5"/>
+                    <DockPanel>
+                        <TextBlock Text="Toplam Kalınlık:" Foreground="#FFFFFF"/>
+                        <TextBlock Text="{Binding CurrentAssembly.TotalThickness, StringFormat='\{0:F3\} m'}" Foreground="#00FFFF" FontWeight="Bold" HorizontalAlignment="Right"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="Toplam Kütle:" Foreground="#FFFFFF"/>
+                        <TextBlock Text="{Binding CurrentAssembly.TotalSurfaceMass, StringFormat='\{0:F1\} kg/m²'}" Foreground="#00FFFF" FontWeight="Bold" HorizontalAlignment="Right"/>
+	                    </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="Tahmini STC:" Foreground="#FFFFFF"/>
+                            <TextBlock Text="{Binding CalculationResult.RwRating.Stc, TargetNullValue='—'}" Foreground="#00FFFF" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="Tahmini OITC:" Foreground="#FFFFFF"/>
+                            <TextBlock Text="{Binding CalculationResult.RwRating.Oitc, TargetNullValue='—'}" Foreground="#00FFFF" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        </DockPanel>
+	                    <DockPanel IsVisible="{Binding CalculationResult.HasMassAirMassResonance}">
+                        <TextBlock Text="MAM Rezonansı:" Foreground="#FFFFFF"/>
+                        <TextBlock Text="{Binding CalculationResult.MassAirMassResonance, StringFormat='\{0:F1\} Hz'}" Foreground="#00FFFF" FontWeight="Bold" HorizontalAlignment="Right"/>
+                    </DockPanel>
+                </StackPanel>
+
+	                <StackPanel Spacing="5">
+	                    <TextBlock Text="Sınırlayıcı Frekanslar" FontWeight="Bold" Foreground="#BBBBBB" Margin="0,10,0,5"/>
+                    <ItemsControl ItemsSource="{Binding CalculationResult.RwRating.LimitingFrequencies}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#444" CornerRadius="4" Padding="4,2" Margin="0,0,4,4">
+                                    <TextBlock Text="{Binding StringFormat='\{0\} Hz'}" FontSize="12"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+	                    </ItemsControl>
+	                </StackPanel>
+
+                    <StackPanel Spacing="5" IsVisible="{Binding WarningRows.Count}">
+                        <TextBlock Text="Uyarılar" FontWeight="Bold" Foreground="#FFCC88"/>
+                        <ItemsControl ItemsSource="{Binding WarningRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#3A2A18" CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding Value}" TextWrapping="Wrap" Foreground="#FFD8A8" FontSize="11"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5" IsVisible="{Binding CriticalFrequencyRows.Count}">
+                        <TextBlock Text="Kritik Frekanslar" FontWeight="Bold" Foreground="#BBBBBB"/>
+                        <ItemsControl ItemsSource="{Binding CriticalFrequencyRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,3">
+                                        <TextBlock Text="{Binding Label}" Foreground="#DDDDDD"/>
+                                        <TextBlock Text="{Binding Value}" Foreground="#00FFFF" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <Button Content="Alternatifi Karşılaştırmaya Ekle"
+                                Command="{Binding AddComparisonCommand}"
+                                Background="#1A5898" Foreground="White"/>
+                        <ItemsControl ItemsSource="{Binding ComparisonRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#1A2532" CornerRadius="4" Padding="6" Margin="0,0,0,4">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                            <TextBlock Text="{Binding Name}" Foreground="#FFFFFF" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding RatingText}" Foreground="#00FFFF" FontWeight="Bold"/>
+                                            <TextBlock Grid.Row="1" Text="{Binding ThicknessText}" Foreground="#AAAAAA" FontSize="11"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MassText}" Foreground="#AAAAAA" FontSize="11"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Kompozit Alan Hesabı" FontWeight="Bold" Foreground="#BBBBBB"/>
+                        <Button Content="Mevcut Sistemi Kompozite Ekle"
+                                Command="{Binding AddCompositeElementCommand}"
+                                Background="#2A3C52" Foreground="#D8EEFF"/>
+                        <ItemsControl ItemsSource="{Binding CompositeElements}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#1A2532" CornerRadius="4" Padding="6" Margin="0,0,0,4">
+                                        <Grid ColumnDefinitions="*,72,Auto" ColumnSpacing="6">
+                                            <TextBlock Text="{Binding Name}" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                            <NumericUpDown Grid.Column="1" Value="{Binding AreaM2}" Minimum="0.01" Maximum="10000" Increment="1" FormatString="F2"/>
+                                            <Button Grid.Column="2"
+                                                    Content="X"
+                                                    Command="{Binding $parent[UserControl].((vm:SoundInsulationViewModel)DataContext).RemoveCompositeElementCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Foreground="Red"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border Background="#333" CornerRadius="6" Padding="8" IsVisible="{Binding HasCompositeResult}">
+                            <StackPanel>
+                                <TextBlock Text="Kompozit Rw (C; Ctr)" Foreground="#AAAAAA"/>
+                                <TextBlock Text="{Binding CompositeResult.RwRating.Rw}" FontSize="26" FontWeight="Bold" Foreground="#00FFFF"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+	            </StackPanel>
+	            </ScrollViewer>
+	        </Border>
+    </Grid>
+</Grid>
+</UserControl>

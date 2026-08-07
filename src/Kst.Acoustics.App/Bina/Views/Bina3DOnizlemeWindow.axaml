@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Kst.Acoustics.App.Controls"
+        x:Class="Kst.Acoustics.App.Bina.Views.Bina3DOnizlemeWindow"
+        Width="980" Height="720"
+        MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        Background="#060E14"
+        Title="Bina Geometrisi — 3D Önizleme">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Üst bilgi çubuğu -->
+        <Border Grid.Row="0"
+                Background="#0A1620"
+                BorderBrush="#132A3C"
+                BorderThickness="0,0,0,1"
+                Padding="14,9">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="BaslikText"
+                           Foreground="#A8D4EC"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Sürükle = döndür · tekerlek = yakınlaştır"
+                               Foreground="#26506A" FontSize="10.5"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <Button Click="Kapat_OnClick"
+                            Background="#0D2535" BorderBrush="#1A5070" Foreground="#C8E4F4"
+                            FontSize="12" Padding="12,5"
+                            Content="Kapat"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 3D görünüm -->
+        <controls:GeometryPreviewControl x:Name="Onizleme3D"
+                                         Grid.Row="1"
+                                         Projection="Isometric3D"
+                                         UnitLabel="m"/>
+    </Grid>
+</Window>

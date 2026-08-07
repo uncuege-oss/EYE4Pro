@@ -1,0 +1,36 @@
+# Build outputs
+**/bin/
+**/obj/
+**/TestResults/
+**/dist/
+publish/
+outputs/
+/src/Kst.Acoustics.App/EYE4PRO.app/
+/src/Kst.Acoustics.ThemeLab/ThemeLab.app/
+EYE4PRO-Acoustics-*.zip
+
+# IDE and user-local settings
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.claude/settings.local.json
+
+# Operating-system metadata
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# Logs, coverage and temporary files
+*.log
+*.dmp
+*.tmp
+*.tmp.*
+*.bak
+coverage/
+coverage.*
+*.coverage
+*.coveragexml

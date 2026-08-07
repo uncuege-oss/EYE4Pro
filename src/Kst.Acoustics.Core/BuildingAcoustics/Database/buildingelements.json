@@ -1,0 +1,17 @@
+[
+  { "Ad": "Betonarme Duvar (10 cm)", "Tip": "Duvar", "Rw": 48, "C": -1, "Ctr": -4, "FlankingDuzeltmesiDb": 0, "Katmanlar": [{ "MalzemeAdi": "Beton", "Kalinlik": 100, "Yogunluk": 2400 }] },
+  { "Ad": "Betonarme Duvar (15 cm)", "Tip": "Duvar", "Rw": 52, "C": -1, "Ctr": -4, "FlankingDuzeltmesiDb": 0, "Katmanlar": [{ "MalzemeAdi": "Beton", "Kalinlik": 150, "Yogunluk": 2400 }] },
+  { "Ad": "Betonarme Duvar (20 cm)", "Tip": "Duvar", "Rw": 55, "C": -1, "Ctr": -4, "FlankingDuzeltmesiDb": 0, "Katmanlar": [{ "MalzemeAdi": "Beton", "Kalinlik": 200, "Yogunluk": 2400 }] },
+  { "Ad": "Betonarme Duvar (25 cm)", "Tip": "Duvar", "Rw": 58, "C": -1, "Ctr": -4, "FlankingDuzeltmesiDb": 0, "Katmanlar": [{ "MalzemeAdi": "Beton", "Kalinlik": 250, "Yogunluk": 2400 }] },
+  { "Ad": "Tuğla Duvar (13 cm + Sıva)", "Tip": "Duvar", "Rw": 45, "C": -1, "Ctr": -3, "FlankingDuzeltmesiDb": 2, "Katmanlar": [{ "MalzemeAdi": "Sıva", "Kalinlik": 20, "Yogunluk": 1800 }, { "MalzemeAdi": "Tuğla", "Kalinlik": 130, "Yogunluk": 1200 }, { "MalzemeAdi": "Sıva", "Kalinlik": 20, "Yogunluk": 1800 }] },
+  { "Ad": "Tuğla Duvar (19 cm + Sıva)", "Tip": "Duvar", "Rw": 49, "C": -1, "Ctr": -3, "FlankingDuzeltmesiDb": 2, "Katmanlar": [{ "MalzemeAdi": "Sıva", "Kalinlik": 20, "Yogunluk": 1800 }, { "MalzemeAdi": "Tuğla", "Kalinlik": 190, "Yogunluk": 1200 }, { "MalzemeAdi": "Sıva", "Kalinlik": 20, "Yogunluk": 1800 }] },
+  { "Ad": "Çift Sıra Tuğla + Boşluk", "Tip": "Duvar", "Rw": 55, "C": -2, "Ctr": -5, "FlankingDuzeltmesiDb": 3, "Katmanlar": [{ "MalzemeAdi": "Tuğla", "Kalinlik": 130, "Yogunluk": 1200 }, { "MalzemeAdi": "Hava Boşluğu", "Kalinlik": 50, "Yogunluk": 1.2 }, { "MalzemeAdi": "Tuğla", "Kalinlik": 130, "Yogunluk": 1200 }] },
+  { "Ad": "Tek İskelet Alçıpan Bölme", "Tip": "Duvar", "Rw": 42, "C": -2, "Ctr": -5, "FlankingDuzeltmesiDb": 4, "Katmanlar": [{ "MalzemeAdi": "Alçıpan + İskelet", "Kalinlik": 120, "Yogunluk": 450 }] },
+  { "Ad": "Çift Kat Alçıpan + Taşyünü", "Tip": "Duvar", "Rw": 52, "C": -2, "Ctr": -5, "FlankingDuzeltmesiDb": 3, "Katmanlar": [{ "MalzemeAdi": "Alçıpan + Taşyünü", "Kalinlik": 160, "Yogunluk": 450 }] },
+  { "Ad": "Beton Döşeme (15 cm)", "Tip": "Doseme", "Rw": 52, "Lnw": 75, "DeltaLw": 0, "FlankingDuzeltmesiDb": 0, "Katmanlar": [{ "MalzemeAdi": "Beton", "Kalinlik": 150, "Yogunluk": 2400 }] },
+  { "Ad": "Beton Döşeme (20 cm)", "Tip": "Doseme", "Rw": 55, "Lnw": 72, "DeltaLw": 0, "FlankingDuzeltmesiDb": 0, "Katmanlar": [{ "MalzemeAdi": "Beton", "Kalinlik": 200, "Yogunluk": 2400 }] },
+  { "Ad": "Yüzer Döşeme Sistemi", "Tip": "Doseme", "Rw": 58, "Lnw": 52, "DeltaLw": 0, "FlankingDuzeltmesiDb": 0, "Katmanlar": [{ "MalzemeAdi": "Şap", "Kalinlik": 50, "Yogunluk": 2000 }, { "MalzemeAdi": "Taş Yünü (Darbe)", "Kalinlik": 20, "Yogunluk": 110 }, { "MalzemeAdi": "Beton", "Kalinlik": 150, "Yogunluk": 2400 }] },
+  { "Ad": "Çift Camlı Pencere (4+12+4)", "Tip": "Pencere", "Rw": 32, "C": -1, "Ctr": -4, "FlankingDuzeltmesiDb": 0, "Katmanlar": [] },
+  { "Ad": "Lamine Akustik Cam", "Tip": "Pencere", "Rw": 40, "C": -1, "Ctr": -5, "FlankingDuzeltmesiDb": 0, "Katmanlar": [] },
+  { "Ad": "Akustik Kapı", "Tip": "Kapi", "Rw": 38, "C": -1, "Ctr": -3, "FlankingDuzeltmesiDb": 0, "Katmanlar": [] }
+]

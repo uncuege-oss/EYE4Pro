@@ -1,0 +1,142 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Kst.Acoustics.Metraj.App"
+        xmlns:metrics="clr-namespace:Kst.Acoustics.Metraj.Metrics;assembly=Kst.Acoustics.Metraj"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        x:Class="Kst.Acoustics.Metraj.App.MainWindow"
+        x:DataType="local:MainViewModel"
+        Title="Eye4Pro Acoustics - Metraj Modülü"
+        Width="900" Height="650" WindowStartupLocation="CenterScreen"
+        Background="#F5F7FA">
+    
+    <Window.Styles>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#101828"/>
+            <Setter Property="BorderBrush" Value="#D0D5DD"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#101828"/>
+            <Setter Property="BorderBrush" Value="#D0D5DD"/>
+        </Style>
+        <Style Selector="NumericUpDown">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#101828"/>
+            <Setter Property="BorderBrush" Value="#D0D5DD"/>
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="#344054"/>
+        </Style>
+        <Style Selector="ListBox">
+            <Setter Property="Foreground" Value="#101828"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="20">
+        <Border Grid.Row="0" Background="#0B547B" CornerRadius="8" Padding="15" Margin="0,0,0,20">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="15">
+                    <TextBlock Text="METRAJ" Foreground="White" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" Classes="HeaderTitle"/>
+                    <TextBlock Text="v1.0" Foreground="#20C3D8" VerticalAlignment="Center" Margin="0,5,0,0"/>
+                </StackPanel>
+                <Button DockPanel.Dock="Right" Content="Ayarlar" Click="OnOpenSettingsClick" 
+                        Background="#20C3D8" Foreground="White" Padding="10,5" FontSize="12"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="*, 300" ColumnSpacing="20">
+            <!-- Left: Templates and Project -->
+            <StackPanel Spacing="20">
+                <!-- Templates Section -->
+                <Border Background="White" CornerRadius="8" Padding="15" BoxShadow="0 2 10 0 #10000000">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0,0,0,10">
+                            <TextBlock Text="Şablon Kütüphanesi (DWG/DXF)" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button Content="+" Click="OnAddTemplateClick" Margin="10,0,0,0" Width="30" HorizontalContentAlignment="Center" Background="#20C3D8" Foreground="White"/>
+                        </StackPanel>
+                        <ListBox ItemsSource="{Binding TemplatePaths}" Height="200" Background="#F9FBFC" BorderThickness="1" BorderBrush="#E1E5E9">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="Sil" Command="{Binding $parent[Window].((local:MainViewModel)DataContext).RemoveTemplateCommand}" CommandParameter="{Binding}" Foreground="Red" Background="Transparent"/>
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <!-- Project Section -->
+                <Border Background="White" CornerRadius="8" Padding="15" BoxShadow="0 2 10 0 #10000000">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Proje Dosyası" FontWeight="SemiBold"/>
+                        <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
+                            <TextBox Text="{Binding ProjectPath}" PlaceholderText="DWG veya DXF dosyası seçin..." IsReadOnly="True"/>
+                            <Button Content="Gözat..." Click="OnSelectProjectClick" Background="#0B547B" Foreground="White"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Right Panel: Parameters -->
+            <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="15" BoxShadow="0 2 10 0 #10000000">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="Parametreler" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                    
+                    <TextBlock Text="Hesap Birimi"/>
+                    <ComboBox ItemsSource="{Binding Units}" 
+                              SelectedItem="{Binding SelectedUnit}" HorizontalAlignment="Stretch"/>
+
+                    <TextBlock Text="Uzunluk Toleransı (%)" Margin="0,10,0,0"/>
+                    <NumericUpDown Value="{Binding LengthTolerance}" Minimum="0" Maximum="10" Increment="0.1" FormatString="0.0"/>
+
+                    <TextBlock Text="Açı Toleransı (°)" Margin="0,10,0,0"/>
+                    <NumericUpDown Value="{Binding AngleTolerance}" Minimum="0" Maximum="45" Increment="1" FormatString="0"/>
+
+                    <Separator Margin="0,10"/>
+
+                    <CheckBox Content="Sadece Şablonları Raporla" IsChecked="{Binding OnlyTemplates}" 
+                              ToolTip.Tip="İşaretlenirse, genel katman/renk metrajları raporda gösterilmez."/>
+                    
+                    <Separator Margin="0,10"/>
+                    
+                    <Button Content="Kural Düzenleyici" Click="OnOpenRuleEditorClick"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="40" Background="#E1E5E9"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Footer: Run and Progress -->
+        <Grid Grid.Row="2" ColumnDefinitions="*, Auto, Auto" Margin="0,20,0,0" VerticalAlignment="Center">
+            <StackPanel Spacing="5" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding StatusText}" Foreground="#667085" FontSize="12"/>
+                    <TextBlock Text="{Binding ResultFilePath}" Foreground="#0B547B" FontSize="12" FontWeight="SemiBold" 
+                               IsVisible="{Binding HasResult}" TextWrapping="NoWrap" MaxWidth="400"/>
+                </StackPanel>
+                <ProgressBar Value="{Binding ProgressValue}" Maximum="100" Height="4" Foreground="#20C3D8" Background="#E1E5E9" CornerRadius="2"/>
+            </StackPanel>
+            
+            <Button Grid.Column="1" Content="RAPORU AÇ" Command="{Binding OpenResultCommand}" 
+                    IsVisible="{Binding HasResult}"
+                    Background="#E1E5E9" Foreground="#0B547B" FontWeight="Bold" 
+                    Padding="20,12" Margin="20,0,0,0" CornerRadius="4"/>
+
+            <Button Grid.Column="2" Content="İPTAL" Command="{Binding CancelCommand}"
+                    IsVisible="{Binding CanCancel}"
+                    Background="#D92D20" Foreground="White" FontWeight="Bold"
+                    Padding="20,12" Margin="20,0,0,0" CornerRadius="4"/>
+
+            <Button Grid.Column="2" Content="METRAJ HESAPLA" Command="{Binding RunCommand}"
+                    IsVisible="{Binding CanRun}"
+                    IsEnabled="{Binding CanRun}"
+                    Background="#20C3D8" Foreground="White" FontWeight="Bold"
+                    Padding="30,12" Margin="20,0,0,0" CornerRadius="4"/>
+        </Grid>
+    </Grid>
+</Window>

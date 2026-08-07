@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="using:Kst.Acoustics.App.BuildingAcoustics.Views"
+             xmlns:models="using:Kst.Acoustics.Core.BuildingAcoustics.Models"
+             mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="300"
+             x:Class="Kst.Acoustics.App.BuildingAcoustics.Views.MekanDuzenlemePanel"
+             x:DataType="models:Mekan">
+
+    <StackPanel Spacing="6" Margin="8">
+
+        <!-- Boş durum -->
+        <Border Background="#2A1A1A" CornerRadius="4" Padding="8,6"
+                IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNull}}">
+            <TextBlock Text="Mekan seçilmedi." Foreground="#AA6644" FontSize="11" TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- M50 geometri sahipliği: oda adı M08'de salt-okunur. -->
+        <TextBlock Text="AD" Foreground="#667788" FontSize="10" FontWeight="Bold"/>
+        <TextBox Text="{Binding Ad, Mode=OneWay}" IsReadOnly="True"
+                 Padding="6,4" FontSize="12"
+                 ToolTip.Tip="Oda adı ve geometrisi M50 Bina Geometrisi modülünde düzenlenir."/>
+
+        <!-- Kullanım -->
+        <TextBlock Text="KULLANIM (EK-2)" Foreground="#667788" FontSize="10" FontWeight="Bold" Margin="0,4,0,0"/>
+        <!-- NOT: SelectedItem binding'i bilerek YOK. ItemsSource bina işlevine göre
+             code-behind'da dinamik atanıyor; TwoWay SelectedItem binding'i ItemsSource
+             yeniden atanınca null'a düşüp KullanimTipi'ni siliyordu. Seçim code-behind
+             (GuncelleKullanimListesi + SelectionChanged) ile yönetilir. -->
+        <ComboBox x:Name="KullanimCombo"
+                  SelectionChanged="KullanimCombo_SelectionChanged"
+                  DropDownOpened="KullanimCombo_DropDownOpened"
+                  HorizontalAlignment="Stretch" Padding="6,4" FontSize="12"/>
+
+        <!-- Alan (sadece göster) -->
+        <TextBlock Text="ALAN" Foreground="#667788" FontSize="10" FontWeight="Bold" Margin="0,4,0,0"/>
+        <Border Background="#111A22" CornerRadius="4" Padding="8,5">
+            <TextBlock Text="{Binding Alan, StringFormat='{}{0:F1} m²'}"
+                       Foreground="#20C3D8" FontSize="12" FontWeight="Bold"/>
+        </Border>
+
+        <!-- Kaynak + Alıcı rozet satırı -->
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6,0,0"
+                    IsVisible="{Binding KaynakDerecesi, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="KAYNAK" Foreground="#667788" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+            <Border CornerRadius="3" Padding="8,3" Background="{Binding KaynakRenkSidebar}">
+                <TextBlock Text="{Binding KaynakDerecesi}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+            </Border>
+            <TextBlock Text="ALICI" Foreground="#667788" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="6,0,0,0"/>
+            <Border CornerRadius="3" Padding="8,3" Background="{Binding AliciRenkSidebar}">
+                <TextBlock Text="{Binding AliciSinifi}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+            </Border>
+        </StackPanel>
+
+        <!-- EK-5 tesisat gürültü beyanı (0 = girilmedi, değerlendirilmez) -->
+        <TextBlock Text="TESİSAT GÜRÜLTÜSÜ (EK-5)" Foreground="#667788" FontSize="10" FontWeight="Bold" Margin="0,6,0,0"/>
+        <Grid ColumnDefinitions="*, 8, *">
+            <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Sürekli LAeq,nT" Foreground="#556677" FontSize="9"/>
+                <NumericUpDown Value="{Binding TesisatSurekliDb, Mode=TwoWay}"
+                               Minimum="0" Maximum="90" Increment="1" FormatString="F0"
+                               FontSize="11" ValueChanged="TesisatGurultu_ValueChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="2">
+                <TextBlock Text="Kesikli LAF,max,nT" Foreground="#556677" FontSize="9"/>
+                <NumericUpDown Value="{Binding TesisatKesikliDb, Mode=TwoWay}"
+                               Minimum="0" Maximum="90" Increment="1" FormatString="F0"
+                               FontSize="11" ValueChanged="TesisatGurultu_ValueChanged"/>
+            </StackPanel>
+        </Grid>
+        <TextBlock Text="0 = beyan yok; girilirse Tablo 5.1/5.2 uyumu hesaplanır"
+                   Foreground="#556677" FontSize="9" TextWrapping="Wrap"/>
+
+        <!-- EK-6 emilim alanı (Sabine RT ön tahmini için) -->
+        <TextBlock Text="EMİLİM ALANI A (m² Sabin)" Foreground="#667788" FontSize="10" FontWeight="Bold" Margin="0,6,0,0"/>
+        <NumericUpDown Value="{Binding EmilimAlani, Mode=TwoWay}"
+                       Minimum="0" Maximum="10000" Increment="1" FormatString="F0"
+                       FontSize="11" ValueChanged="TesisatGurultu_ValueChanged"/>
+        <TextBlock Text="0 = yalnız 0,32·V ile ön tahmin (T ≈ 0,5 s); resmî uyum için emilim alanı girin"
+                   Foreground="#556677" FontSize="9" TextWrapping="Wrap"/>
+
+    </StackPanel>
+</UserControl>

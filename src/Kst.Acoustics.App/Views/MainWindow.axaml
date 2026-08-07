@@ -1,0 +1,529 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.ViewModels"
+        xmlns:controls="using:Kst.Acoustics.App.Controls"
+        xmlns:converters="using:Kst.Acoustics.App.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+        x:Class="Kst.Acoustics.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="1280"
+        Height="780"
+        MinWidth="900"
+        MinHeight="580"
+        RequestedThemeVariant="Light"
+        Background="#F3F6FA"
+        Foreground="#1E2E3E"
+        Title="{Binding IsDirty, Converter={StaticResource DirtyTitleConverter}}">
+
+    <Window.Resources>
+        <converters:BoolToGridLengthConverter x:Key="BoolToGridLengthConverter"/>
+        <converters:GeometryProjectionModeNameConverter x:Key="GeometryProjectionModeNameConverter"/>
+        <converters:M01UserFacingTextConverter x:Key="M01UserFacingTextConverter"/>
+    </Window.Resources>
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Window.Styles>
+        <Style Selector="Button.primaryAction">
+            <Setter Property="Background" Value="#EAF1F8"/>
+            <Setter Property="Foreground" Value="#13283E"/>
+            <Setter Property="BorderBrush" Value="#95A8BC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+        <Style Selector="Button.toolAction">
+            <Setter Property="Background" Value="#D6E4F0"/>
+            <Setter Property="Foreground" Value="#13283E"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="DataGrid">
+            <Setter Property="FontSize" Value="9.5"/>
+            <Setter Property="RowHeaderWidth" Value="0"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#13283E"/>
+            <Setter Property="RowBackground" Value="#FFFFFF"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#D7E0E9"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#D7E0E9"/>
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="FontSize" Value="9.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="Background" Value="#E5ECF3"/>
+            <Setter Property="Foreground" Value="#13283E"/>
+        </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="Foreground" Value="#13283E"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#13283E"/>
+            <Setter Property="CaretBrush" Value="#13283E"/>
+            <Setter Property="BorderBrush" Value="#95A8BC"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#13283E"/>
+            <Setter Property="BorderBrush" Value="#95A8BC"/>
+        </Style>
+        <Style Selector="ComboBoxItem">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#13283E"/>
+        </Style>
+    </Window.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12">
+
+        <!-- ROW 0: Başlık + Dosya İşlemleri -->
+        <Border Background="#132032" CornerRadius="16" Padding="16,12">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="10" MinWidth="1050">
+                <Button Click="BackToLauncher_OnClick" Classes="primaryAction" 
+                        Background="#2A3C52" Foreground="White" BorderThickness="0"
+                        Padding="12,6" Content="← Geri"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <Border Width="170" Height="56"
+                            CornerRadius="7"
+                            Background="#F3F7FA"
+                            BorderBrush="#C9D7E4"
+                            BorderThickness="1"
+                            ClipToBounds="True"
+                            VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="45,*" ColumnSpacing="10" Margin="10,4">
+                        <Grid Width="45" Height="36">
+                            <Ellipse Width="38" Height="24" Stroke="#0B547B" StrokeThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="22" Height="22" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M11,18 L16,18 M20,13 L20,23 M25,10 L25,26 M30,14 L30,22 M34,18 L39,18"
+                                  Stroke="#0A4C72"
+                                  StrokeThickness="1.5"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="14" FontWeight="Bold"/>
+                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="9" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="Hacim Akustiği"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="#EAF2F8"/>
+                        <TextBlock FontSize="12" Foreground="#7A94AD" Text="{Binding SelectedFilePath}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                    <Button Classes="primaryAction" Click="OpenFileButton_OnClick" Content="DXF Seç"/>
+                    <Button Classes="primaryAction" Click="SalonYukleButton_OnClick" Content="Salon Yükle"
+                            ToolTip.Tip="M51 Salon Tasarla çıktısını (.e4salon.json) yükle"/>
+                </StackPanel>
+                <Button Grid.Column="3" Classes="primaryAction" Click="OpenProjectButton_OnClick" Content="Proje Aç"/>
+                <Button Grid.Column="4" Classes="primaryAction" Click="SaveProjectButton_OnClick" Content="Kaydet"/>
+                <Button Grid.Column="5" Click="StartProjectButton_OnClick"
+                        IsEnabled="{Binding CanStartProject}"
+                        Background="#1A7F4B" Foreground="White"
+                        FontWeight="Bold" FontSize="14"
+                        CornerRadius="10" Padding="18,8"
+                        Content="Projeye Başla  →"/>
+            </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ROW 1: Özet Kartları + Araçlar (Kompakt) -->
+        <Border Grid.Row="1" Margin="0,8,0,8">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+            <Grid ColumnDefinitions="*,*,*,*,*,*,Auto" ColumnSpacing="8" MinWidth="1120">
+                <!-- Proje Adı -->
+                <Border Background="#E7F0F8" CornerRadius="12" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock FontSize="11" Foreground="#516273" Text="Proje Adı"/>
+                        <TextBox Text="{Binding ProjectName}" FontSize="13" FontWeight="SemiBold"
+                                 Background="Transparent" BorderThickness="0" Padding="0,2"/>
+                    </StackPanel>
+                </Border>
+                <!-- Salon Tipi -->
+                <Border Grid.Column="1" Background="#F0F0F8" CornerRadius="12" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock FontSize="11" Foreground="#516273" Text="Salon Tipi"/>
+                        <ComboBox ItemsSource="{Binding RoomTypes}" SelectedItem="{Binding SelectedRoomType}"
+                                  FontSize="13" VerticalAlignment="Center" Padding="0,2" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="13"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Birim -->
+                <Border Grid.Column="2" Background="#EAF6EA" CornerRadius="12" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock FontSize="11" Foreground="#516273" Text="Birim"/>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                            <ComboBox ItemsSource="{Binding UnitOptions}" SelectedItem="{Binding TargetUnitOption}"
+                                      FontSize="13" VerticalAlignment="Center" Padding="4,2">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" FontSize="13"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Grid.Column="1" Classes="toolAction" Click="ConvertUnitsButton_OnClick" Content="Dönüştür"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <!-- Ölçek -->
+                <Border Grid.Column="3" Background="#F9F1DE" CornerRadius="12" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock FontSize="11" Foreground="#516273" Text="Ölçek Katsayısı"/>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                            <TextBox Text="{Binding CustomScaleFactor}" PlaceholderText="1.0"
+                                     FontSize="13" Padding="4,2"/>
+                            <Button Grid.Column="1" Classes="toolAction" Click="ApplyScaleButton_OnClick" Content="Uygula"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <!-- Yüzey / Kategori -->
+                <Border Grid.Column="4" Background="#F6EAF1" CornerRadius="12" Padding="10,8">
+                    <StackPanel>
+                        <TextBlock FontSize="11" Foreground="#516273" Text="Yüzey / Kategori"/>
+                        <TextBlock FontSize="16" FontWeight="Bold" Foreground="#1E2E3E">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} / {1}">
+                                    <Binding Path="SurfaceCount"/>
+                                    <Binding Path="CategoryCount"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <!-- Boyut -->
+                <Border Grid.Column="5" Background="#EAEEF3" CornerRadius="12" Padding="10,8" MinWidth="200">
+                    <StackPanel>
+                        <TextBlock FontSize="11" Foreground="#516273" Text="Proje Boyutu"/>
+                        <TextBlock FontSize="12" Foreground="#1E2E3E" Text="{Binding ProjectSizeSummary}"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Border>
+                <!-- Sızdırmazlık -->
+                <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button Classes="primaryAction" Click="RunLeakTestButton_OnClick"
+                            Background="#A96200" Foreground="White"
+                            Content="Sızdırmazlık&#x0a;Testi"/>
+                    <Button Click="ClearLeakTestButton_OnClick"
+                            Background="#556070" Foreground="White" FontSize="11"
+                            Padding="8,4" VerticalAlignment="Center"
+                            Content="Temizle"/>
+                </StackPanel>
+            </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ROW 2: Doğrulama ve içe aktarma uyarıları her zaman görünür. -->
+        <StackPanel Grid.Row="2" Spacing="6" Margin="0,0,0,8">
+            <Border Background="#FDECEC"
+                    BorderBrush="#C93434"
+                    BorderThickness="1"
+                    CornerRadius="9"
+                    Padding="10,7"
+                    IsVisible="{Binding HasInvalidPoints}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <Path Width="16" Height="16" Stretch="Uniform"
+                          Fill="#C93434" Data="M10,1 L19,18 L1,18 Z"/>
+                    <TextBlock Grid.Column="1"
+                               Foreground="#7B1D1D"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Text="{Binding PointValidationMessage}"
+                               TextWrapping="Wrap"/>
+                </Grid>
+            </Border>
+            <Border Background="#FFF4DE"
+                    BorderBrush="#A96200"
+                    BorderThickness="1"
+                    CornerRadius="9"
+                    Padding="10,7"
+                    IsVisible="{Binding ImportWarningsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <Path Width="16" Height="16" Stretch="Uniform"
+                          Fill="#A96200" Data="M10,1 L19,18 L1,18 Z"/>
+                    <ScrollViewer Grid.Column="1" MaxHeight="84" VerticalScrollBarVisibility="Auto">
+                        <TextBlock Foreground="#6E4100"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding ImportWarningsSummary, Converter={StaticResource M01UserFacingTextConverter}}"
+                                   TextWrapping="Wrap"/>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </StackPanel>
+
+        <!-- ROW 3: Ana İçerik — Sol: Geometri | Sağ: Yüzey Listesi -->
+        <Grid Grid.Row="3" ColumnDefinitions="*,440" ColumnSpacing="12" MinHeight="340">
+
+            <!-- SOL: Geometri Önizleme (Tek Viewport) -->
+            <Border Background="#F7F9FC" CornerRadius="16" Padding="12">
+                <Panel ClipToBounds="True">
+                    <!-- Viewport (Arka Plan) -->
+                    <controls:GeometryPreviewControl x:Name="LeftGeometryPreview"
+                                                     Surfaces="{Binding VisibleProjectSurfaces}"
+                                                     HighlightedSurfaceId="{Binding HighlightedSurfaceId, Mode=TwoWay}"
+                                                     SelectedSurfaceIds="{Binding SelectedSurfaceIds}"
+                                                     LeakTestPath="{Binding LeakTestPath}"
+                                                     SourcePoints="{Binding SourcePoints}"
+                                                     ReceiverPoints="{Binding ReceiverPoints}"
+                                                     PlacementMode="{Binding PlacementMode}"
+                                                     UnitLabel="{Binding UnitShortName}"
+                                                     Projection="{Binding LeftProjectionMode}"/>
+                    
+                    <!-- Sol Üst: Geometri Modu + Sıfırla + Odaklan -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10">
+                        <Border Background="#E0132032" CornerRadius="8" Padding="8,4" BorderThickness="1" BorderBrush="#40FFFFFF">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="Geometri" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <ComboBox ItemsSource="{Binding ProjectionModes}"
+                                          SelectedItem="{Binding LeftProjectionMode}" 
+                                          FontSize="11" 
+                                          Padding="4,2" 
+                                          Background="#2A3C52" 
+                                          Foreground="White"
+                                          BorderThickness="0"
+                                          Height="24"
+                                          VerticalAlignment="Center">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource GeometryProjectionModeNameConverter}}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                    <ComboBox.Styles>
+                                        <Style Selector="ComboBoxItem">
+                                            <Setter Property="Foreground" Value="#13283E"/>
+                                        </Style>
+                                    </ComboBox.Styles>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+                        <Button Click="ResetLeftViewButton_OnClick" Content="Sıfırla"
+                                Background="#E0132032" Foreground="White" BorderThickness="1" BorderBrush="#40FFFFFF"
+                                CornerRadius="8" Padding="10,4" FontSize="11" Height="30" VerticalAlignment="Center"/>
+                        <Button Click="FocusLeftViewButton_OnClick" Content="Odaklan"
+                                Background="#E0132032" Foreground="White" BorderThickness="1" BorderBrush="#40FFFFFF"
+                                CornerRadius="8" Padding="10,4" FontSize="11" Height="30" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Sağ Alt: Yardım Metni -->
+                    <Border Background="#A0132032" CornerRadius="6" Padding="8,4" BorderThickness="1" BorderBrush="#20FFFFFF"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
+                        <TextBlock FontSize="10" Foreground="#E0FFFFFF"
+                                   Text="Tekerlek: zum  |  Sol tuş: seç / kaydır"/>
+                    </Border>
+
+                    <!-- Sol Alt: Sızdırmazlık Test Özet -->
+                    <Border Background="#E0132032" CornerRadius="8" Padding="10,6" BorderThickness="1" BorderBrush="#40FFFFFF"
+                            HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10"
+                            IsVisible="{Binding LeakTestSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock FontSize="11" Foreground="#FFB03A" FontWeight="SemiBold"
+                                   Text="{Binding LeakTestSummary}" TextWrapping="Wrap" MaxWidth="350"/>
+                    </Border>
+
+                </Panel>
+            </Border>
+
+            <!-- SAĞ: Yüzey Yönetim Paneli (Açılır/Kapanır Kartlar) -->
+            <Grid Grid.Column="1" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="{Binding #YuzeylerToggle.IsChecked, Converter={StaticResource BoolToGridLengthConverter}, ConverterParameter=1.5*}"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="{Binding #KategoriOzetiToggle.IsChecked, Converter={StaticResource BoolToGridLengthConverter}, ConverterParameter=*}"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Yüzeyler (Row 0 - Boşluğu Doldurur) -->
+                <Border Grid.Row="0" Background="#F7F9FC" CornerRadius="16" Padding="14,10" BorderThickness="1" BorderBrush="#E1E8F0">
+                    <Grid RowDefinitions="Auto,*">
+                        <ToggleButton Grid.Row="0" x:Name="YuzeylerToggle" IsChecked="True" 
+                                      Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,0,6"
+                                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                            <ToggleButton.Styles>
+                                <Style Selector="ToggleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style Selector="ToggleButton:checked /template/ ContentPresenter#PART_ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                            </ToggleButton.Styles>
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                                <TextBlock Text="Yüzeyler" FontSize="14" FontWeight="Bold" Foreground="#1E2E3E" VerticalAlignment="Center"/>
+                                <Border Grid.Column="2" Background="#E2EAF3" CornerRadius="10" Padding="8,2" VerticalAlignment="Center">
+                                    <TextBlock FontSize="10.5" FontWeight="SemiBold" Foreground="#516273">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0} yüzey · {1} kategori">
+                                                <Binding Path="SurfaceCount"/>
+                                                <Binding Path="CategoryCount"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </Border>
+                                <TextBlock Grid.Column="3" Text="▼" FontSize="10" Foreground="#516273" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !#YuzeylerToggle.IsChecked}"/>
+                                <TextBlock Grid.Column="3" Text="▲" FontSize="10" Foreground="#516273" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding #YuzeylerToggle.IsChecked}"/>
+                            </Grid>
+                            </ToggleButton>
+                            
+                            <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*" RowSpacing="8" Margin="0,6,0,0" IsVisible="{Binding #YuzeylerToggle.IsChecked}">
+                                <TextBox Grid.Row="0" FontSize="12"
+                                         PlaceholderText="Ara (ad, numara, kategori)"
+                                         Text="{Binding SurfaceSearchText}"/>
+                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="4">
+                                    <ComboBox ItemsSource="{Binding CategoryFilterOptions}"
+                                              SelectedItem="{Binding SelectedCategoryFilter}" FontSize="11" Padding="4,2"/>
+                                    <Button Grid.Column="1" Classes="toolAction" Click="HideSelectedButton_OnClick" Content="Gizle"/>
+                                    <Button Grid.Column="2" Classes="toolAction" Click="IsolateSelectedButton_OnClick" Content="İzole"/>
+                                    <Button Grid.Column="3" Classes="toolAction" Click="ShowAllButton_OnClick" Content="Tümü"/>
+                                </Grid>
+                                <DataGrid Grid.Row="2"
+                                          x:Name="SurfaceDataGrid"
+                                          AutoGenerateColumns="False"
+                                          CanUserResizeColumns="True"
+                                          CanUserSortColumns="True"
+                                          GridLinesVisibility="Horizontal"
+                                          HeadersVisibility="Column"
+                                          IsReadOnly="True"
+                                          SelectionMode="Extended"
+                                          SelectionChanged="SurfaceDataGrid_OnSelectionChanged"
+                                          SelectedItem="{Binding SelectedSurface}"
+                                          ItemsSource="{Binding VisibleSurfacePreviews}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="No" Binding="{Binding Id}" Width="32"/>
+                                        <DataGridTextColumn Header="Ad" Binding="{Binding Name}" Width="*"/>
+                                        <DataGridTextColumn Header="Kategori" Binding="{Binding Category}" Width="85"/>
+                                        <DataGridTextColumn Header="Köşe" Binding="{Binding VertexCount}" Width="38"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Grid>
+                    </Border>
+ 
+                    <!-- Kategori Ata / Oluştur (Row 1) -->
+                    <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="14" Padding="14,10" BorderThickness="1" BorderBrush="#E1E8F0">
+                        <Grid RowDefinitions="Auto,*">
+                            <ToggleButton Grid.Row="0" x:Name="KategoriAtaToggle" IsChecked="True" 
+                                          Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,0,6"
+                                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                <ToggleButton.Styles>
+                                    <Style Selector="ToggleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                    <Style Selector="ToggleButton:checked /template/ ContentPresenter#PART_ContentPresenter">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                </ToggleButton.Styles>
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <TextBlock Text="Kategori Ata / Oluştur" FontSize="13" FontWeight="SemiBold" Foreground="#1E2E3E" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" FontSize="11" Foreground="#5D6C7C" VerticalAlignment="Center">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="Seçili: {0} yüzey">
+                                                <Binding Path="SelectedSurfaces.Count"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                    <TextBlock Grid.Column="2" Text="▼" FontSize="10" Foreground="#516273" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !#KategoriAtaToggle.IsChecked}"/>
+                                    <TextBlock Grid.Column="2" Text="▲" FontSize="10" Foreground="#516273" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding #KategoriAtaToggle.IsChecked}"/>
+                                </Grid>
+                            </ToggleButton>
+                            
+                            <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="8" Margin="0,6,0,0" IsVisible="{Binding #KategoriAtaToggle.IsChecked}">
+                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <TextBox PlaceholderText="Kategori adı yazın (yeni veya mevcut)" FontSize="12"
+                                             Text="{Binding NewCategoryName}" Padding="6,4"/>
+                                    <Button Grid.Column="1" Classes="toolAction" Background="#3D7EC7" Foreground="White"
+                                            Click="ApplySurfaceCategoryButton_OnClick" Content="Seçiliye Ata"/>
+                                </Grid>
+                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <TextBox PlaceholderText="Tüm kategoriyi taşı → hedef ad" FontSize="12"
+                                             Text="{Binding BatchTargetCategoryName}" Padding="6,4"/>
+                                    <Button Grid.Column="1" Classes="toolAction" Background="#8B6914" Foreground="White"
+                                            Click="ApplyBatchCategoryButton_OnClick" Content="Toplu Taşı"/>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </Border>
+ 
+                    <!-- Kategori Özeti (Row 2) -->
+                    <Border Grid.Row="2" Background="#F7F9FC" CornerRadius="14" Padding="14,10" BorderThickness="1" BorderBrush="#E1E8F0">
+                        <Grid RowDefinitions="Auto,*">
+                            <ToggleButton Grid.Row="0" x:Name="KategoriOzetiToggle" IsChecked="True" 
+                                          Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,0,6"
+                                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                <ToggleButton.Styles>
+                                    <Style Selector="ToggleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                    <Style Selector="ToggleButton:checked /template/ ContentPresenter#PART_ContentPresenter">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                </ToggleButton.Styles>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBlock Text="Kategori Özeti" FontSize="13" FontWeight="SemiBold" Foreground="#1E2E3E" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="▼" FontSize="10" Foreground="#516273" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !#KategoriOzetiToggle.IsChecked}"/>
+                                    <TextBlock Grid.Column="1" Text="▲" FontSize="10" Foreground="#516273" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding #KategoriOzetiToggle.IsChecked}"/>
+                                </Grid>
+                            </ToggleButton>
+                            
+                            <DataGrid Grid.Row="1"
+                                      Margin="0,6,0,0"
+                                      IsVisible="{Binding #KategoriOzetiToggle.IsChecked}"
+                                      AutoGenerateColumns="False"
+                                      CanUserResizeColumns="True"
+                                      CanUserSortColumns="True"
+                                      GridLinesVisibility="Horizontal"
+                                      HeadersVisibility="Column"
+                                      IsReadOnly="True"
+                                      SelectedItem="{Binding SelectedCategory}"
+                                      ItemsSource="{Binding CategorySummaries}">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Kategori" Binding="{Binding Name}" Width="*"/>
+                                    <DataGridTextColumn Header="Yüzey" Binding="{Binding SurfaceCount}" Width="50"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ROW 4: Durum Çubuğu -->
+        <Border Grid.Row="4"
+                Margin="0,8,0,0"
+                Background="#111A27"
+                CornerRadius="10"
+                Padding="12,8">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Foreground="#E3ECF5" FontSize="12"
+                           Text="{Binding StatusMessage, Converter={StaticResource M01UserFacingTextConverter}}"
+                           TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1"
+                           Foreground="#F5A623"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           IsVisible="{Binding IsDirty}"
+                           Text="● Kaydedilmemiş değişiklikler"/>
+            </Grid>
+        </Border>
+    </Grid>
+    </ScrollViewer>
+
+</Window>

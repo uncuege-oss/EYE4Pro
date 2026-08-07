@@ -1,0 +1,73 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      EYE4PRO merkezi semantik renk paleti.
+      Tüm modüller renkleri buradan {DynamicResource App...} ile alır.
+      Sabit hex/renk adı KULLANILMAZ (maincodex §4.3 + tema merkezileştirme kararı).
+      ThemeVariant: Dark (varsayılan, seçilen FluentAvalonia Koyu) + Light.
+    -->
+    <ResourceDictionary.ThemeDictionaries>
+
+        <!-- ============ KOYU (Dark) — seçilen varsayılan ============ -->
+        <ResourceDictionary x:Key="Dark">
+            <!-- Zeminler -->
+            <SolidColorBrush x:Key="AppWindowBackground" Color="#0B131C"/>
+            <SolidColorBrush x:Key="AppPanelBackground" Color="#0F1A24"/>
+            <SolidColorBrush x:Key="AppPanelBackgroundAlt" Color="#0B1218"/>
+            <SolidColorBrush x:Key="AppControlBackground" Color="#13202C"/>
+            <!-- Kenarlıklar -->
+            <SolidColorBrush x:Key="AppBorder" Color="#1D2B38"/>
+            <SolidColorBrush x:Key="AppBorderStrong" Color="#2A3B4D"/>
+            <SolidColorBrush x:Key="AppBorderAccent" Color="#27465C"/>
+            <!-- Metin -->
+            <SolidColorBrush x:Key="AppTextPrimary" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="AppTextSecondary" Color="#DCE7F0"/>
+            <SolidColorBrush x:Key="AppTextTertiary" Color="#7894A8"/>
+            <SolidColorBrush x:Key="AppTextMuted" Color="#7F8C8D"/>
+            <!-- Vurgu (marka teal) -->
+            <SolidColorBrush x:Key="AppAccent" Color="#20C3D8"/>
+            <SolidColorBrush x:Key="AppAccentSecondary" Color="#5080A0"/>
+            <SolidColorBrush x:Key="AppAccentText" Color="#0B131C"/>
+            <!-- Durum -->
+            <SolidColorBrush x:Key="AppSuccess" Color="#A0C888"/>
+            <SolidColorBrush x:Key="AppWarning" Color="#E0B050"/>
+            <SolidColorBrush x:Key="AppDanger" Color="#E06A5A"/>
+            <!-- Tablo / grid -->
+            <SolidColorBrush x:Key="AppGridHeaderBackground" Color="#13202C"/>
+            <SolidColorBrush x:Key="AppGridRowAltBackground" Color="#0F1A24"/>
+            <!-- Veri görselleştirme serileri -->
+            <SolidColorBrush x:Key="AppChartSeries1" Color="#20C3D8"/>
+            <SolidColorBrush x:Key="AppChartSeries2" Color="#A0C888"/>
+            <SolidColorBrush x:Key="AppChartSeries3" Color="#7FD2C7"/>
+            <SolidColorBrush x:Key="AppChartSeries4" Color="#9FD3B4"/>
+        </ResourceDictionary>
+
+        <!-- ============ AÇIK (Light) — gelecekteki geçiş için ============ -->
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="AppWindowBackground" Color="#F4F6F8"/>
+            <SolidColorBrush x:Key="AppPanelBackground" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="AppPanelBackgroundAlt" Color="#EDF1F5"/>
+            <SolidColorBrush x:Key="AppControlBackground" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="AppBorder" Color="#D6DEE6"/>
+            <SolidColorBrush x:Key="AppBorderStrong" Color="#BCC8D4"/>
+            <SolidColorBrush x:Key="AppBorderAccent" Color="#9FC2D4"/>
+            <SolidColorBrush x:Key="AppTextPrimary" Color="#0B131C"/>
+            <SolidColorBrush x:Key="AppTextSecondary" Color="#33495C"/>
+            <SolidColorBrush x:Key="AppTextTertiary" Color="#5B7488"/>
+            <SolidColorBrush x:Key="AppTextMuted" Color="#8895A0"/>
+            <SolidColorBrush x:Key="AppAccent" Color="#0E97AC"/>
+            <SolidColorBrush x:Key="AppAccentSecondary" Color="#3E6880"/>
+            <SolidColorBrush x:Key="AppAccentText" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="AppSuccess" Color="#4E8A3A"/>
+            <SolidColorBrush x:Key="AppWarning" Color="#B5841F"/>
+            <SolidColorBrush x:Key="AppDanger" Color="#C0392B"/>
+            <SolidColorBrush x:Key="AppGridHeaderBackground" Color="#E4EAF0"/>
+            <SolidColorBrush x:Key="AppGridRowAltBackground" Color="#F0F3F6"/>
+            <SolidColorBrush x:Key="AppChartSeries1" Color="#0E97AC"/>
+            <SolidColorBrush x:Key="AppChartSeries2" Color="#5A8C3E"/>
+            <SolidColorBrush x:Key="AppChartSeries3" Color="#3F9C8E"/>
+            <SolidColorBrush x:Key="AppChartSeries4" Color="#5AA17C"/>
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

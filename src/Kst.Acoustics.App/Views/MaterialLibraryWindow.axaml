@@ -1,0 +1,276 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="Kst.Acoustics.App.Views.MaterialLibraryWindow"
+        x:DataType="vm:MaterialLibraryWindowViewModel"
+        Width="1200" Height="700"
+        MinWidth="980" MinHeight="560"
+        Background="#0E1824"
+        Title="Materyal Kütüphanesi">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Araç çubuğu -->
+        <Border Background="#091320" Padding="14,10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="150" Height="44" CornerRadius="6" Background="#F5F8FB" BorderBrush="#DCE7EF" BorderThickness="1" Padding="6,3" VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="36,*" ColumnSpacing="6">
+                        <Grid Width="36" Height="28">
+                            <Ellipse Width="30" Height="20" Stroke="#0B547B" StrokeThickness="2.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="18" Height="18" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M9,14 L12,14 M15,10 L15,18 M18,7 L18,21 M21,11 L21,17 M24,14 L27,14"
+                                  Stroke="#0A4C72"
+                                  StrokeThickness="1.2"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="11" FontWeight="Bold"/>
+                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="7" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <TextBlock Text="Materyal Kütüphanesi"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="#E0EFFF" VerticalAlignment="Center"/>
+                <Border Width="1" Background="#1A3050" Margin="4,0"/>
+
+                <Button Content="+ Yeni" Click="NewButton_OnClick"
+                        Background="#1A4A28" Foreground="#80E8A0"
+                        BorderThickness="0" CornerRadius="6" Padding="10,5" FontSize="12"/>
+
+                <Button Content="💾 Kaydet" Click="SaveButton_OnClick"
+                        IsEnabled="{Binding CanSave}"
+                        Background="#1A3050" Foreground="#90C8E8"
+                        BorderThickness="0" CornerRadius="6" Padding="10,5" FontSize="12"/>
+
+                <Button Content="🗑 Sil" Click="DeleteButton_OnClick"
+                        IsEnabled="{Binding CanDelete}"
+                        Background="#3A1A1A" Foreground="#E08080"
+                        BorderThickness="0" CornerRadius="6" Padding="10,5" FontSize="12"/>
+
+                <Border Width="1" Background="#1A3050" Margin="4,0"/>
+
+                <Button Content="📥 Excel'den Al" Click="ImportButton_OnClick"
+                        Background="#1A2A40" Foreground="#80A8D0"
+                        BorderThickness="0" CornerRadius="6" Padding="10,5" FontSize="12"/>
+
+                <Button Content="📤 Excel'e Aktar" Click="ExportButton_OnClick"
+                        Background="#1A2A40" Foreground="#80A8D0"
+                        BorderThickness="0" CornerRadius="6" Padding="10,5" FontSize="12"/>
+
+                <Button Content="📋 Şablon İndir" Click="TemplateButton_OnClick"
+                        Background="#1A2840" Foreground="#607090"
+                        BorderThickness="0" CornerRadius="6" Padding="10,5" FontSize="12"/>
+
+                <Button Content="✕ Kapat" Click="CloseButton_OnClick"
+                        Background="#2A1A1A" Foreground="#E07070"
+                        BorderThickness="0" CornerRadius="6" Padding="10,5" FontSize="12"
+                        Margin="12,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- İçerik: Sol liste | Sağ editör -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,330" Margin="10,8" ColumnSpacing="8">
+
+            <!-- Materyal listesi -->
+            <Border Background="#0C1826" CornerRadius="10">
+                <Grid RowDefinitions="Auto,*">
+
+                    <!-- Sütun başlıkları -->
+                    <Border Background="#0D1E30" CornerRadius="10,10,0,0" Padding="8,5">
+                        <Grid ColumnDefinitions="34,60,150,2.4*,40,40,40,40,40,40,40,40,40">
+                            <TextBlock Text="Fav"    FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="Tür"    FontSize="10" FontWeight="SemiBold" Foreground="#40607A"/>
+                            <TextBlock Grid.Column="2" Text="Kategori" FontSize="10" FontWeight="SemiBold" Foreground="#40607A"/>
+                            <TextBlock Grid.Column="3" Text="Malzeme adı" FontSize="10" FontWeight="SemiBold" Foreground="#40607A" Margin="4,0,0,0"/>
+                            <TextBlock Grid.Column="4" Text="63"   FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="125"  FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="250"  FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="7" Text="500"  FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="8" Text="1k"   FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="9" Text="2k"   FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="10" Text="4k"  FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="11" Text="8k"  FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="12" Text="s̄"   FontSize="10" FontWeight="SemiBold" Foreground="#40607A" HorizontalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MaterialRowViewModel">
+                                    <Border x:Name="RowBorder" Padding="8,4"
+                                            BorderThickness="0,0,0,1" BorderBrush="#0D1E30"
+                                            PointerPressed="Row_PointerPressed"
+                                            Cursor="Hand">
+                                        <Grid ColumnDefinitions="34,60,150,2.4*,40,40,40,40,40,40,40,40,40">
+                                            <Button Content="{Binding FavoriteGlyph}"
+                                                    Click="FavoriteButton_OnClick"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Foreground="#E0C84A"
+                                                    FontSize="17"
+                                                    Padding="0"
+                                                    ToolTip.Tip="Materyal atama listesinde göster/gizle"/>
+                                            <Border Grid.Column="1" CornerRadius="3" Padding="4,1"
+                                                    Background="#131F2E">
+                                                <TextBlock Text="{Binding TypeLabel}"
+                                                           FontSize="9" HorizontalAlignment="Center"
+                                                           Foreground="#506880"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="2"  Text="{Binding Category}"
+                                                       FontSize="12" Foreground="#A8BED8"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="3"  Text="{Binding Name}"
+                                                       FontSize="13" Foreground="#DCEEFF"
+                                                       FontWeight="SemiBold"
+                                                       Margin="4,0,0,0" VerticalAlignment="Center"
+                                                       TextWrapping="NoWrap"/>
+                                            <TextBlock Grid.Column="4"  Text="{Binding A63}"  FontSize="10" Foreground="#7FB987" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                            <TextBlock Grid.Column="5"  Text="{Binding A125}" FontSize="10" Foreground="#7FB987" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                            <TextBlock Grid.Column="6"  Text="{Binding A250}" FontSize="10" Foreground="#7FB987" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                            <TextBlock Grid.Column="7"  Text="{Binding A500}" FontSize="10" Foreground="#D8D45C" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                            <TextBlock Grid.Column="8"  Text="{Binding A1k}"  FontSize="10" Foreground="#D8D45C" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                            <TextBlock Grid.Column="9"  Text="{Binding A2k}"  FontSize="10" Foreground="#7FB987" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                            <TextBlock Grid.Column="10" Text="{Binding A4k}"  FontSize="10" Foreground="#7FB987" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                            <TextBlock Grid.Column="11" Text="{Binding A8k}"  FontSize="10" Foreground="#7FB987" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                            <TextBlock Grid.Column="12" Text="{Binding Scat}" FontSize="10" Foreground="#7890AC" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- Editör paneli -->
+            <Border Grid.Column="1" Background="#0C1826" CornerRadius="10" Padding="14">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Materyal Düzenle" FontSize="13" FontWeight="SemiBold"
+                               Foreground="#D0E8FF"/>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="ID (benzersiz)" FontSize="11" Foreground="#5080A0"/>
+                        <TextBox Text="{Binding EditId}"
+                                 IsReadOnly="{Binding !IsEditorForNew}"
+                                 FontSize="12" Padding="6,4"
+                                 Background="#0D1E30" Foreground="#C0DFF8"
+                                 BorderBrush="#1A3050"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Görünen Ad" FontSize="11" Foreground="#5080A0"/>
+                        <TextBox Text="{Binding EditName}"
+                                 IsReadOnly="{Binding IsEditorReadOnly}"
+                                 FontSize="12" Padding="6,4"
+                                 Background="#0D1E30" Foreground="#C0DFF8"
+                                 BorderBrush="#1A3050"/>
+                    </StackPanel>
+
+                    <!-- Alpha değerleri -->
+                    <Border Background="#0A1520" CornerRadius="6" Padding="10,8">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Emilim katsayıları (α)" FontSize="11"
+                                       Foreground="#5080A0" FontWeight="SemiBold"/>
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4" ColumnSpacing="6">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="63 Hz" FontSize="10" Foreground="#40607A"/>
+                                    <NumericUpDown Value="{Binding EditAlpha63}" IsEnabled="{Binding !IsEditorReadOnly}" Minimum="0" Maximum="1" Increment="0.01" FormatString="F2" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="125 Hz" FontSize="10" Foreground="#40607A"/>
+                                    <NumericUpDown Value="{Binding EditAlpha125}" IsEnabled="{Binding !IsEditorReadOnly}" Minimum="0" Maximum="1" Increment="0.01" FormatString="F2" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Spacing="2">
+                                    <TextBlock Text="250 Hz" FontSize="10" Foreground="#40607A"/>
+                                    <NumericUpDown Value="{Binding EditAlpha250}" IsEnabled="{Binding !IsEditorReadOnly}" Minimum="0" Maximum="1" Increment="0.01" FormatString="F2" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="500 Hz" FontSize="10" Foreground="#40607A"/>
+                                    <NumericUpDown Value="{Binding EditAlpha500}" IsEnabled="{Binding !IsEditorReadOnly}" Minimum="0" Maximum="1" Increment="0.01" FormatString="F2" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Spacing="2">
+                                    <TextBlock Text="1k Hz" FontSize="10" Foreground="#40607A"/>
+                                    <NumericUpDown Value="{Binding EditAlpha1k}" IsEnabled="{Binding !IsEditorReadOnly}" Minimum="0" Maximum="1" Increment="0.01" FormatString="F2" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="2k Hz" FontSize="10" Foreground="#40607A"/>
+                                    <NumericUpDown Value="{Binding EditAlpha2k}" IsEnabled="{Binding !IsEditorReadOnly}" Minimum="0" Maximum="1" Increment="0.01" FormatString="F2" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Spacing="2">
+                                    <TextBlock Text="4k Hz" FontSize="10" Foreground="#40607A"/>
+                                    <NumericUpDown Value="{Binding EditAlpha4k}" IsEnabled="{Binding !IsEditorReadOnly}" Minimum="0" Maximum="1" Increment="0.01" FormatString="F2" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="8k Hz" FontSize="10" Foreground="#40607A"/>
+                                    <NumericUpDown Value="{Binding EditAlpha8k}" IsEnabled="{Binding !IsEditorReadOnly}" Minimum="0" Maximum="1" Increment="0.01" FormatString="F2" FontSize="11"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Saçılım (s)" FontSize="11" Foreground="#5080A0"/>
+                        <NumericUpDown Value="{Binding EditScattering}" Minimum="0" Maximum="1"
+                                       IsEnabled="{Binding !IsEditorReadOnly}"
+                                       Increment="0.05" FormatString="F2" FontSize="12"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Kategori" FontSize="11" Foreground="#5080A0"/>
+                        <TextBox Text="{Binding EditCategory}"
+                                 IsReadOnly="{Binding IsEditorReadOnly}"
+                                 FontSize="12" Padding="6,4"
+                                 Background="#0D1E30" Foreground="#C0DFF8"
+                                 BorderBrush="#1A3050"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Referans" FontSize="11" Foreground="#5080A0"/>
+                        <TextBox Text="{Binding EditReference}"
+                                 IsReadOnly="True"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Height="72"
+                                 FontSize="11" Padding="6,4"
+                                 Background="#0D1E30" Foreground="#C0DFF8"
+                                 BorderBrush="#1A3050"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Not" FontSize="11" Foreground="#5080A0"/>
+                        <TextBox Text="{Binding EditNote}"
+                                 IsReadOnly="{Binding IsEditorReadOnly}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Height="66"
+                                 FontSize="11" Padding="6,4"
+                                 Background="#0D1E30" Foreground="#C0DFF8"
+                                 BorderBrush="#1A3050"/>
+                    </StackPanel>
+
+                    <Button Content="💾 Kaydet" Click="SaveButton_OnClick"
+                            IsEnabled="{Binding CanSave}"
+                            Background="#1A4A28" Foreground="#80E8A0"
+                            BorderThickness="0" CornerRadius="6"
+                            Padding="0,8" HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            FontSize="12" FontWeight="SemiBold"/>
+
+                </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Durum çubuğu -->
+        <Border Grid.Row="2" Background="#070E18" Padding="14,6">
+            <TextBlock Text="{Binding StatusText}"
+                       FontSize="11" Foreground="#4A7090"/>
+        </Border>
+    </Grid>
+</Window>

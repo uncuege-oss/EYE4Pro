@@ -1,0 +1,198 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Architecture.Model3D.ViewModels"
+        xmlns:local="using:Kst.Acoustics.App.Architecture.Model3D.Views"
+        x:Class="Kst.Acoustics.App.Architecture.Model3D.Views.Model3DWindow"
+        x:DataType="vm:Model3DViewModel"
+        Width="1280" Height="820"
+        MinWidth="1080" MinHeight="700"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#0A1015"
+        Title="Eye4Pro Architecture - 3D BIM Model">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#7E93A4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.value">
+            <Setter Property="Foreground" Value="#F2F6F8"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="#101821"/>
+            <Setter Property="BorderBrush" Value="#243646"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#256D7B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#111D26"/>
+            <Setter Property="Foreground" Value="#B9CAD6"/>
+            <Setter Property="BorderBrush" Value="#2A3E50"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12,7"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" BorderBrush="#243646" BorderThickness="0,0,0,1" Background="#0D151D">
+            <Grid ColumnDefinitions="*,Auto" Margin="26,18" ColumnSpacing="16">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="M35 3D BIM Model"
+                               Foreground="#F2F6F8"
+                               FontSize="22"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ModelOzetiText}"
+                               Foreground="#8CA2B3"
+                               FontSize="12"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Classes="secondary" Click="BackToLauncher_OnClick" Content="Mimari Modüller"/>
+                    <Button Classes="secondary" Click="KamerayiSifirla_OnClick" Content="Kamera"/>
+                    <Button Classes="primary" Click="ModelUret_OnClick" Content="3D Üret"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="300,*,310" ColumnSpacing="18" Margin="22">
+            <Border Classes="panel">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="14">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Proje" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Classes="label" Text="PROJE ADI"/>
+                            <TextBox Text="{Binding ProjeAdi, Mode=TwoWay}" MinHeight="34"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="label" Text="DOSYA"/>
+                            <TextBlock Text="{Binding DosyaYoluText}"
+                                       Foreground="#B8CCD7"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Classes="secondary" Click="ProjeAc_OnClick" Content="Aç"/>
+                            <Button Grid.Column="1" Classes="secondary" Click="Kaydet_OnClick" Content="Kaydet"/>
+                        </Grid>
+
+                        <Button Classes="secondary" Click="FarkliKaydet_OnClick" Content="Farklı Kaydet"/>
+                        <Button Classes="secondary" Click="OrnekModel_OnClick" Content="Örnek Model"/>
+
+                        <Border Height="1" Background="#243646"/>
+
+                        <UniformGrid Columns="2" Rows="2">
+                            <Border Background="#0B1218" BorderBrush="#223341" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,6,6">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="label" Text="KAT"/>
+                                    <TextBlock Classes="value" Text="{Binding KatSayisiText}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#0B1218" BorderBrush="#223341" BorderThickness="1" CornerRadius="8" Padding="12" Margin="6,0,0,6">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="label" Text="ELEMAN"/>
+                                    <TextBlock Classes="value" Text="{Binding ElemanSayisiText}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#0B1218" BorderBrush="#223341" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,6,6,0">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="label" Text="DÖŞEME"/>
+                                    <TextBlock Classes="value" Text="{Binding ToplamAlanText}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#0B1218" BorderBrush="#223341" BorderThickness="1" CornerRadius="8" Padding="12" Margin="6,6,0,0">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="label" Text="HACİM"/>
+                                    <TextBlock Classes="value" Text="{Binding ToplamHacimText}"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <Border Background="#0B1218" BorderBrush="#223341" BorderThickness="1" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="5">
+                                <TextBlock Classes="label" Text="DURUM"/>
+                                <TextBlock Text="{Binding DurumMesaji}" Foreground="#B8CCD7" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Background="#0B1218"
+                    BorderBrush="#243646"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="0">
+                <local:Model3DCanvas x:Name="OnizlemeCanvas"
+                                     Model="{Binding Model}"
+                                     MinHeight="560"/>
+            </Border>
+
+            <Border Grid.Column="2" Classes="panel">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Model Özeti" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                        <ItemsControl ItemsSource="{Binding ElemanOzetleri}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:Model3DElemanOzetSatiriViewModel">
+                                    <Border Background="#0B1218" BorderBrush="#1F303E" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
+                                            <TextBlock Text="{Binding Ad}" Foreground="#E8F0F4" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Adet}" Foreground="#7FD2C7" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Deger}" Foreground="#8CA2B3" FontSize="11"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Katlar" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                            <ItemsControl ItemsSource="{Binding Katlar}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:Model3DKatSatiriViewModel">
+                                        <Border Background="#0B1218" BorderBrush="#1F303E" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+                                                <TextBlock Text="{Binding Ad}" Foreground="#E8F0F4" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Mahaller}" Foreground="#7FD2C7" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Kot}" Foreground="#8CA2B3" FontSize="11"/>
+                                                <TextBlock Grid.Row="2" Text="{Binding Alan}" Foreground="#B8CCD7" FontSize="11"/>
+                                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Hacim}" Foreground="#B8CCD7" FontSize="11"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Border Grid.Row="2" Height="1" Background="#243646"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" BorderBrush="#1B2A36" BorderThickness="0,1,0,0" Background="#070C11" Padding="0,10">
+            <TextBlock Text="Eye4Pro Architecture"
+                       FontSize="11"
+                       Foreground="#5E7282"
+                       HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

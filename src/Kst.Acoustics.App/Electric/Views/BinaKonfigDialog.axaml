@@ -1,0 +1,67 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.Views.BinaKonfigDialog"
+        Width="460" Height="380"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#080F0A"
+        Title="Bina Konfigürasyonu">
+    <Window.Styles>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="Foreground" Value="#7AA060"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="TextBox, NumericUpDown">
+            <Setter Property="Background" Value="#101C10"/>
+            <Setter Property="Foreground" Value="#D0E8C0"/>
+            <Setter Property="BorderBrush" Value="#2A4A20"/>
+        </Style>
+        <Style Selector="TextBlock.fixedValue">
+            <Setter Property="Foreground" Value="#D0E8C0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <TextBlock Grid.Row="0" Text="🏢 Bina Kat Konfigürasyonu"
+                   Foreground="#C8E4B0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+        <StackPanel Grid.Row="1" Spacing="10">
+            <CheckBox x:Name="BodrumCheck" Content="Bodrum Kat Var"
+                      Foreground="#A0C888"/>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Bodrum Kat Sayısı (1–5)"/>
+                <NumericUpDown x:Name="BodrumBox" Value="1" Minimum="1" Maximum="5" Increment="1"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Zemin Kat"/>
+                <TextBlock Classes="fixedValue" Text="Zemin Kat her zaman var"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Zemin Üzeri Kat Sayısı (0–50)"/>
+                <NumericUpDown x:Name="NormalBox" Value="3" Minimum="0" Maximum="50" Increment="1"/>
+            </StackPanel>
+
+            <CheckBox x:Name="CatiCheck" Content="Çatı Katı Var"
+                      Foreground="#A0C888"/>
+
+            <Border Background="#0C160C" CornerRadius="4" Padding="10" BorderBrush="#1A3018" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Önizleme:" Foreground="#7AA060" FontSize="11"/>
+                    <TextBlock x:Name="OnizlemeText" Foreground="#D0E8C0" FontSize="12" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+            <Button Content="İptal" Click="Iptal_OnClick"
+                    Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+            <Button Content="Kaydet" Click="Kaydet_OnClick"
+                    Background="#3A7A18" Foreground="White" FontWeight="SemiBold"/>
+        </StackPanel>
+    </Grid>
+</Window>

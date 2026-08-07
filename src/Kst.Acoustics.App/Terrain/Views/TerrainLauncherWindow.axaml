@@ -1,0 +1,89 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Terrain.Views.TerrainLauncherWindow"
+        Width="1120" Height="760"
+        MinWidth="940" MinHeight="640"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#0D1117"
+        Title="Eye4Pro Terrain - Modül Merkezi">
+
+    <Window.Styles>
+        <Style Selector="Button.moduleAction">
+            <Setter Property="Background" Value="#2E7D4F"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <Style Selector="TextBlock.moduleTitle">
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#DDF5E5"/>
+        </Style>
+        <Style Selector="TextBlock.moduleMeta">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#5FB07F"/>
+        </Style>
+        <Style Selector="TextBlock.moduleBody">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#9FD3B4"/>
+            <Setter Property="LineHeight" Value="18"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" BorderBrush="#143222" BorderThickness="0,0,0,1" Padding="28,18">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Color="#0D1117" Offset="0"/>
+                    <GradientStop Color="#0F1C14" Offset="0.55"/>
+                    <GradientStop Color="#0D1117" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel Spacing="3">
+                <TextBlock Text="EYE4PRO TERRAIN" Foreground="#7BD3A0" FontSize="20" FontWeight="Bold"/>
+                <TextBlock Text="Arazi, topografya ve hafriyat modülleri" Foreground="#6FB78E" FontSize="12"/>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Padding="28,22">
+            <StackPanel Spacing="16">
+                <Border Background="#111B14" BorderBrush="#2E7D4F" BorderThickness="1" CornerRadius="10" Padding="20">
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Bottom" Classes="moduleAction" Margin="0,14,0,0"
+                                Click="OpenHafriyat_OnClick" Content="Aç"/>
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="moduleMeta" Text="M60"/>
+                            <TextBlock Classes="moduleTitle" Text="Hafriyat Hesapla (Yarma / Dolgu)"/>
+                            <TextBlock Classes="moduleBody"
+                                       Text="DXF arazi kotlarından 3B arazi yüzeyi (TIN) üretir; seçilen hedef kota göre yarma/dolgu hacmini ve kabarma/sıkışma dengesini hesaplar. Çıktı paylaşılan .e4arazi.json'dur."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Background="#111B14" BorderBrush="#256D7B" BorderThickness="1" CornerRadius="10" Padding="20">
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Bottom" Classes="moduleAction" Margin="0,14,0,0"
+                                Background="#256D7B" Click="OpenTemelOturtma_OnClick" Content="Aç"/>
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="moduleMeta" Text="M61"/>
+                            <TextBlock Classes="moduleTitle" Text="Bina Temeli Kota Oturtma"/>
+                            <TextBlock Classes="moduleBody"
+                                       Text="Salt-okunur arazi (.e4arazi) ve bina (.e4bina) yükler; ayak izini araziye oturtur, ±0.00, bodrum, giriş/çıkış ve yangın merdiveni kotları ile kazı derinliğini üretir."/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="#070D13" BorderBrush="#1C2B3A" BorderThickness="0,1,0,0" Padding="20,10">
+            <Button Content="← Mühendislik Ana Ekranı" Click="BackToEngineeringHome_OnClick"
+                    Background="#1B2A1F" Foreground="#9FD3B4" BorderThickness="0" CornerRadius="6" Padding="14,7"/>
+        </Border>
+    </Grid>
+</Window>

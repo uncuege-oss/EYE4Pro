@@ -1,0 +1,358 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Views.LauncherWindow"
+        Width="1120" Height="760"
+        MinWidth="940" MinHeight="640"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#0B1118"
+        Title="Eye4Pro Acoustics - Modül Merkezi">
+
+    <Window.Styles>
+        <Style Selector="Button.moduleAction">
+            <Setter Property="Background" Value="#1F5F94"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <Style Selector="TextBlock.moduleTitle">
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#E6EEF6"/>
+        </Style>
+        <Style Selector="TextBlock.moduleMeta">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#7E94A7"/>
+        </Style>
+        <Style Selector="TextBlock.moduleBody">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#AAB8C4"/>
+            <Setter Property="LineHeight" Value="18"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" BorderBrush="#223040" BorderThickness="0,0,0,1">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Color="#101922" Offset="0"/>
+                    <GradientStop Color="#13212C" Offset="0.55"/>
+                    <GradientStop Color="#0D151D" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18" Margin="28,18">
+                <Border Width="230" Height="76" CornerRadius="8"
+                        Background="#F3F7FA"
+                        BorderBrush="#D6E2EC"
+                        BorderThickness="1"
+                        ClipToBounds="True"
+                        VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="60,*" ColumnSpacing="10" Margin="12,8">
+                        <Grid Width="60" Height="48">
+                            <Ellipse Width="48" Height="32" Stroke="#0B547B" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="28" Height="28" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M14,24 L21,24 M25,17 L25,31 M31,13 L31,35 M37,18 L37,30 M41,24 L49,24"
+                                  Stroke="#0A4C72"
+                                  StrokeThickness="2"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="18" FontWeight="Bold"/>
+                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="10" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                    <TextBlock Text="Akustik Tasarım Platformu"
+                               Foreground="#EAF2F8"
+                               FontSize="20"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="Analiz modülleri, hesaplama araçları ve proje iş akışı"
+                               Foreground="#7F98AE"
+                               FontSize="12"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Content="⬡ Bina Geometrisi"
+                            Click="OpenBinaGeometrisi_OnClick"
+                            Background="#0C2235"
+                            BorderBrush="#1A5A82"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,7"
+                            Foreground="#60C0E8"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            ToolTip.Tip="M50 — Bina geometrisi oluştur / düzenle"/>
+                    <Button Content="🎭 Salon Tasarla"
+                            Click="OpenSalonTasarla_OnClick"
+                            Background="#231630"
+                            BorderBrush="#5A3A82"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,7"
+                            Foreground="#C49BE4"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            ToolTip.Tip="M51 — Salon (oditoryum) geometrisi tasarla → M01'e girdi"/>
+                    <Button Content="Complete Engineering"
+                            Click="BackToEngineeringHome_OnClick"
+                            Background="#172331"
+                            BorderBrush="#283849"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,7"
+                            Foreground="#BCD0DF"
+                            FontSize="12"
+                            FontWeight="SemiBold"/>
+                    <Border Background="#172331"
+                            BorderBrush="#283849"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,7">
+                        <TextBlock Text="Acoustics Engine v2.0"
+                                   Foreground="#9DB0C0"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Grid ColumnDefinitions="300,*" ColumnSpacing="22" Margin="28,24,28,16">
+                <Border Background="#101821"
+                        BorderBrush="#223040"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="18">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Modül Merkezi"
+                                       Foreground="#E6EEF6"
+                                       FontSize="19"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="Aktif geliştirme hattındaki akustik hesaplama alanları"
+                                       Foreground="#8094A6"
+                                       FontSize="12"
+                                       LineHeight="18"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <Border Height="1" Background="#243342"/>
+
+                        <StackPanel Spacing="9">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#8CC7F2" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Hacim akustiği" Foreground="#BFD1E0" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#E6B86D" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Ses yalıtımı" Foreground="#BFD1E0" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#B8A4F0" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Delikli panel tasarımı" Foreground="#BFD1E0" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#8CBF92" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Bina akustiği" Foreground="#BFD1E0" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#82C8D2" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Darbe emici yüzey" Foreground="#BFD1E0" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#FFAC8B" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Ses bariyeri tasarımı" Foreground="#BFD1E0" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#C49BE4" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Oda modları hesabı" Foreground="#BFD1E0" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#84C98C" Opacity="0.5" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Yerinde ölçüm" Foreground="#7E94A7" FontSize="13" FontStyle="Italic"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <Border Background="#0C131B"
+                                BorderBrush="#203040"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Durum"
+                                           Foreground="#6F879D"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Text="7 aktif modül · 1 planlanan"
+                                           Foreground="#DCE7F0"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Text="Bina akustiği TS EN 12354 + yönetmelik uyumu ile yayında."
+                                           Foreground="#7E94A7"
+                                           FontSize="11"
+                                           TextWrapping="Wrap"
+                                           LineHeight="16"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <UniformGrid Grid.Column="1" Columns="2" Rows="4">
+                    <Border Margin="0,0,10,10" Background="#111B25" CornerRadius="8" BorderBrush="#2A4055" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#14324B">
+                                    <TextBlock Text="HA" Foreground="#8CC7F2" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Hacim Akustiği"/>
+                                    <TextBlock Classes="moduleMeta" Text="Oda tasarımı ve simülasyon"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenRoomAcoustics_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="3D geometri (DXF), yüzey-bazlı malzeme atama, ışın izleme; oktav-bantlı RT60, EDT, C80, D50 ve STI hesabı."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="10,0,0,10" Background="#111B25" CornerRadius="8" BorderBrush="#2A4055" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#2D2518">
+                                    <TextBlock Text="SY" Foreground="#E6B86D" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Ses Yalıtımı"/>
+                                    <TextBlock Classes="moduleMeta" Text="Hava doğuşlu ses yalıtımı"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenSoundInsulation_OnClick" Background="#9B6A25" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Çok katmanlı kütle-yay-kütle paneller, malzeme kütüphanesi; üçüncü-oktav TL tahmini ve ISO 717-1 Rw / C / Ctr endekslerinin türetilmesi."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="0,10,10,10" Background="#111B25" CornerRadius="8" BorderBrush="#2A4055" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#221E3C">
+                                    <TextBlock Text="DP" Foreground="#B8A4F0" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Delikli Panel Tasarımı"/>
+                                    <TextBlock Classes="moduleMeta" Text="Akustik soğurucu kontrolü"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenPanelDesign_OnClick" Background="#6650A8" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Helmholtz rezonans + gözenekli absorpsiyon hesabı, DXF delik deseni içe aktarma; NRC, αw ve emilim sınıfı (A–E) çıktısı."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="10,10,0,10" Background="#111B25" CornerRadius="8" BorderBrush="#2A4055" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#17251A">
+                                    <TextBlock Text="BA" Foreground="#8CBF92" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Bina Akustiği"/>
+                                    <TextBlock Classes="moduleMeta" Text="TS EN 12354 Hesaplama"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenBinaAkustigi_OnClick" Background="#1B3B26" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="DXF kat planı, çok katlı bina düzenleyici (2D/3D), 150+ kalemli yapı elemanı kütüphanesi; TS EN 12354-1/-2 ile R'w, DnT,A, L'n,w ve yönetmelik Tablo 3.2 A–F uyum kontrolü."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="0,10,10,10" Background="#111B25" CornerRadius="8" BorderBrush="#2A4055" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#12282B">
+                                    <TextBlock Text="DY" Foreground="#82C8D2" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Darbe Emici Yüzey"/>
+                                    <TextBlock Classes="moduleMeta" Text="HIC ve Gmax analizi"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Content="Başlat" 
+                                    Click="OpenImpactSurface_OnClick"
+                                    Background="#12282B" Foreground="#82C8D2"/>
+                            <TextBlock Classes="moduleBody" Text="Çok katmanlı oyun alanı/spor zemin tasarımı; HIC ve Gmax simülasyonu, EN 1177 uyumlu kritik düşüş yüksekliği (CFH) değerlendirmesi."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="10,10,0,10" Background="#14212D" CornerRadius="8"
+                            BorderBrush="#304A6A" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#3D2A24">
+                                    <TextBlock Text="SB" Foreground="#FFAC8B" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Ses Bariyeri Tasarımı" Foreground="#FFAC8B"/>
+                                    <TextBlock Classes="moduleMeta" Text="Dış mekan gürültü kontrolü"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Content="Başlat" 
+                                    Click="OpenNoiseBarrier_OnClick"
+                                    HorizontalAlignment="Right"
+                                    Background="#3D2A24" Foreground="#FFAC8B"
+                                    FontWeight="SemiBold" FontSize="12"
+                                    CornerRadius="6" Padding="14,6"/>
+                            <TextBlock Classes="moduleBody" Text="Otoyol ve endüstriyel bariyer geometrisi tasarımı; ISO 9613-2 ışın yolu, Maekawa-Tatge kırınımı ve panel TL'siyle insertion-loss tahmini."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="0,10,10,0" Background="#111B25" CornerRadius="8" BorderBrush="#2A4055" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#241D2D">
+                                    <TextBlock Text="OM" Foreground="#C49BE4" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Oda Modları Hesabı"/>
+                                    <TextBlock Classes="moduleMeta" Text="Düşük frekans analizi"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenRoomModes_OnClick" Background="#241D2D" Foreground="#C49BE4" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Dikdörtgen oda eksensel/teğetsel/eğik özmod hesabı, mod yoğunluğu ve basınç dağılımı; Schroeder frekansı ve düşük frekans tepki tahmini."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="10,10,0,0" Background="#0F171F" CornerRadius="8" BorderBrush="#203040" BorderThickness="1" Padding="18" Opacity="0.82">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#17251A">
+                                    <TextBlock Text="YÖ" Foreground="#84C98C" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Yerinde Ölçüm"/>
+                                    <TextBlock Classes="moduleMeta" Text="Akustik test ve doğrulama"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" 
+                                    Click="OpenMeasurement_OnClick"
+                                    Background="#17251A" Foreground="#84C98C" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Sinyal jeneratörü (sweep / pembe gürültü / impuls), FFT analizör; ISO 3382 / 16283 uyumlu RT60, STI ve R'w saha veri toplama."/>
+                        </DockPanel>
+                    </Border>
+                </UniformGrid>
+            </Grid>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" BorderBrush="#1D2B38" BorderThickness="0,1,0,0" Background="#090F15" Padding="0,10">
+            <TextBlock Text="Eye4Pro Acoustics"
+                       FontSize="11"
+                       Foreground="#536879"
+                       HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

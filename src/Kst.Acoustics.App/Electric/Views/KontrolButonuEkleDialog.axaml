@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.Views.KontrolButonuEkleDialog"
+        Width="520" Height="360"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#080F0A"
+        Title="Kontrol Butonu Ekle">
+    <Window.Styles>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="Foreground" Value="#8A78C8"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="TextBox, ComboBox">
+            <Setter Property="Background" Value="#10101C"/>
+            <Setter Property="Foreground" Value="#E0D8FF"/>
+            <Setter Property="BorderBrush" Value="#4A3A78"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <TextBlock Grid.Row="0" x:Name="BaslikText" Text="Kontrol Butonu Ekle"
+                   Foreground="#D8CCFF" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+        <StackPanel Grid.Row="1" Spacing="10">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Kat"/>
+                <ComboBox x:Name="KatCombo" HorizontalAlignment="Stretch" SelectionChanged="Kat_OnChanged"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Pano"/>
+                <ComboBox x:Name="PanoCombo" HorizontalAlignment="Stretch" SelectionChanged="Pano_OnChanged"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Darbe Kesicili Sigorta"/>
+                <ComboBox x:Name="LinyeCombo" HorizontalAlignment="Stretch" SelectionChanged="Linye_OnChanged"/>
+            </StackPanel>
+
+            <Border Background="#111022" BorderBrush="#4A3A78" BorderThickness="1" CornerRadius="4" Padding="8">
+                <TextBlock x:Name="BilgiText" Text="—" Foreground="#C8B8FF" FontSize="12" TextWrapping="Wrap"/>
+            </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+            <Button Content="İptal" Click="Iptal_OnClick"
+                    Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+            <Button x:Name="HepsiniEkleButton" Content="Hepsini Ekle" Click="HepsiniEkle_OnClick"
+                    Background="#4A3A78" Foreground="White" FontWeight="SemiBold"/>
+            <Button x:Name="EkleButton" Content="Ekle" Click="Ekle_OnClick"
+                    Background="#3A7A18" Foreground="White" FontWeight="SemiBold"/>
+        </StackPanel>
+    </Grid>
+</Window>

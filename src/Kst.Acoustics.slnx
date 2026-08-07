@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="Kst.Acoustics.App/Kst.Acoustics.App.csproj" />
+  <Project Path="Kst.Acoustics.Core/Kst.Acoustics.Core.csproj" />
+  <Project Path="Kst.Acoustics.Core.Tests/Kst.Acoustics.Core.Tests.csproj" />
+  <Project Path="Kst.Acoustics.ImportPreview/Kst.Acoustics.ImportPreview.csproj" />
+  <Project Path="Kst.Acoustics.Metraj.App/Kst.Acoustics.Metraj.App.csproj" />
+  <Project Path="Kst.Acoustics.Metraj.Tests/Kst.Acoustics.Metraj.Tests.csproj" />
+  <Project Path="Kst.Acoustics.Metraj/Kst.Acoustics.Metraj.csproj" />
+  <Project Path="Kst.Acoustics.Tests/Kst.Acoustics.Tests.csproj" />
+  <Project Path="Kst.Acoustics.ThemeLab/Kst.Acoustics.ThemeLab.csproj" />
+</Solution>

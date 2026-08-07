@@ -1,0 +1,56 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.BuildingAcoustics.Views.DxfOlcekModalWindow"
+        Width="420" Height="380"
+        Title="DXF Birim / Ölçek Seçimi"
+        Background="#151D26"
+        Foreground="#D6E8F5"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <StackPanel Margin="18,18" Spacing="14">
+        <TextBlock Text="DXF BİRİM SEÇİMİ"
+                   Foreground="#20C3D8" FontSize="13" FontWeight="Bold"/>
+
+        <TextBlock Text="DXF dosyasının bir biriminin gerçek dünyada karşılık geldiği birimi seçin. Mevcut tüm geometri (poligonlar, duvarlar, açıklıklar) bu orana göre yeniden ölçeklendirilir."
+                   Foreground="#9AB7CC" FontSize="11" TextWrapping="Wrap"/>
+
+        <Border Background="#0E1E2E" CornerRadius="4" Padding="12,10" BorderBrush="#2A4053" BorderThickness="1">
+            <StackPanel Spacing="8">
+                <TextBlock Text="Mevcut ölçek katsayısı:" Foreground="#7894A8" FontSize="10"/>
+                <TextBlock x:Name="MevcutOlcekLabel" Foreground="#D6E8F5" FontSize="12" FontWeight="SemiBold"/>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="Yeni birim:" Foreground="#88AABB" FontSize="11" Margin="0,4,0,0"/>
+        <StackPanel Orientation="Vertical" Spacing="4">
+            <RadioButton x:Name="RbMm" Content="Milimetre (mm) — 1 birim = 0.001 m"
+                         Foreground="#D6E8F5" FontSize="12"/>
+            <RadioButton x:Name="RbCm" Content="Santimetre (cm) — 1 birim = 0.01 m"
+                         Foreground="#D6E8F5" FontSize="12"/>
+            <RadioButton x:Name="RbM" Content="Metre (m) — 1 birim = 1 m"
+                         Foreground="#D6E8F5" FontSize="12"/>
+            <RadioButton x:Name="RbIn" Content="İnç (in) — 1 birim = 0.0254 m"
+                         Foreground="#D6E8F5" FontSize="12"/>
+            <RadioButton x:Name="RbOzel" Content="Özel katsayı:"
+                         Foreground="#D6E8F5" FontSize="12"/>
+            <NumericUpDown x:Name="OzelKatsayi"
+                           Value="1.0" Minimum="0.0001" Maximum="10000" Increment="0.1"
+                           FormatString="0.######"
+                           Background="#0E2233" Foreground="White"
+                           BorderBrush="#20C3D8" BorderThickness="1"
+                           Margin="22,0,0,0"
+                           IsEnabled="{Binding #RbOzel.IsChecked}"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,8,0,0">
+            <Button Content="İptal" Click="Iptal_OnClick"
+                    Background="#1A1F2A" Foreground="#9AB7CC"
+                    BorderBrush="#2A4053" BorderThickness="1"
+                    Padding="14,6" FontSize="11"/>
+            <Button Content="Uygula" Click="Uygula_OnClick"
+                    Background="#0B547B" Foreground="White"
+                    Padding="14,6" FontSize="11" FontWeight="Bold"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

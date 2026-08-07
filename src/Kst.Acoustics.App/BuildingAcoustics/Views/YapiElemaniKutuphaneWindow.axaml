@@ -1,0 +1,233 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.BuildingAcoustics.ViewModels"
+        xmlns:model="using:Kst.Acoustics.Core.BuildingAcoustics.Models"
+        x:Class="Kst.Acoustics.App.BuildingAcoustics.Views.YapiElemaniKutuphaneWindow"
+        x:DataType="vm:BinaProjesiViewModel"
+        
+        Width="1390"
+        Height="660"
+        MinWidth="900"
+        MinHeight="520"
+        Title="Yapı Elemanı Kütüphanesi"
+        Background="#151D26"
+        Foreground="#D6E8F5">
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="12">
+        <!-- Row 0: Header -->
+        <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,8">
+            <TextBlock Text="YAPI ELEMANI KÜTÜPHANESİ"
+                       Foreground="#20C3D8" FontSize="14" FontWeight="Bold"/>
+            <TextBlock Text="{Binding KutuphaneMesaji}"
+                       Foreground="#9AB7CC" FontSize="11"
+                       TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+
+        <!-- Row 1: TabControl -->
+        <TabControl Grid.Row="1">
+
+            <!-- Tab 1: Yapı Elemanları -->
+            <TabItem Header="Yapı Elemanları">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- Tab 1 toolbar -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,4,0,6"
+                                IsEnabled="{Binding DuzenlemeEtkin}">
+                        <Button Command="{Binding KutuphaneElemaniEkleCommand}"
+                                Content="Yeni" Height="30" Padding="12,0"
+                                Background="#123A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                        <Button Command="{Binding KutuphaneElemaniSilCommand}"
+                                Content="Sil" Height="30" Padding="12,0"
+                                Background="#3A1A1A" Foreground="#FFB0B0" FontWeight="SemiBold"/>
+                        <Button Command="{Binding KutuphaneKaydetCommand}"
+                                Content="Kaydet" Height="30" Padding="12,0"
+                                Background="#163A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                    </StackPanel>
+
+                    <!-- Tab 1 DataGrid -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding KutuphaneElemanlari}"
+                              SelectedItem="{Binding SeciliKutuphaneElemani}"
+                              IsReadOnly="{Binding ProjeKilitli}"
+                              CellEditEnded="KutuphaneGrid_OnCellEditEnded"
+                              AutoGenerateColumns="False"
+                              CanUserReorderColumns="True"
+                              CanUserResizeColumns="True"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              Background="#101820"
+                              BorderBrush="#2B4054"
+                              BorderThickness="1"
+                              Foreground="#D6E8F5"
+                              FontSize="11">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Tip" Binding="{Binding Tip}" Width="80"/>
+                            <DataGridTextColumn Header="Sınıf" Binding="{Binding Hafiflik}" Width="74"/>
+                            <DataGridTextColumn Header="Ts (s)" Binding="{Binding YapisalRtSn}" Width="60"/>
+                            <DataGridTextColumn Header="Rw" Binding="{Binding Rw}" Width="58"/>
+                            <DataGridTextColumn Header="C" Binding="{Binding C}" Width="50"/>
+                            <DataGridTextColumn Header="Ctr" Binding="{Binding Ctr}" Width="50"/>
+                            <DataGridTextColumn Header="Lnw" Binding="{Binding Lnw}" Width="58"/>
+                            <DataGridTextColumn Header="DeltaLw" Binding="{Binding DeltaLw}" Width="70"/>
+                            <DataGridTextColumn Header="Kij" Binding="{Binding FlankingDuzeltmesiDb}" Width="58"/>
+                            <DataGridTextColumn Header="63" Binding="{Binding R63}" Width="58"/>
+                            <DataGridTextColumn Header="125" Binding="{Binding R125}" Width="58"/>
+                            <DataGridTextColumn Header="250" Binding="{Binding R250}" Width="58"/>
+                            <DataGridTextColumn Header="500" Binding="{Binding R500}" Width="58"/>
+                            <DataGridTextColumn Header="1k" Binding="{Binding R1k}" Width="58"/>
+                            <DataGridTextColumn Header="2k" Binding="{Binding R2k}" Width="58"/>
+                            <DataGridTextColumn Header="4k" Binding="{Binding R4k}" Width="58"/>
+                            <DataGridTextColumn Header="8k" Binding="{Binding R8k}" Width="58"/>
+                            <DataGridTextColumn Header="s' MN/m³" Binding="{Binding DinamikRijitlikMNm3}" Width="80"/>
+                            <DataGridTextColumn Header="fc (Hz)" Binding="{Binding KritikFrekansHz}" Width="68" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="f0 (Hz)" Binding="{Binding KutleselRezonansHz}" Width="68" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="fr (Hz)" Binding="{Binding YuzerDosemeRezonansHz}" Width="68" IsReadOnly="True"/>
+                            <DataGridTemplateColumn Header="Hava verisi kaynağı" Width="128">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="model:YapiElemani">
+                                        <TextBlock Text="{Binding SpektrumKaynagiEtiketi}" Margin="6,0" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate x:DataType="model:YapiElemani">
+                                        <ComboBox ItemsSource="{x:Static model:YapiElemani.TumSpektrumKaynagiSecenekleri}"
+                                                  SelectedValueBinding="{Binding Deger}"
+                                                  SelectedValue="{Binding SpektrumKaynagi, Mode=TwoWay}"
+                                                  HorizontalAlignment="Stretch"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 2: Açıklık Önayarları -->
+            <TabItem Header="Açıklık Önayarları">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- Tab 2 toolbar -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,4,0,6"
+                                IsEnabled="{Binding DuzenlemeEtkin}">
+                        <Button Command="{Binding OnayarYeniPencereCommand}"
+                                Content="Yeni Pencere" Height="30" Padding="12,0"
+                                Background="#123A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                        <Button Command="{Binding OnayarYeniKapiCommand}"
+                                Content="Yeni Kapı" Height="30" Padding="12,0"
+                                Background="#163A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                        <Button Command="{Binding OnayarSilCommand}"
+                                Content="Sil" Height="30" Padding="12,0"
+                                Background="#3A1A1A" Foreground="#FFB0B0" FontWeight="SemiBold"/>
+                        <Button Command="{Binding OnayarKaydetCommand}"
+                                Content="Kaydet" Height="30" Padding="12,0"
+                                Background="#16304A" Foreground="#B8E4FF" FontWeight="SemiBold"/>
+                    </StackPanel>
+
+                    <!-- Tab 2 DataGrid -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding OnayarElemanlari}"
+                              SelectedItem="{Binding SeciliOnayarElemani}"
+                              IsReadOnly="{Binding ProjeKilitli}"
+                              CellEditEnded="OnayarGrid_OnCellEditEnded"
+                              AutoGenerateColumns="False"
+                              CanUserReorderColumns="True"
+                              CanUserResizeColumns="True"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              Background="#101820"
+                              BorderBrush="#2B4054"
+                              BorderThickness="1"
+                              Foreground="#D6E8F5"
+                              FontSize="11">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad"     Binding="{Binding Ad}"          Width="200" IsReadOnly="False"/>
+                            <DataGridTextColumn Header="Tip"    Binding="{Binding Tip}"          Width="80"  IsReadOnly="False"/>
+                            <DataGridTextColumn Header="En cm"  Binding="{Binding GenislikCm}"   Width="70"  IsReadOnly="False"/>
+                            <DataGridTextColumn Header="Boy cm" Binding="{Binding YukseklikCm}"  Width="70"  IsReadOnly="False"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 3: Darbe Sesi Oktav Bantları -->
+            <TabItem Header="Darbe Sesi Bantları">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- Tab 3 bilgi bandı -->
+                    <Border Grid.Row="0" Background="#1A1A2E" Padding="8,5" Margin="0,4,0,6">
+                        <TextBlock Foreground="#9AB7CC" FontSize="11"
+                                   Text="Ln(f) — çıplak döşeme laboratuvar darbe sesi değerleri (dB). DeltaLw uygulanmadan önce girilmeli."/>
+                    </Border>
+
+                    <!-- Tab 3 DataGrid -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding KutuphaneElemanlari}"
+                              SelectedItem="{Binding SeciliKutuphaneElemani}"
+                              IsReadOnly="{Binding ProjeKilitli}"
+                              CellEditEnded="KutuphaneGrid_OnCellEditEnded"
+                              AutoGenerateColumns="False"
+                              CanUserReorderColumns="True"
+                              CanUserResizeColumns="True"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              Background="#101820"
+                              BorderBrush="#2B4054"
+                              BorderThickness="1"
+                              Foreground="#D6E8F5"
+                              FontSize="11">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad"       Binding="{Binding Ad}"            Width="220" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Tip"      Binding="{Binding Tip}"            Width="72"  IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Lnw"      Binding="{Binding Lnw}"            Width="58"/>
+                            <DataGridTextColumn Header="ΔLw"      Binding="{Binding DeltaLw}"        Width="58"/>
+                            <DataGridTextColumn Header="Ln 63"    Binding="{Binding L63}"            Width="64"/>
+                            <DataGridTextColumn Header="Ln 125"   Binding="{Binding L125}"           Width="64"/>
+                            <DataGridTextColumn Header="Ln 250"   Binding="{Binding L250}"           Width="64"/>
+                            <DataGridTextColumn Header="Ln 500"   Binding="{Binding L500}"           Width="64"/>
+                            <DataGridTextColumn Header="Ln 1k"    Binding="{Binding L1k}"            Width="64"/>
+                            <DataGridTextColumn Header="Ln 2k"    Binding="{Binding L2k}"            Width="64"/>
+                            <DataGridTextColumn Header="Ln 4k"    Binding="{Binding L4k}"            Width="64"/>
+                            <DataGridTemplateColumn Header="Darbe verisi kaynağı" Width="128">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="model:YapiElemani">
+                                        <TextBlock Text="{Binding DarbeSpektrumKaynagiEtiketi}" Margin="6,0" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate x:DataType="model:YapiElemani">
+                                        <ComboBox ItemsSource="{x:Static model:YapiElemani.TumSpektrumKaynagiSecenekleri}"
+                                                  SelectedValueBinding="{Binding Deger}"
+                                                  SelectedValue="{Binding DarbeSpektrumKaynagi, Mode=TwoWay}"
+                                                  HorizontalAlignment="Stretch"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- Row 2: Bottom bar (import/export) -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+            <TextBlock Grid.Column="0"
+                       Text="Tip değerleri: Duvar, Doseme, Tavan, Pencere, Kapi"
+                       Foreground="#7894A8" FontSize="11"
+                       VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <Button Command="{Binding KutuphaneIceriAktarCommand}"
+                        CommandParameter="{Binding $parent[Window]}"
+                        IsEnabled="{Binding DuzenlemeEtkin}"
+                        Content="Excel İçe Aktar" Height="30" Padding="12,0"
+                        Background="#16304A" Foreground="#B8E4FF"/>
+                <Button Command="{Binding KutuphaneDisaAktarCommand}"
+                        CommandParameter="{Binding $parent[Window]}"
+                        Content="Excel Dışa Aktar" Height="30" Padding="12,0"
+                        Background="#1A2A3A" Foreground="#C7D8E8"/>
+                <Button Command="{Binding KutuphaneSablonKaydetCommand}"
+                        CommandParameter="{Binding $parent[Window]}"
+                        Content="Şablon Kaydet" Height="30" Padding="12,0"
+                        Background="#3A3316" Foreground="#FFE39A"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

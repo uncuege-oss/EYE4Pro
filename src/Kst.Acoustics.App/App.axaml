@@ -1,0 +1,27 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Kst.Acoustics.App.ViewModels"
+             x:Class="Kst.Acoustics.App.App"
+             xmlns:local="using:Kst.Acoustics.App"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <vm:DirtyTitleConverter x:Key="DirtyTitleConverter"/>
+            <!-- Merkezi semantik renk paleti (ThemeDictionaries: Dark/Light) -->
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Kst.Acoustics.App/Themes/SemanticColors.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <sty:FluentAvaloniaTheme />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    </Application.Styles>
+</Application>

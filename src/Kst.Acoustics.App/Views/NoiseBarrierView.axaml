@@ -1,0 +1,484 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Kst.Acoustics.App.ViewModels"
+             xmlns:controls="clr-namespace:Kst.Acoustics.App.Controls"
+             xmlns:nb="clr-namespace:Kst.Acoustics.Core.NoiseBarrier;assembly=Kst.Acoustics.Core"
+             x:Class="Kst.Acoustics.App.Views.NoiseBarrierView"
+             x:DataType="vm:NoiseBarrierViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#7FA6C2"/>
+            <Setter Property="Margin" Value="0,0,0,3"/>
+        </Style>
+        <Style Selector="NumericUpDown.formInput">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#0C1D2E" Padding="16,12" BorderBrush="#1B406A" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="20">
+                <!-- Sol: Geri ve Logo -->
+                <StackPanel Orientation="Horizontal" Spacing="15">
+                    <Button Click="BackToLauncher_OnClick" Background="Transparent" Padding="5">
+                        <PathIcon Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" Width="20" Foreground="#D8EEFF"/>
+                    </Button>
+                    <Border Width="160" Height="48" CornerRadius="7" Background="#F3F7FA" BorderBrush="#C9D7E4" BorderThickness="1" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="40,*" ColumnSpacing="10" Margin="8,4">
+                            <Grid Width="40" Height="32">
+                                <Ellipse Width="34" Height="22" Stroke="#0B547B" StrokeThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="20" Height="20" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Path Data="M10,16 L14,16 M18,11 L18,21 M22,8 L22,24 M26,12 L26,20 M30,16 L34,16"
+                                      Stroke="#0A4C72"
+                                      StrokeThickness="1.5"/>
+                            </Grid>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                                <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="13" FontWeight="Bold"/>
+                                <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="8" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Orta: Başlık -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="Ses Bariyeri Tasarımı ve Çevresel Gürültü" FontSize="18" FontWeight="Bold" Foreground="#D8EEFF"/>
+                    <TextBlock Text="3B Simülasyon ve İyileştirme Analizi" FontSize="11" Foreground="#3A5C78"/>
+                </StackPanel>
+                
+                <!-- Sağ: Aksiyonlar -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Content="📚 Kütüphane" Click="OpenLibrary_OnClick"
+                            Background="#1A3050" Foreground="#90C0E8" Padding="12,8" CornerRadius="6"/>
+                    <Button Content="📂 Aç" Command="{Binding LoadProjectCommand}"
+                            Background="#1A3050" Foreground="#90C0E8" Padding="12,8" CornerRadius="6"/>
+                    <Button Content="💾 Kaydet" Command="{Binding SaveProjectCommand}"
+                            Background="#1A4A2A" Foreground="#80EFA0" Padding="12,8" CornerRadius="6"/>
+                    <Button Content="📄 PDF Rapor" Command="{Binding ExportPdfCommand}"
+                            Background="#4A1A1A" Foreground="#EF8080" Padding="12,8" CornerRadius="6"/>
+                    <Separator Width="1" Background="#1B406A" Margin="5,0"/>
+                    <Button Content="Hesapla / Güncelle" Command="{Binding UpdateSimulationCommand}"
+                            Background="#1A5898" Foreground="White" Padding="15,8" CornerRadius="6"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="360, *, 320" Margin="10" ColumnSpacing="10">
+            <!-- Left Panel: Geometry & Sources -->
+            <Border Grid.Column="0" Background="#0B1D32" CornerRadius="12" Padding="18" BorderBrush="#1B406A" BorderThickness="1">
+                <ScrollViewer>
+                    <StackPanel Spacing="18">
+                        <TextBlock Text="GEOMETRİ" FontSize="12" FontWeight="Bold" Foreground="#3E6880"/>
+                        
+                        <!-- Building -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Bina Boyutları (m)" FontSize="11" Foreground="#8FB7D3"/>
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                                <StackPanel>
+                                    <TextBlock Classes="fieldLabel" Text="Genişlik"/>
+                                    <NumericUpDown Classes="formInput" Value="{Binding Project.Building.Width, Mode=TwoWay}" Minimum="1" Maximum="200" ValueChanged="Recalculate_OnValueChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Classes="fieldLabel" Text="Yükseklik"/>
+                                    <NumericUpDown Classes="formInput" Value="{Binding Project.Building.Height, Mode=TwoWay}" Minimum="1" Maximum="100" ValueChanged="Recalculate_OnValueChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+                                    <TextBlock Classes="fieldLabel" Text="Derinlik"/>
+                                    <NumericUpDown Classes="formInput" Value="{Binding Project.Building.Depth, Mode=TwoWay}" Minimum="1" Maximum="200" ValueChanged="Recalculate_OnValueChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2">
+                                    <TextBlock Classes="fieldLabel" Text="Grid Sütun"/>
+                                    <NumericUpDown Classes="formInput" Value="{Binding Project.Building.FacadeGridColumns, Mode=TwoWay}" Minimum="1" Maximum="40" ValueChanged="Recalculate_OnValueChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1">
+                                    <TextBlock Classes="fieldLabel" Text="Grid Satır"/>
+                                    <NumericUpDown Classes="formInput" Value="{Binding Project.Building.FacadeGridRows, Mode=TwoWay}" Minimum="1" Maximum="30" ValueChanged="Recalculate_OnValueChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Grid.ColumnSpan="2">
+                                    <TextBlock Classes="fieldLabel" Text="Kat Yüksekliği"/>
+                                    <NumericUpDown Classes="formInput" Value="{Binding Project.Building.FloorHeight, Mode=TwoWay}" Minimum="1" Maximum="10" Increment="0.1" ValueChanged="Recalculate_OnValueChanged"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+
+                        <TextBlock Text="HESAP AYARLARI" FontSize="12" FontWeight="Bold" Foreground="#3E6880" Margin="0,10,0,0"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="fieldLabel" Text="Kırınım Modeli"/>
+                            <ComboBox ItemsSource="{Binding DiffractionMethods}"
+                                      SelectedItem="{Binding Project.Method, Mode=TwoWay}"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="Recalculate_OnSelectionChanged"/>
+                        </StackPanel>
+
+                        <!-- Barriers -->
+                        <TextBlock Text="BARİYERLER" FontSize="12" FontWeight="Bold" Foreground="#3E6880"/>
+                        <ItemsControl ItemsSource="{Binding Project.Barriers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="nb:BarrierModel">
+                                    <Border Background="#0E2840" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+                                        <StackPanel Spacing="7">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                                <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                          Command="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).UpdateSimulationCommand}"
+                                                          VerticalAlignment="Center"/>
+                                                <TextBox Text="{Binding Name, Mode=TwoWay}" FontWeight="Bold" Foreground="#D8EEFF" FontSize="12"
+                                                         Background="Transparent" BorderThickness="0" Padding="0"
+                                                         Grid.Column="1"/>
+                                                <Button Grid.Column="2"
+                                                        Content="Sil"
+                                                        Command="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).RemoveBarrierCommand}"
+                                                        CommandParameter="{Binding .}"
+                                                        Padding="8,3"
+                                                        Background="#4A1A1A"
+                                                        Foreground="#EF8080"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                                                <StackPanel>
+                                                    <TextBlock Classes="fieldLabel" Text="Uzunluk"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding Length, Mode=TwoWay}" Minimum="1" Maximum="500" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Classes="fieldLabel" Text="Yükseklik"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding Height, Mode=TwoWay}" Minimum="0.5" Maximum="20" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="1">
+                                                    <TextBlock Classes="fieldLabel" Text="Binadan Uzaklık"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding DistanceFromBuilding, Mode=TwoWay}" Minimum="1" Maximum="100" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="1" Grid.Column="1">
+                                                    <TextBlock Classes="fieldLabel" Text="X Kaydırma"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding CenterX, Mode=TwoWay}" Minimum="-200" Maximum="200" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <StackPanel>
+                                                <TextBlock Classes="fieldLabel" Text="Malzeme"/>
+                                                <ComboBox ItemsSource="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).Materials}"
+                                                          SelectedValue="{Binding MaterialId, Mode=TwoWay}"
+                                                          SelectedValueBinding="{Binding Id}"
+                                                          SelectionChanged="Recalculate_OnSelectionChanged"
+                                                          HorizontalAlignment="Stretch">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Name}"/>
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </StackPanel>
+                                            <StackPanel Spacing="6" Margin="0,4,0,0">
+                                                <CheckBox Content="Kaynak tarafı absorptif"
+                                                          IsChecked="{Binding HasAbsorptiveSourceSide, Mode=TwoWay}"
+                                                          Command="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).UpdateSimulationCommand}"
+                                                          Foreground="#8FB7D3"/>
+                                                <CheckBox Content="Alıcı tarafı absorptif"
+                                                          IsChecked="{Binding HasAbsorptiveReceiverSide, Mode=TwoWay}"
+                                                          Command="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).UpdateSimulationCommand}"
+                                                          Foreground="#8FB7D3"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="+ Bariyer Ekle" Command="{Binding AddBarrierCommand}" HorizontalAlignment="Stretch" Background="#1B406A"/>
+
+                        <Separator Background="#1B406A"/>
+                        
+                        <TextBlock Text="KAYNAKLAR" FontSize="12" FontWeight="Bold" Foreground="#3E6880"/>
+                        <ItemsControl ItemsSource="{Binding Project.Sources}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="nb:NoiseSource">
+                                    <Border Background="#0E2840" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+                                        <StackPanel Spacing="7">
+                                            <Grid ColumnDefinitions="Auto,*,90,Auto" ColumnSpacing="8">
+                                                <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                          Command="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).UpdateSimulationCommand}"
+                                                          VerticalAlignment="Center"/>
+                                                <TextBox Text="{Binding Name, Mode=TwoWay}" FontWeight="Bold" Foreground="#D8EEFF" FontSize="12"
+                                                         Background="Transparent" BorderThickness="0" Padding="0"
+                                                         Grid.Column="1"/>
+                                                <ComboBox Grid.Column="2"
+                                                          ItemsSource="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).SourceTypes}"
+                                                          SelectedItem="{Binding Type, Mode=TwoWay}"
+                                                          FontSize="10"
+                                                          Padding="4,2"
+                                                          SelectionChanged="Recalculate_OnSelectionChanged"/>
+                                                <Button Grid.Column="3"
+                                                        Content="Sil"
+                                                        Command="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).RemoveSourceCommand}"
+                                                        CommandParameter="{Binding .}"
+                                                        Padding="8,3"
+                                                        Background="#4A1A1A"
+                                                        Foreground="#EF8080"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                                                <StackPanel>
+                                                    <TextBlock Classes="fieldLabel" Text="X"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding X, Mode=TwoWay}" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Classes="fieldLabel" Text="Y"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding Y, Mode=TwoWay}" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+                                                    <TextBlock Classes="fieldLabel" Text="Z"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding Z, Mode=TwoWay}" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding IsLineLike}">
+                                                <StackPanel>
+                                                    <TextBlock Classes="fieldLabel" Text="X2"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding XEnd, Mode=TwoWay}" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Classes="fieldLabel" Text="Y2"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding YEnd, Mode=TwoWay}" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <StackPanel Margin="0,5,0,0" IsVisible="{Binding ShowManualLw}">
+                                                <TextBlock Classes="fieldLabel" Text="Güç (Lw)"/>
+                                                <NumericUpDown Classes="formInput" Value="{Binding OverallLw, Mode=TwoWay}" ValueChanged="Recalculate_OnValueChanged"/>
+                                            </StackPanel>
+                                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8" IsVisible="{Binding IsTraffic}">
+                                                <StackPanel>
+                                                    <TextBlock Classes="fieldLabel" Text="Trafik Debisi"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding TrafficFlowVehiclesPerHour, Mode=TwoWay}" Minimum="1" Maximum="20000" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Classes="fieldLabel" Text="Hız km/h"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding AverageSpeedKmh, Mode=TwoWay}" Minimum="10" Maximum="160" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+                                                    <TextBlock Classes="fieldLabel" Text="Ağır Taşıt %"/>
+                                                    <NumericUpDown Classes="formInput" Value="{Binding HeavyVehiclePercent, Mode=TwoWay}" Minimum="0" Maximum="100" ValueChanged="Recalculate_OnValueChanged"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <StackPanel IsVisible="{Binding IsTraffic}">
+                                                <TextBlock Classes="fieldLabel" Text="Trafik Modeli"/>
+                                                <ComboBox ItemsSource="{Binding $parent[UserControl].((vm:NoiseBarrierViewModel)DataContext).TrafficModels}"
+                                                          SelectedItem="{Binding TrafficModel, Mode=TwoWay}"
+                                                          SelectionChanged="Recalculate_OnSelectionChanged"
+                                                          HorizontalAlignment="Stretch"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="+ Kaynak Ekle" Command="{Binding AddSourceCommand}" HorizontalAlignment="Stretch" Background="#1B406A"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Center: 3D Visualization -->
+            <Border Grid.Column="1" Background="#050C14" CornerRadius="12" Margin="10,0" ClipToBounds="True">
+                <Grid>
+                    <!-- Visualizer Control Placeholder -->
+                    <controls:NoiseBarrierPreviewControl Project="{Binding Project}"
+                                                          SceneRevision="{Binding SimulationRevision}"/>
+                    
+                    <!-- Overlay Legend -->
+                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Right" Background="#AA000000" Padding="10" Margin="10" CornerRadius="8">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Gürültü Seviyesi dB(A)" FontSize="10" Foreground="White" Margin="0,0,0,5"/>
+                            <Grid ColumnDefinitions="Auto, *">
+                                <Rectangle Width="15" Height="80" VerticalAlignment="Stretch">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                            <GradientStop Offset="0" Color="#FF4444"/>
+                                            <GradientStop Offset="0.5" Color="#FFFF44"/>
+                                            <GradientStop Offset="1" Color="#44FF44"/>
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Stretch" Margin="5,0,0,0">
+                                    <TextBlock Text="80+" FontSize="9" Foreground="White"/>
+                                    <Separator Height="25" Opacity="0"/>
+                                    <TextBlock Text="55" FontSize="9" Foreground="White"/>
+                                    <Separator Height="25" Opacity="0"/>
+                                    <TextBlock Text="30" FontSize="9" Foreground="White"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Right Panel: Materials & Results -->
+            <Border Grid.Column="2" Background="#0B1D32" CornerRadius="12" Padding="15" BorderBrush="#1B406A" BorderThickness="1">
+                <ScrollViewer>
+                    <StackPanel Spacing="18">
+                        <TextBlock Text="MALZEME" FontSize="12" FontWeight="Bold" Foreground="#3E6880"/>
+                        <ComboBox ItemsSource="{Binding Materials}" SelectedItem="{Binding SelectedMaterial}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Content="Excel Şablonu"
+                                    Command="{Binding ExportBarrierMaterialTemplateCommand}"
+                                    HorizontalAlignment="Stretch"
+                                    Background="#1B406A"/>
+                            <Button Grid.Column="1"
+                                    Content="Excelden Aktar"
+                                    Command="{Binding ImportBarrierMaterialsFromExcelCommand}"
+                                    HorizontalAlignment="Stretch"
+                                    Background="#1B406A"/>
+                        </Grid>
+
+                        <Border Background="#0E2840" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="MANUEL MALZEME TANIMI" FontSize="11" FontWeight="Bold" Foreground="#3498DB"/>
+                                <StackPanel>
+                                    <TextBlock Classes="fieldLabel" Text="Malzeme Adı"/>
+                                    <TextBox Text="{Binding NewMaterialName, Mode=TwoWay}" Height="32"/>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                    <StackPanel>
+                                        <TextBlock Classes="fieldLabel" Text="Ort. Rw (TL)"/>
+                                        <NumericUpDown Classes="formInput" Value="{Binding NewMaterialRw, Mode=TwoWay}" Minimum="0" Maximum="90"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Classes="fieldLabel" Text="Ort. NRC (Abs)"/>
+                                        <NumericUpDown Classes="formInput" Value="{Binding NewMaterialNrc, Mode=TwoWay}" Minimum="0" Maximum="1" Increment="0.01"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Expander Header="Frekans Bazlı Veriler" Foreground="#8FB7D3" FontSize="11" Padding="5">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Ses Geçiş Kaybı (TL) [dB]" Foreground="#3498DB" FontSize="10"/>
+                                        <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto" Margin="0,0,0,5">
+                                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="2"><TextBlock Text="63" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialTl63}" ShowButtonSpinner="False" FontSize="10"/></StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="2"><TextBlock Text="125" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialTl125}" ShowButtonSpinner="False" FontSize="10"/></StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="2" Margin="2"><TextBlock Text="250" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialTl250}" ShowButtonSpinner="False" FontSize="10"/></StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="3" Margin="2"><TextBlock Text="500" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialTl500}" ShowButtonSpinner="False" FontSize="10"/></StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="2"><TextBlock Text="1k" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialTl1k}" ShowButtonSpinner="False" FontSize="10"/></StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="2"><TextBlock Text="2k" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialTl2k}" ShowButtonSpinner="False" FontSize="10"/></StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="2" Margin="2"><TextBlock Text="4k" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialTl4k}" ShowButtonSpinner="False" FontSize="10"/></StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="3" Margin="2"><TextBlock Text="8k" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialTl8k}" ShowButtonSpinner="False" FontSize="10"/></StackPanel>
+                                        </Grid>
+
+                                        <TextBlock Text="Ses Yutma Katsayısı (α)" Foreground="#3498DB" FontSize="10"/>
+                                        <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto">
+                                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="2"><TextBlock Text="63" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialAlpha63}" ShowButtonSpinner="False" FontSize="10" Increment="0.01"/></StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="2"><TextBlock Text="125" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialAlpha125}" ShowButtonSpinner="False" FontSize="10" Increment="0.01"/></StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="2" Margin="2"><TextBlock Text="250" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialAlpha250}" ShowButtonSpinner="False" FontSize="10" Increment="0.01"/></StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="3" Margin="2"><TextBlock Text="500" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialAlpha500}" ShowButtonSpinner="False" FontSize="10" Increment="0.01"/></StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="2"><TextBlock Text="1k" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialAlpha1k}" ShowButtonSpinner="False" FontSize="10" Increment="0.01"/></StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="2"><TextBlock Text="2k" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialAlpha2k}" ShowButtonSpinner="False" FontSize="10" Increment="0.01"/></StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="2" Margin="2"><TextBlock Text="4k" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialAlpha4k}" ShowButtonSpinner="False" FontSize="10" Increment="0.01"/></StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="3" Margin="2"><TextBlock Text="8k" Classes="fieldLabel" HorizontalAlignment="Center"/><NumericUpDown Value="{Binding NewMaterialAlpha8k}" ShowButtonSpinner="False" FontSize="10" Increment="0.01"/></StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Expander>
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                    <StackPanel>
+                                        <TextBlock Classes="fieldLabel" Text="Kalınlık mm"/>
+                                        <NumericUpDown Classes="formInput" Value="{Binding ManualMaterialThicknessMm, Mode=TwoWay}" Minimum="1" Maximum="1000"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Classes="fieldLabel" Text="Yüzey Kütlesi"/>
+                                        <NumericUpDown Classes="formInput" Value="{Binding ManualMaterialSurfaceMass, Mode=TwoWay}" Minimum="0.1" Maximum="2000"/>
+                                    </StackPanel>
+                                </Grid>
+                                <Button Content="+ Kütüphaneye Ekle"
+                                        Command="{Binding AddManualMaterialCommand}"
+                                        HorizontalAlignment="Stretch"
+                                        Background="#1A5898"
+                                        Height="38"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Separator Background="#1B406A"/>
+                        
+                        <TextBlock Text="ÖZET SONUÇLAR" FontSize="12" FontWeight="Bold" Foreground="#3E6880"/>
+                        <Border Background="#0E2840" CornerRadius="10" Padding="15">
+                            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                <StackPanel>
+                                    <TextBlock Text="Bariyersiz Ortalama" FontSize="11" Foreground="#8FB7D3"/>
+                                    <TextBlock Text="{Binding AverageNoBarrierText}" FontSize="22" FontWeight="Bold" Foreground="#FF6B6B"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1">
+                                    <TextBlock Text="Bariyerli Ortalama" FontSize="11" Foreground="#8FB7D3"/>
+                                    <TextBlock Text="{Binding AverageWithBarrierText}" FontSize="22" FontWeight="Bold" Foreground="#70C8A8"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2">
+                                    <TextBlock Text="İyileştirme (ΔL)" FontSize="11" Foreground="#8FB7D3"/>
+                                    <TextBlock Text="{Binding AverageInsertionLossText}" FontSize="28" FontWeight="Bold" Foreground="#00FFFF"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <StackPanel>
+                                <TextBlock Text="Min. İyileştirme" FontSize="11" Foreground="#8FB7D3"/>
+                                <TextBlock Text="{Binding MinimumInsertionLossText}" FontSize="18" FontWeight="Bold" Foreground="#F5A623"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Maks. İyileştirme" FontSize="11" Foreground="#8FB7D3"/>
+                                <TextBlock Text="{Binding MaximumInsertionLossText}" FontSize="18" FontWeight="Bold" Foreground="#70C8A8"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel>
+                            <TextBlock Text="Kritik Alıcı" FontSize="11" Foreground="#8FB7D3"/>
+                            <TextBlock Text="{Binding CriticalReceiverText}" FontSize="13" Foreground="#D8EEFF" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <TextBlock Text="* Tüm alıcıların enerji ortalamasıdır." FontSize="9" Foreground="#3E6880" FontStyle="Italic"/>
+
+                        <TextBlock Text="ALICI SONUÇLARI" FontSize="12" FontWeight="Bold" Foreground="#3E6880"/>
+                        <DataGrid ItemsSource="{Binding Project.Receivers}"
+                                  SelectedItem="{Binding SelectedReceiver, Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  Height="210"
+                                  GridLinesVisibility="Horizontal"
+                                  Background="#071421"
+                                  Foreground="#D8EEFF">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="No" Binding="{Binding Id}" Width="44"/>
+                                <DataGridTextColumn Header="Kat" Binding="{Binding FloorIndex}" Width="48"/>
+                                <DataGridTextColumn Header="Z" Binding="{Binding Z, StringFormat='{}{0:F1}'}" Width="52"/>
+                                <DataGridTextColumn Header="Yok" Binding="{Binding TotalDbANoBarrier, StringFormat='{}{0:F1}'}" Width="64"/>
+                                <DataGridTextColumn Header="Var" Binding="{Binding TotalDbAWithBarrier, StringFormat='{}{0:F1}'}" Width="64"/>
+                                <DataGridTextColumn Header="ΔL" Binding="{Binding InsertionLoss, StringFormat='{}{0:F1}'}" Width="60"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <TextBlock Text="SEÇİLİ ALICI FREKANS BANTLARI" FontSize="12" FontWeight="Bold" Foreground="#3E6880"/>
+                        <DataGrid ItemsSource="{Binding SelectedReceiverBands}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  Height="190"
+                                  GridLinesVisibility="Horizontal"
+                                  Background="#071421"
+                                  Foreground="#D8EEFF">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Hz" Binding="{Binding FrequencyHz, StringFormat='{}{0:F0}'}" Width="58"/>
+                                <DataGridTextColumn Header="Yok" Binding="{Binding NoBarrierDb, StringFormat='{}{0:F1}'}" Width="64"/>
+                                <DataGridTextColumn Header="Var" Binding="{Binding WithBarrierDb, StringFormat='{}{0:F1}'}" Width="64"/>
+                                <DataGridTextColumn Header="ΔL" Binding="{Binding InsertionLossDb, StringFormat='{}{0:F1}'}" Width="60"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <ItemsControl ItemsSource="{Binding ValidationWarnings}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="#F5A623" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

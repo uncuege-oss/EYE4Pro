@@ -1,0 +1,50 @@
+[
+  {
+    "Id": "SAMP_04",
+    "Name": "Yalıtımlı Alçıpan (12.5+50MW+12.5)",
+    "Layers": [
+      {
+        "Material": {
+          "Id": "GYP_12.5",
+          "Name": "Alçı Levha 12.5mm",
+          "Category": "Levha",
+          "SubCategory": "Alçı",
+          "Density": 800.0,
+          "YoungModulus": 2500000000.0,
+          "PoissonRatio": 0.3,
+          "LossFactor": 0.03
+        },
+        "Thickness": 0.0125
+      },
+      {
+        "Material": {
+          "Id": "MW_50",
+          "Name": "Taş Yünü 50kg/m3",
+          "Category": "Dolgu",
+          "SubCategory": "Mineral Yün",
+          "Density": 50.0,
+          "FlowResistivity": 15000.0,
+          "Porosity": 0.95,
+          "LossFactor": 0.1
+        },
+        "Thickness": 0.05,
+        "IsAirGap": true,
+        "HasPorousFill": true
+      },
+      {
+        "Material": {
+          "Id": "GYP_12.5",
+          "Name": "Alçı Levha 12.5mm",
+          "Category": "Levha",
+          "SubCategory": "Alçı",
+          "Density": 800.0,
+          "YoungModulus": 2500000000.0,
+          "PoissonRatio": 0.3,
+          "LossFactor": 0.03
+        },
+        "Thickness": 0.0125
+      }
+    ],
+    "Description": "Taş yünü dolgulu çift cidarlı alçıpan bölme."
+  }
+]

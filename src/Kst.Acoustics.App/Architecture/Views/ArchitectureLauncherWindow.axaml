@@ -1,0 +1,259 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Architecture.Views.ArchitectureLauncherWindow"
+        Width="1120" Height="760"
+        MinWidth="940" MinHeight="640"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#0A1015"
+        Title="Eye4Pro Architecture - Modül Merkezi">
+
+    <Window.Styles>
+        <Style Selector="Button.moduleAction">
+            <Setter Property="Background" Value="#256D7B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <Style Selector="TextBlock.moduleTitle">
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#ECF3F7"/>
+        </Style>
+        <Style Selector="TextBlock.moduleMeta">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#7890A2"/>
+        </Style>
+        <Style Selector="TextBlock.moduleBody">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#9BAEBB"/>
+            <Setter Property="LineHeight" Value="18"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" BorderBrush="#243646" BorderThickness="0,0,0,1" Background="#0D151D">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18" Margin="28,18">
+                <Border Width="230" Height="76" CornerRadius="8"
+                        Background="#F5F8FA"
+                        BorderBrush="#D9E4EA"
+                        BorderThickness="1"
+                        Padding="12,8">
+                    <Grid ColumnDefinitions="60,*" ColumnSpacing="10">
+                        <Grid Width="60" Height="48">
+                            <Ellipse Width="48" Height="30" Stroke="#345D67" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="28" Height="28" Fill="#7FC8C0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M14,34 L27,15 L40,34 M20,34 L20,25 L34,25 L34,34"
+                                  Stroke="#244650"
+                                  StrokeThickness="3"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#244650" FontSize="18" FontWeight="Bold"/>
+                            <TextBlock Text="ARCHITECTURE" Foreground="#4B918D" FontSize="10" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                    <TextBlock Text="Mimari BIM Platformu"
+                               Foreground="#ECF3F7"
+                               FontSize="20"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="İhtiyaç programı, konsept yerleşim, kural kontrolü ve mimari çıktı akışı"
+                               Foreground="#7890A2"
+                               FontSize="12"/>
+                </StackPanel>
+
+                <Button Grid.Column="2"
+                        Content="Ana Menü"
+                        Click="BackToEngineeringHome_OnClick"
+                        Background="#111D26"
+                        BorderBrush="#2A3E50"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12,7"
+                        Foreground="#B9CAD6"
+                        FontSize="12"
+                        FontWeight="SemiBold"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Grid ColumnDefinitions="300,*" ColumnSpacing="22" Margin="28,24,28,16">
+                <Border Background="#101821"
+                        BorderBrush="#243646"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="18">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Modül Merkezi"
+                                       Foreground="#ECF3F7"
+                                       FontSize="19"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="Mimari BIM üretimi küçük ve izlenebilir adımlarla açılıyor"
+                                       Foreground="#7890A2"
+                                       FontSize="12"
+                                       LineHeight="18"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Border Height="1" Background="#243646"/>
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="M31 İhtiyaç Programı" Foreground="#BBD1DA" FontSize="13"/>
+                            <TextBlock Text="M32 Konsept Plan" Foreground="#BBD1DA" FontSize="13"/>
+                            <TextBlock Text="M33 Çekirdek / Şaft" Foreground="#BBD1DA" FontSize="13"/>
+                            <TextBlock Text="M34 Yönetmelik Ön Kontrol" Foreground="#BBD1DA" FontSize="13"/>
+                            <TextBlock Text="M35 3D BIM Model" Foreground="#BBD1DA" FontSize="13"/>
+                        </StackPanel>
+                        <Border Background="#0B1218"
+                                BorderBrush="#1F303E"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Durum"
+                                           Foreground="#7890A2"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Text="3 aktif modül, 4 MVP modül"
+                                           Foreground="#D7E6ED"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <UniformGrid Grid.Column="1" Columns="2" Rows="4">
+                    <Border Margin="0,0,10,10" Background="#101821" CornerRadius="8" BorderBrush="#256D7B" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#15313B">
+                                    <TextBlock Text="31" Foreground="#7FD2C7" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="İhtiyaç Programı"/>
+                                    <TextBlock Classes="moduleMeta" Text="Bina işlevi ve mahal listesi"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenIhtiyacProgrami_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Bina işlevi, kapasite, alan hedefleri, mahal gereksinimleri ve net/brüt alan özeti."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="10,0,0,10" Background="#101821" CornerRadius="8" BorderBrush="#256D7B" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#15313B">
+                                    <TextBlock Text="32" Foreground="#7FD2C7" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Konsept Plan"/>
+                                    <TextBlock Classes="moduleMeta" Text="Parametrik yerleşim"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenKonseptPlan_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Mahal blokları, ilişki matrisi ve ilk yerleşim algoritması."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="0,10,10,10" Background="#101821" CornerRadius="8" BorderBrush="#256D7B" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#15313B">
+                                    <TextBlock Text="33" Foreground="#7FD2C7" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Çekirdek ve Şaft"/>
+                                    <TextBlock Classes="moduleMeta" Text="Düşey süreklilik"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border DockPanel.Dock="Bottom" Background="#14303A" CornerRadius="6" Padding="12,7" HorizontalAlignment="Right">
+                                <TextBlock Text="MVP" Foreground="#7FD2C7" FontSize="12" FontWeight="SemiBold"/>
+                            </Border>
+                            <TextBlock Classes="moduleBody" Text="Merdiven, asansör, şaft ve kaçış grafı ön altyapısı."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="10,10,0,10" Background="#101821" CornerRadius="8" BorderBrush="#256D7B" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#15313B">
+                                    <TextBlock Text="34" Foreground="#7FD2C7" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Yönetmelik Ön Kontrol"/>
+                                    <TextBlock Classes="moduleMeta" Text="Kural motoru"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border DockPanel.Dock="Bottom" Background="#14303A" CornerRadius="6" Padding="12,7" HorizontalAlignment="Right">
+                                <TextBlock Text="MVP" Foreground="#7FD2C7" FontSize="12" FontWeight="SemiBold"/>
+                            </Border>
+                            <TextBlock Classes="moduleBody" Text="İmar, yangın, erişilebilirlik ve enerji ön kontrol uyarıları."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="0,10,10,0" Background="#101821" CornerRadius="8" BorderBrush="#256D7B" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#15313B">
+                                    <TextBlock Text="35" Foreground="#7FD2C7" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="3D BIM Model"/>
+                                    <TextBlock Classes="moduleMeta" Text="Hacim önizleme"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenModel3D_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="2D taslaktan kat, mahal, çekirdek ve şaft 3D hacimleri."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="10,10,0,0" Background="#101821" CornerRadius="8" BorderBrush="#256D7B" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#15313B">
+                                    <TextBlock Text="36" Foreground="#7FD2C7" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Detay ve Malzeme"/>
+                                    <TextBlock Classes="moduleMeta" Text="Yapı elemanı ve malzeme ataması"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenMalzemeAtama_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Duvar, döşeme, tavan, kapı, pencere tipleri ve mahal/eleman malzeme ataması."/>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Margin="0,10,10,0" Background="#101821" CornerRadius="8" BorderBrush="#256D7B" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#15313B">
+                                    <TextBlock Text="37" Foreground="#7FD2C7" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Rapor ve İhracat"/>
+                                    <TextBlock Classes="moduleMeta" Text="Çizelge, OBJ, .e4bina"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenMimariCikti_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Mahal/alan/finisaj çizelgeleri, ön kontrol raporu (HTML/XLSX) ve OBJ / .e4bina ihracatı."/>
+                        </DockPanel>
+                    </Border>
+                </UniformGrid>
+            </Grid>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" BorderBrush="#1B2A36" BorderThickness="0,1,0,0" Background="#070C11" Padding="0,10">
+            <TextBlock Text="Eye4Pro Architecture"
+                       FontSize="11"
+                       Foreground="#5E7282"
+                       HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

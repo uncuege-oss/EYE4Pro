@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.ZayifAkimTekHat.KatSecDialog"
+        x:CompileBindings="False"
+        Width="380" Height="290"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#080F0A"
+        Title="Kat Seçimi">
+  <Window.Styles>
+    <Style Selector="ComboBox">
+      <Setter Property="Background" Value="#101C10"/>
+      <Setter Property="Foreground" Value="#D0E8C0"/>
+      <Setter Property="BorderBrush" Value="#2A4A20"/>
+      <Setter Property="MinHeight" Value="30"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Margin="16">
+    <TextBlock Grid.Row="0" x:Name="BaslikText" Text="Rack kabin hangi kata eklensin?"
+               Foreground="#C8E4B0" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+    <TextBlock Grid.Row="1" Text="Kat" Foreground="#7AA060" FontSize="12" Margin="0,0,0,4"/>
+    <ComboBox Grid.Row="2" x:Name="KatCombo" VerticalAlignment="Top">
+      <ComboBox.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Text="{Binding Ad}" Foreground="#D0E8C0"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+
+    <TextBlock Grid.Row="3" x:Name="BaglantiLabel" Text="Bağlantı (üst)" Foreground="#7AA060"
+               FontSize="12" Margin="0,12,0,4"/>
+    <ComboBox Grid.Row="4" x:Name="BaglantiCombo" VerticalAlignment="Top">
+      <ComboBox.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Text="{Binding Ad}" Foreground="#D0E8C0"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+
+    <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+      <Button Content="İptal" Click="Iptal_OnClick"
+              Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+      <Button Content="Ekle" Click="Ekle_OnClick"
+              Background="#3A7A18" Foreground="White" FontWeight="SemiBold"/>
+    </StackPanel>
+  </Grid>
+</Window>

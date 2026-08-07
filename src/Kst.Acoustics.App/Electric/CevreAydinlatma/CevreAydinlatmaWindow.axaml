@@ -1,0 +1,104 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Electric.CevreAydinlatma"
+        x:Class="Kst.Acoustics.App.Electric.CevreAydinlatma.CevreAydinlatmaWindow"
+        x:DataType="vm:CevreAydinlatmaViewModel"
+        x:CompileBindings="False"
+        Title="Çevre Aydınlatma Projesi"
+        Width="1200" Height="760"
+        Background="#080F0A"
+        CanResize="True">
+
+  <Window.Styles>
+    <Style Selector="Button.tool">
+      <Setter Property="Background" Value="#163A10"/>
+      <Setter Property="Foreground" Value="#D8E8C8"/>
+      <Setter Property="BorderBrush" Value="#3A7A18"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="12,7"/>
+      <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+    <Style Selector="TextBlock.sectionTitle">
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="#C8E4B0"/>
+      <Setter Property="Margin" Value="0,4,0,6"/>
+    </Style>
+  </Window.Styles>
+
+  <DockPanel LastChildFill="True">
+
+    <!-- Üst araç çubuğu -->
+    <Border DockPanel.Dock="Top" Background="#0C1610" BorderBrush="#1A3020" BorderThickness="0,0,0,1" Padding="14,10">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <Button Classes="tool" Content="← Geri" Click="BackToLauncher_OnClick"/>
+        <Border Width="1" Background="#1A3020" Margin="4,0"/>
+        <Button Classes="tool" Content="DXF Yükle" Click="DxfYukle_OnClick"/>
+        <Button Classes="tool" Content="Arazi Yükle (.e4arazi)" Click="AraziYukle_OnClick"/>
+        <Button Classes="tool" Content="Seçili Yüzeyden Güzergâh" Click="YuzeydenGuzergah_OnClick"/>
+        <Button Classes="tool" Content="Otomatik Direk Yerleştir" Click="OtomatikYerlestir_OnClick"/>
+        <Border Width="1" Background="#1A3020" Margin="4,0"/>
+        <Button Classes="tool" Content="Aç" Click="ProjeAc_OnClick"/>
+        <Button Classes="tool" Content="Kaydet" Click="ProjeKaydet_OnClick"/>
+        <Button Classes="tool" Content="Tek Hat'a Aktar (.e4p11)" Click="TekHataAktar_OnClick"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Alt durum çubuğu -->
+    <Border DockPanel.Dock="Bottom" Background="#0C1610" BorderBrush="#1A3020" BorderThickness="0,1,0,0" Padding="14,7">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding DurumMesaji}" Foreground="#9FC080" FontSize="12" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding AraziBilgisi}" Foreground="#5FA0C0" FontSize="11" VerticalAlignment="Center"/>
+      </Grid>
+    </Border>
+
+    <!-- İçerik -->
+    <Grid Margin="14" ColumnDefinitions="360,*,240" ColumnSpacing="14">
+
+      <DockPanel Grid.Column="0" LastChildFill="True">
+        <TextBlock DockPanel.Dock="Top" Classes="sectionTitle" Text="Yüzeyler (DXF katmanından otomatik atanır; kategoriyi elle düzeltebilirsiniz)"/>
+        <DataGrid Name="dgYuzeyler"
+                  ItemsSource="{Binding Yuzeyler}"
+                  SelectedItem="{Binding SeciliYuzey}"
+                  AutoGenerateColumns="False"
+                  GridLinesVisibility="All"
+                  HeadersVisibility="Column"
+                  IsReadOnly="False"
+                  CanUserResizeColumns="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="*"/>
+            <DataGridTemplateColumn Header="Kategori" Width="150">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <ComboBox HorizontalAlignment="Stretch"
+                            ItemsSource="{Binding DataContext.Kategoriler, RelativeSource={RelativeSource AncestorType=Window}}"
+                            SelectedItem="{Binding Kategori, Mode=TwoWay}"/>
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn Header="Alan (m²)" Binding="{Binding AlanM2, StringFormat={}{0:N1}}" Width="100" IsReadOnly="True"/>
+            <DataGridTextColumn Header="Katman" Binding="{Binding KaynakKatman}" Width="120" IsReadOnly="True"/>
+          </DataGrid.Columns>
+        </DataGrid>
+      </DockPanel>
+
+      <!-- Harita önizleme (yüzeyler + direkler) -->
+      <Border Grid.Column="1" Background="#0A140D" BorderBrush="#1A3020" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+        <vm:CevreAydinlatmaPreview ArkaPlan="{Binding ArkaPlan}" Yuzeyler="{Binding Yuzeyler}" Direkler="{Binding Direkler}"/>
+      </Border>
+
+      <Border Grid.Column="2" Background="#0C1610" BorderBrush="#1A3020" BorderThickness="1" CornerRadius="8" Padding="14">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="sectionTitle" Text="Özet"/>
+          <TextBlock Foreground="#C8E4B0" FontSize="12" Text="{Binding Yuzeyler.Count, StringFormat='Yüzey sayısı: {0}'}"/>
+          <TextBlock Foreground="#C8E4B0" FontSize="12" Text="{Binding Direkler.Count, StringFormat='Direk sayısı: {0}'}"/>
+          <TextBlock Foreground="#C8E4B0" FontSize="12" Text="{Binding Proje.Guzergahlar.Count, StringFormat='Güzergâh sayısı: {0}'}"/>
+          <Border Height="1" Background="#1A3020" Margin="0,6"/>
+          <TextBlock Foreground="#7FA060" FontSize="11" TextWrapping="Wrap"
+                     Text="Harita yüzeyleri (kategori renkli) ve direkleri gösterir. Zoom/pan ve güzergâh/poligon çizimi sonraki sürümde."/>
+        </StackPanel>
+      </Border>
+
+    </Grid>
+  </DockPanel>
+</Window>

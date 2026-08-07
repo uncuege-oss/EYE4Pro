@@ -1,0 +1,885 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:Kst.Acoustics.Core.Electric.Models;assembly=Kst.Acoustics.Core"
+        x:Class="Kst.Acoustics.App.Electric.Views.TekHatSemasiWindow"
+        Width="1340" Height="820"
+        MinWidth="1100" MinHeight="700"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#080F0A"
+        Title="Eye4Pro Electric - Tek Hat Şeması">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#C8E4B0"/>
+        </Style>
+        <Style Selector="TextBlock.labelText">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#7AA060"/>
+        </Style>
+        <Style Selector="TextBlock.valueText">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#E0F0D0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#101C10"/>
+            <Setter Property="Foreground" Value="#D0E8C0"/>
+            <Setter Property="BorderBrush" Value="#2A4A20"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="MinHeight" Value="28"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="#101C10"/>
+            <Setter Property="Foreground" Value="#D0E8C0"/>
+            <Setter Property="BorderBrush" Value="#2A4A20"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="MinHeight" Value="28"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#3A7A18"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#162A10"/>
+            <Setter Property="Foreground" Value="#A0C888"/>
+            <Setter Property="BorderBrush" Value="#2A4A20"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="#0C1A0C"/>
+            <Setter Property="Foreground" Value="#7AA060"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style Selector="DataGridRow">
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="Foreground" Value="#C0D8B0"/>
+        </Style>
+        <Style Selector="DataGrid">
+            <Setter Property="Background" Value="#0A140A"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="BorderBrush" Value="#1A3018"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#142814"/>
+        </Style>
+        <!-- Tooltip'ler koyu zeminli olsun (varsayılan açık zeminde açık yazılar okunmuyordu) -->
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="#0C1A0C"/>
+            <Setter Property="BorderBrush" Value="#3A5A2A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#E0F0D0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="MaxWidth" Value="340"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!-- ROW 0: HEADER BAR -->
+        <Border Grid.Row="0" BorderBrush="#1A3020" BorderThickness="0,0,0,1" Padding="16,10">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Color="#090F0B" Offset="0"/>
+                    <GradientStop Color="#0E1E10" Offset="0.5"/>
+                    <GradientStop Color="#090F0B" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Border Width="32" Height="32" CornerRadius="6" Background="#163A10">
+                            <TextBlock Text="TH" Foreground="#8CDA50" FontSize="13" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Tek Hat Şeması" Foreground="#E0F0D0" FontSize="15" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1" x:Name="ProjeAdiText" Text="Yeni Proje"
+                               Foreground="#5A8A40" FontSize="12" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+
+                    <WrapPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Classes="secondary" Content="Yeni" Click="YeniProje_OnClick" Margin="0,0,6,0"/>
+                        <Button Classes="secondary" Content="Aç" Click="ProjeAc_OnClick" Margin="0,0,6,0"/>
+                        <Button Classes="secondary" Content="Kaydet" Click="Kaydet_OnClick" Margin="0,0,6,0"
+                                ToolTip.Tip="Kaydet (Ctrl/Cmd+S)"/>
+                        <Button Classes="secondary" Content="Farklı Kaydet" Click="FarkliKaydet_OnClick" Margin="0,0,6,0"
+                                ToolTip.Tip="Farklı kaydet (Ctrl/Cmd+Shift+S)"/>
+                        <Button Classes="secondary" Content="Excel Dışa Aktar" Click="ExcelDisaAktar_OnClick" Margin="0,0,6,0"/>
+                        <Button Classes="secondary" Content="DXF Dışa Aktar" Click="DxfDisaAktar_OnClick" Margin="0,0,6,0"/>
+                        <Button Classes="primary" Content="Kütüphane" Click="Kutuphane_OnClick" Margin="0,0,6,0"/>
+                        <Button Classes="secondary" Content="Modüller" Click="BackToLauncher_OnClick"/>
+                    </WrapPanel>
+                </Grid>
+
+                <!-- Proje Ayarları: Selektivite + Gerilim Düşümü -->
+                <WrapPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="Selektivite:" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
+                        <ToggleSwitch x:Name="SelektiviteToggle" OnContent="Açık" OffContent="Kapalı"
+                                      IsChecked="False" Foreground="#D0E8C0"
+                                      IsCheckedChanged="Selektivite_OnChanged"/>
+                    </StackPanel>
+                    <Button x:Name="KontrolBtn" Classes="secondary" Content="Kontrol"
+                            Click="Kontrol_OnClick" Margin="0,0,16,0"/>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="Gerilim Düşümü - Segment (%):" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
+                        <TextBox x:Name="GerilimDususBox" Text="3" Width="46"
+                                 ToolTip.Tip="Her kablo/busbar segmentinin boyutlandırma sınırı (son devre tipik %3)."
+                                 LostFocus="GerilimDusus_OnChanged"/>
+                        <TextBlock Text="Toplam (%):" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
+                        <TextBox x:Name="ToplamGerilimDususBox" Text="5" Width="46"
+                                 ToolTip.Tip="Kaynaktan en uçtaki yüke kadar izin verilen birikimli gerilim düşümü sınırı (tipik %5)."
+                                 LostFocus="ToplamGerilimDusus_OnChanged"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="UPS Topolojisi:" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="UpsTopolojiCombo" MinWidth="96" SelectedIndex="0"
+                                  SelectionChanged="UpsTopoloji_OnChanged">
+                            <ComboBoxItem Content="Lokal"/>
+                            <ComboBoxItem Content="Merkezi"/>
+                        </ComboBox>
+                        <Button x:Name="MerkeziUpsKurBtn" Classes="secondary" Content="Merkezi UPS Kur"
+                                IsVisible="False" Click="MerkeziUpsKur_OnClick"/>
+                    </StackPanel>
+                </WrapPanel>
+
+                <TextBlock Grid.Row="2" x:Name="KontrolLegend" IsVisible="False" FontSize="11"
+                           Text="Kırmızı: açıklama eksik, gerilim düşümü aşımı veya kesit yetersiz. Sarı: kablo mesafesi varsayılan. Boşluğa tıklayın: kontrolden çık."
+                           TextWrapping="Wrap" Foreground="#C0D0A0"/>
+            </Grid>
+        </Border>
+
+        <!-- ROW 1: PANO ÇUBUĞU — aç/kapatılabilir -->
+        <Border Grid.Row="1" Background="#0A140A" BorderBrush="#1A3018" BorderThickness="0,0,0,1" Padding="16,10">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <Grid x:Name="PanoMenuFields" Grid.Column="0" RowDefinitions="Auto,Auto" RowSpacing="8">
+                    <WrapPanel Grid.Row="0" Orientation="Horizontal">
+                        <TextBlock Text="Pano:" Foreground="#7AA060" FontSize="12" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBox x:Name="YeniPanoAd" PlaceholderText="Pano adı" Width="120" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="YeniPanoKat" Width="80" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="YeniPanoTipi" SelectedIndex="0" Width="150" Margin="0,0,8,0"
+                                  SelectionChanged="YeniPanoTipi_OnChanged">
+                            <ComboBoxItem Content="Tali Pano"/>
+                            <ComboBoxItem Content="Ana Pano"/>
+                            <ComboBoxItem Content="Aydınlatma Panosu"/>
+                            <ComboBoxItem Content="Kompanzasyon"/>
+                            <ComboBoxItem Content="Kontrol Panosu"/>
+                            <ComboBoxItem Content="Yangın Panosu"/>
+                        </ComboBox>
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <CheckBox x:Name="AydinlatmaSayacliCheck" Content="Sayaçlı"
+                                      IsVisible="False" Foreground="#A0C888" FontSize="11"/>
+                            <CheckBox x:Name="HarmonikFiltreliCheck" Content="Harmonik Filtreli"
+                                      IsVisible="False" Foreground="#A0C888" FontSize="11"/>
+                        </StackPanel>
+                        <Button Classes="primary" Content="+ Pano" Click="PanoEkle_OnClick" Margin="0,0,8,0"/>
+                        <Button Classes="secondary" Content="+ Busbar" Click="BusbarEkle_OnClick" Margin="0,0,8,0"/>
+                        <Button Classes="secondary" Content="Jeneratör" Click="Jenerator_OnClick" Margin="0,0,8,0"/>
+                        <Button Classes="secondary" Content="OG / Trafo" Click="OrtaGerilim_OnClick" Margin="0,0,8,0"/>
+                        <Button Classes="secondary" Content="Bina" Click="Bina_OnClick"/>
+                    </WrapPanel>
+
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock x:Name="BagliText" Text="" Foreground="#A0C888" FontSize="11"
+                                       FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="Seçili:" Foreground="#5A7A44" FontSize="11" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="PanoSecici" MinWidth="220" SelectionChanged="PanoSecim_OnChanged"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Kablo (m):" Foreground="#5A7A44" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBox x:Name="KabloMesafe" Text="10" Width="60"/>
+                            <Button Classes="secondary" Content="Ata" Click="KabloMesafeAta_OnClick"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+                <Button Grid.Column="1" x:Name="PanoMenuToggleBtn" Content="▾" Width="26" Height="26"
+                        Padding="0" FontSize="13" Click="PanoMenuToggle_OnClick"
+                        Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+            </Grid>
+        </Border>
+
+        <!-- ROW 2: ANA İÇERİK — Ağaç Şeması + Linye Giriş + Sağ Özet -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,5,1.5*">
+
+            <!-- SOL PANEL: Ağaç Şeması -->
+            <Border Grid.Column="0" Background="#060C07" BorderBrush="#1A3018" BorderThickness="0,0,1,0" ClipToBounds="True">
+                <Panel x:Name="SemaViewport" Background="Transparent">
+                    <Canvas x:Name="SemaCanvas" Background="Transparent" RenderTransformOrigin="0,0"/>
+                </Panel>
+            </Border>
+
+            <!-- AYIRICI -->
+            <GridSplitter Grid.Column="1" Background="#1A3018" ResizeDirection="Columns"/>
+
+            <!-- SAĞ PANEL: Linye Formu + DataGrid + Özet -->
+            <Grid Grid.Column="2" x:Name="SagIcGrid" ColumnDefinitions="*,5,320" ColumnSpacing="0">
+
+                <!-- SOL İÇ: Linye Formu + DataGrid -->
+            <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16,10,8,10">
+
+                <!-- Linye Giriş Formu — 2 satır halinde -->
+                <Border x:Name="LinyeFormPanel" Background="#0C160C" CornerRadius="8" BorderBrush="#1A3018" BorderThickness="1" Padding="12" Margin="0,0,0,8" KeyDown="LinyeForm_OnKeyDown">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Classes="sectionTitle" Text="Linye Ekle" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" x:Name="LinyeToggleBtn" Content="▾" Width="26" Height="26"
+                                    Padding="0" FontSize="13" Click="LinyeToggle_OnClick"
+                                    Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+                        </Grid>
+                        <!-- Satır 1: Linye giriş alanları (responsive WrapPanel) -->
+                        <WrapPanel x:Name="LinyeFormFields" Orientation="Horizontal" ItemWidth="NaN" ItemHeight="NaN">
+                            <StackPanel Spacing="2" Width="60" Margin="0,0,6,4">
+                                <TextBlock Classes="labelText" Text="Linye No"/>
+                                <TextBox x:Name="LinyeNoBox" PlaceholderText="Oto"/>
+                            </StackPanel>
+                            <StackPanel Spacing="2" Width="130" Margin="0,0,6,4">
+                                <TextBlock Classes="labelText" Text="Yük Tipi"/>
+                                <ComboBox x:Name="YukTipiCombo" HorizontalAlignment="Stretch"
+                                          SelectionChanged="YukTipi_OnChanged"/>
+                            </StackPanel>
+                            <StackPanel Spacing="2" Width="65" Margin="0,0,6,4">
+                                <TextBlock Classes="labelText" Text="Faz"/>
+                                <ComboBox x:Name="FazTipiCombo" SelectedIndex="0" HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="1Faz"/>
+                                    <ComboBoxItem Content="3Faz"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Spacing="2" Width="50" Margin="0,0,6,4">
+                                <TextBlock Classes="labelText" Text="Sorti"/>
+                                <TextBox x:Name="SortiBox" Text="1"/>
+                            </StackPanel>
+                            <StackPanel Spacing="2" Width="60" Margin="0,0,6,4">
+                                <TextBlock Classes="labelText" Text="Güç (W)"/>
+                                <TextBox x:Name="GucBox" Text="300"/>
+                            </StackPanel>
+                            <StackPanel Spacing="2" Width="55" Margin="0,0,6,4">
+                                <TextBlock Classes="labelText" Text="Talep F."/>
+                                <TextBox x:Name="TalepBox" Text="1,0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,0,4">
+                                <Button Classes="primary" Content="+ Ekle" Click="LinyeEkle_OnClick"/>
+                            </StackPanel>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Row="1" Spacing="6">
+                <Border Background="#0C160C" CornerRadius="4" Padding="8,5"
+                        BorderBrush="#1A3018" BorderThickness="1">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="Seçili panoya Excel ile toplu linye aktarımı"
+                                       Classes="labelText" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" x:Name="LinyeExcelToggleBtn" Content="▾" Width="24" Height="24"
+                                    Padding="0" FontSize="12" Click="LinyeExcelToggle_OnClick"
+                                    Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+                        </Grid>
+                        <Grid x:Name="LinyeExcelFields" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <TextBlock Grid.Column="0" Text="" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="secondary" Content="Excel Şablonu"
+                                    Click="LinyeExcelSablon_OnClick"/>
+                            <Button Grid.Column="2" Classes="secondary" Content="Excelden Aktar"
+                                    Click="LinyeExcelIceAktar_OnClick"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Faz Dağılımı Bar -->
+                <Border x:Name="FazDagilimPanel" Background="#0C160C" CornerRadius="4" Padding="8,5"
+                        BorderBrush="#1A3018" BorderThickness="1">
+                    <TextBlock x:Name="FazDagilimText" Classes="valueText" Text="Faz dağılımı: Pano seçin ve linye ekleyin"/>
+                </Border>
+
+                <!-- Kompanzasyon Panosu Özel Görünüm (linye yerine) -->
+                <Border x:Name="KompanzasyonPanoPanel" Background="#1A2A0C" CornerRadius="6" Padding="12"
+                        BorderBrush="#3A5A18" BorderThickness="1" IsVisible="False">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Kompanzasyon Panosu - Bileşenler"
+                                   Foreground="#B8E068" FontSize="13" FontWeight="SemiBold"/>
+                        <TextBlock Text="Sağ tık → Panoyu Düzenle ile pano bileşenlerini (röle/NH/reaktör/SVC) değiştirebilirsiniz. Kademeler aşağıdaki tablodan tek tek düzenlenebilir."
+                                   Foreground="#A0C888" FontSize="10" TextWrapping="Wrap"/>
+
+                        <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                              RowSpacing="4" ColumnSpacing="8" Margin="0,6,0,0">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Kompanzasyon Rölesi:" Classes="labelText"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="KompRoleText" Classes="valueText" Text="—"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Giriş NH Sigorta:" Classes="labelText"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="KompNHText" Classes="valueText" Text="—"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Harmonik Filtre:" Classes="labelText"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="KompFiltreText" Classes="valueText" Text="—"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Reaktör (SVC):" Classes="labelText"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="KompReaktorText" Classes="valueText" Text="—"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="SVC Sürücü:" Classes="labelText"/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="KompSvcText" Classes="valueText" Text="—"/>
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Gerekli Reaktif Güç:" Classes="labelText"/>
+                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="KompGerekliText" Classes="valueText" Text="—"/>
+                        </Grid>
+
+                        <!-- Kondansatör Kademeleri (6/12/18) -->
+                        <Border Background="#0F1A08" CornerRadius="4" Padding="8,6" Margin="0,8,0,0"
+                                BorderBrush="#2A4018" BorderThickness="1">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="Kondansatör Kademeleri" Foreground="#B8E068"
+                                               FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="Kademe Sayısı:" Foreground="#A0C888"
+                                               FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <ComboBox Grid.Column="2" x:Name="KompKondKademeSayiCombo"
+                                              MinWidth="70" SelectionChanged="KompKondKademeSayi_OnChanged">
+                                        <ComboBoxItem Content="6"/>
+                                        <ComboBoxItem Content="12"/>
+                                        <ComboBoxItem Content="18"/>
+                                    </ComboBox>
+                                </Grid>
+
+                                <!-- Kondansatör tablo başlığı -->
+                                <Grid ColumnDefinitions="40,*,80,80" Background="#0A1505">
+                                    <TextBlock Grid.Column="0" Text="No" Classes="labelText" Padding="4,3"/>
+                                    <TextBlock Grid.Column="1" Text="Kondansatör" Classes="labelText" Padding="4,3"/>
+                                    <TextBlock Grid.Column="2" Text="kVAr" Classes="labelText" Padding="4,3"/>
+                                    <TextBlock Grid.Column="3" Text="Faz" Classes="labelText" Padding="4,3"/>
+                                </Grid>
+                                <ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl x:Name="KompKondList" x:CompileBindings="False">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="40,*,80,80"
+                                                      Background="#0C1808" Margin="0,1,0,0">
+                                                    <TextBlock Grid.Column="0" Text="{Binding KademeNo}"
+                                                               Classes="valueText" Padding="4,4" VerticalAlignment="Center"/>
+                                                    <ComboBox Grid.Column="1" Tag="{Binding}"
+                                                              ItemsSource="{Binding DataContext.KondansatorTipleri, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                              SelectedValueBinding="{Binding Ad}"
+                                                              SelectedValue="{Binding KondansatorAd, Mode=OneWay}"
+                                                              SelectionChanged="KompKondansator_OnSelectionChanged"
+                                                              HorizontalAlignment="Stretch" Margin="2"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding KVar}"
+                                                               Classes="valueText" Padding="4,4" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding FazTipi}"
+                                                               Classes="valueText" Padding="4,4" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                <TextBlock x:Name="KompKondOzet" Foreground="#A0C888" FontSize="11" Text=""/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Reaktör (SVC) Kademeleri — 0 ya da 3 sabit -->
+                        <Border Background="#0F1A08" CornerRadius="4" Padding="8,6" Margin="0,6,0,0"
+                                BorderBrush="#2A4018" BorderThickness="1">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="Reaktör (SVC) Kademeleri — 3 sabit"
+                                               Foreground="#B8E068" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <ToggleSwitch Grid.Column="1" x:Name="KompReaktorToggle"
+                                                  OnContent="Aktif" OffContent="Kapalı"
+                                                  IsCheckedChanged="KompReaktorAktif_OnChanged"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                    <TextBlock Grid.Column="0" Text="Akort (p):" Foreground="#A0C888"
+                                               FontSize="11" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1" x:Name="KompAkortCombo" HorizontalAlignment="Left"
+                                              MinWidth="180" SelectionChanged="KompAkort_OnChanged">
+                                        <ComboBoxItem Content="%5.67 (210 Hz)"/>
+                                        <ComboBoxItem Content="%7 (189 Hz)"/>
+                                        <ComboBoxItem Content="%14 (134 Hz)"/>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="40,*,80,80,80" Background="#0A1505">
+                                    <TextBlock Grid.Column="0" Text="No" Classes="labelText" Padding="4,3"/>
+                                    <TextBlock Grid.Column="1" Text="Reaktör" Classes="labelText" Padding="4,3"/>
+                                    <TextBlock Grid.Column="2" Text="kVAr" Classes="labelText" Padding="4,3"/>
+                                    <TextBlock Grid.Column="3" Text="L (mH)" Classes="labelText" Padding="4,3"/>
+                                    <TextBlock Grid.Column="4" Text="Akort Hz" Classes="labelText" Padding="4,3"/>
+                                </Grid>
+                                <ItemsControl x:Name="KompReaktorList" x:CompileBindings="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnDefinitions="40,*,80,80,80"
+                                                  Background="#0C1808" Margin="0,1,0,0">
+                                                <TextBlock Grid.Column="0" Text="{Binding KademeNo}"
+                                                           Classes="valueText" Padding="4,4" VerticalAlignment="Center"/>
+                                                <ComboBox Grid.Column="1" Tag="{Binding}"
+                                                          ItemsSource="{Binding DataContext.ReaktorTipleri, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValueBinding="{Binding Ad}"
+                                                          SelectedValue="{Binding ReaktorAd, Mode=OneWay}"
+                                                          SelectionChanged="KompReaktor_OnSelectionChanged"
+                                                          HorizontalAlignment="Stretch" Margin="2"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding KVar}"
+                                                           Classes="valueText" Padding="4,4" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding L_mH, StringFormat=N2}"
+                                                           Classes="valueText" Padding="4,4" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="4" Text="{Binding AkortFrekansHz, StringFormat=N0}"
+                                                           Classes="valueText" Padding="4,4" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Column="0" Text="SVC Yük Sürücü:" Foreground="#A0C888"
+                                               FontSize="11" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1" x:Name="KompSvcSurucuCombo" MinWidth="240"
+                                              SelectionChanged="KompSvcSurucu_OnChanged"/>
+                                </Grid>
+                                <TextBlock x:Name="KompReaktorOzet" Foreground="#A0C888" FontSize="11" Text=""/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Kontrol Panosu Özel Görünüm -->
+                <Border x:Name="KontrolPanoPanel" Background="#17142A" CornerRadius="6" Padding="12"
+                        BorderBrush="#4A3A78" BorderThickness="1" IsVisible="False">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <TextBlock Grid.Column="0" Text="Kontrol Panosu — Butonlar"
+                                       Foreground="#C8B8FF" FontSize="13" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="primary" Content="+ Kontrol Butonu"
+                                    Click="KontrolButonuEkle_OnClick"/>
+                            <Button Grid.Column="2" Classes="secondary" Content="Seçiliyi Sil"
+                                    Click="KontrolButonuSil_OnClick"/>
+                        </Grid>
+
+                        <DataGrid x:Name="KontrolButonGrid" AutoGenerateColumns="False"
+                                  IsReadOnly="True" HeadersVisibility="Column" MaxHeight="170"
+                                  CanUserResizeColumns="True" CanUserReorderColumns="False"
+                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                  x:CompileBindings="False">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Kaynak Pano" Binding="{Binding KaynakPanoAd}" Width="140"/>
+                                <DataGridTextColumn Header="Linye" Binding="{Binding LinyeNo}" Width="70"/>
+                                <DataGridTextColumn Header="Sigorta" Binding="{Binding SigortaAmper, StringFormat='{}{0}A'}" Width="70"/>
+                                <DataGridTextColumn Header="Açıklama" Binding="{Binding LinyeAciklama}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <TextBlock Text="Sinyal Kabloları" Foreground="#C8B8FF" FontSize="12" FontWeight="SemiBold"/>
+                        <DataGrid x:Name="KontrolSinyalKabloGrid" AutoGenerateColumns="False"
+                                  IsReadOnly="False" HeadersVisibility="Column" MaxHeight="135"
+                                  CanUserResizeColumns="True" CanUserReorderColumns="False"
+                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                  CellEditEnded="KontrolSinyalKabloGrid_CellEditEnded"
+                                  x:CompileBindings="False">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Kaynak Pano" Binding="{Binding KaynakPanoAd}" Width="140" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Damar" Binding="{Binding DamarSayisi}" Width="70" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Kesit (mm²)" Binding="{Binding KesitMm2, Mode=TwoWay}" Width="90"/>
+                                <DataGridTextColumn Header="Metraj (m)" Binding="{Binding MetrajM, Mode=TwoWay}" Width="90"/>
+                                <DataGridTextColumn Header="Kablo Tipi" Binding="{Binding KabloTipi, Mode=TwoWay}" Width="100"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Çıkış Sigortaları (alt panolara) — bu pano alt panolara sahipse görünür -->
+                <Border x:Name="CikisSigortalariPanel" Background="#0E1A2A" CornerRadius="6" Padding="12"
+                        BorderBrush="#1A3A60" BorderThickness="1" IsVisible="False">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="Çıkış Sigortaları (Alt Panolara)"
+                                       Foreground="#80A0E0" FontSize="13" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" x:Name="CikisSigortalariToggleBtn" Content="▾" Width="24" Height="24"
+                                    Padding="0" FontSize="12" Click="CikisSigortalariToggle_OnClick"
+                                    Background="#102A48" Foreground="#A8C4F0" BorderBrush="#1A3A60"/>
+                        </Grid>
+                        <DataGrid x:Name="CikisSigortaGrid" AutoGenerateColumns="False"
+                                  IsReadOnly="False" HeadersVisibility="Column" MaxHeight="180"
+                                  CanUserResizeColumns="True" CanUserReorderColumns="False"
+                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                  x:CompileBindings="False">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Alt Pano" Binding="{Binding Ad}" Width="120" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Bağlantı" Binding="{Binding BaglantiTipi}" Width="80" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Çıkış Sig. (A)" Binding="{Binding CikisKorumaAkimA}" Width="100" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Akım (A)" Binding="{Binding GirisAkimA, StringFormat=N1}" Width="80" IsReadOnly="True"/>
+                                <DataGridTemplateColumn Header="Cihaz" Width="84">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding DataContext.CihazTipleri, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      SelectedItem="{Binding CikisKorumaCihaziTipi, Mode=OneWay}"
+                                                      IsEnabled="{Binding CikisSigortaDegistirilebilir}"
+                                                      SelectionChanged="CikisCihaz_OnSelectionChanged"
+                                                      MinWidth="0" Margin="2,1" FontSize="11"
+                                                      HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="kA" Width="70">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding CikisKesmeKapasiteSecenekleri}"
+                                                      SelectedItem="{Binding CikisKesmeKapasitesi, Mode=OneWay}"
+                                                      SelectionChanged="CikisKesme_OnSelectionChanged"
+                                                      MinWidth="0" Margin="2,1" FontSize="11"
+                                                      HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Kablo" Binding="{Binding KabloKesiti}" Width="90" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Mesafe (m)" Binding="{Binding KabloMesafeM, StringFormat=N1}" Width="90" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="ΔU (%)" Binding="{Binding KabloGerilimDususYuzde, StringFormat=N2}" Width="70" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="ΣΔU (%)" Binding="{Binding KumulatifGerilimDususGoster}" Width="80" IsReadOnly="True"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+                </StackPanel>
+
+                <!-- Linye DataGrid -->
+                <DataGrid Grid.Row="2" x:Name="LinyeGrid"
+                          x:DataType="models:Linye"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="False"
+                          CanUserResizeColumns="True"
+                          CanUserReorderColumns="False"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto"
+                          HeadersVisibility="Column"
+                          RowHeight="28"
+                          KeyDown="LinyeGrid_OnKeyDown"
+                          DoubleTapped="LinyeGrid_OnDoubleTapped">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Düzenle" Click="LinyeDuzenle_OnClick"/>
+                            <MenuItem Header="Tekrarla Ekle" Click="LinyeTekrarlaEkleMenu_OnClick"/>
+                            <MenuItem Header="Sil" Click="LinyeSilMenu_OnClick"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Linye" Binding="{Binding LinyeNo}" Width="60" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Yük Tipi" Binding="{Binding YukTipiAd}" Width="90" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Faz" Binding="{Binding FazTipi}" Width="55" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Sorti" Binding="{Binding SortiSayisi}" Width="45" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="W/adet" Binding="{Binding BirimGucW}" Width="55" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="T.F." Binding="{Binding TalepFaktoru}" Width="40" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Toplam W" Binding="{Binding ToplamGucW, StringFormat=N0}" Width="70" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="I (A)" Binding="{Binding AkimA, StringFormat=N1}" Width="55" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Sig." Binding="{Binding SigortaAmper}" Width="40" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tip" Binding="{Binding SigortaCinsi}" Width="35" IsReadOnly="True"/>
+                        <DataGridTemplateColumn Header="Cihaz" Width="84">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="models:Linye">
+                                    <ComboBox x:CompileBindings="False"
+                                              ItemsSource="{Binding DataContext.CihazTipleri, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              SelectedItem="{Binding KorumaCihaziTipi, Mode=OneWay}"
+                                              IsEnabled="{Binding SigortaDegistirilebilir}"
+                                              SelectionChanged="LinyeCihaz_OnSelectionChanged"
+                                              MinWidth="0" Margin="2,1" FontSize="11"
+                                              HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="kA" Width="70">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="models:Linye">
+                                    <ComboBox x:CompileBindings="False"
+                                              ItemsSource="{Binding KesmeKapasiteSecenekleri}"
+                                              SelectedItem="{Binding KesmeKapasitesi, Mode=OneWay}"
+                                              SelectionChanged="LinyeKesme_OnSelectionChanged"
+                                              MinWidth="0" Margin="2,1" FontSize="11"
+                                              HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Kablo (m)" Binding="{Binding KabloMesafeM, StringFormat=N1}" Width="80" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Faz" Binding="{Binding FazAtamasiGoster}" Width="45" IsReadOnly="True"/>
+                        <DataGridTemplateColumn Header="Kontaktör" Width="95">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="models:Linye">
+                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <CheckBox IsChecked="{Binding KontaktorluMu}" Click="LinyeKontaktor_OnClick"
+                                                  VerticalAlignment="Center" MinWidth="0"/>
+                                        <TextBlock Text="{Binding Kontaktor.AnmaAkimA, StringFormat='{}{0}A'}"
+                                                   VerticalAlignment="Center" FontSize="11" Foreground="#A0C888"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Darbe Kesici" Width="95">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="models:Linye">
+                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <CheckBox IsChecked="{Binding DarbeKesiciMi}" Click="LinyeDarbeKesici_OnClick"
+                                                  VerticalAlignment="Center" MinWidth="0"/>
+                                        <TextBlock Text="{Binding DarbeKesici.AnmaAkimA, StringFormat='{}{0}A'}"
+                                                   VerticalAlignment="Center" FontSize="11" Foreground="#A0C888"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Açıklama" Width="180">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="models:Linye">
+                                    <TextBox Name="LinyeAciklamaBox"
+                                             Text="{Binding Aciklama, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             KeyDown="LinyeAciklamaBox_OnKeyDown"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             Padding="4,1"
+                                             MinHeight="24"
+                                             VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Alt Özet Bar -->
+                <Border Grid.Row="3" Background="#0C180C" CornerRadius="4" Padding="8,5" Margin="0,6,0,0"
+                        BorderBrush="#2A5A18" BorderThickness="1">
+                    <TextBlock x:Name="PanoOzetText" Classes="valueText" Text="Pano oluşturun → Linye ekleyin → Otomatik hesaplansın"
+                               TextWrapping="Wrap"/>
+                </Border>
+            </Grid>
+
+            <GridSplitter Grid.Column="1" x:Name="OzetGridSplitter" Background="#1A3018" ResizeDirection="Columns"/>
+
+            <!-- SAĞ PANEL: Hesap Özeti -->
+            <Border Grid.Column="2" x:Name="OzetBorder" Background="#0A120A" BorderBrush="#1A3018" BorderThickness="1,0,0,0" Padding="0" ClipToBounds="True">
+                <Grid>
+                    <ScrollViewer x:Name="OzetScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14,10,14,10">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="sectionTitle" Text="Hesap Özeti" Margin="0,0,30,0"/>
+
+                        <!-- Temel Değerler -->
+                        <Border Background="#0C160C" CornerRadius="6" Padding="10" BorderBrush="#1A3018" BorderThickness="1">
+                            <StackPanel Spacing="5">
+                                <TextBlock Classes="labelText" Text="Toplam Aktif Güç"/>
+                                <TextBlock x:Name="ToplamGucText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Toplam Görünür Güç"/>
+                                <TextBlock x:Name="ToplamVAText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Giriş Akımı"/>
+                                <TextBlock x:Name="GirisAkimText" Classes="valueText" Text="—"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Giriş Sigortası"/>
+                                <TextBlock x:Name="GirisSigortaText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Classes="labelText" Text="KAR" VerticalAlignment="Center"/>
+                                    <ToggleSwitch Grid.Column="1" x:Name="KarAktifToggle"
+                                                  OnContent="Açık" OffContent="Kapalı"
+                                                  IsChecked="True" IsVisible="False" Foreground="#D0E8C0"
+                                                  IsCheckedChanged="KarAktif_OnChanged"/>
+                                </Grid>
+                                <TextBlock x:Name="KarText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Modül Sayısı"/>
+                                <TextBlock x:Name="ModulText" Classes="valueText" Text="—"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Pano Gövdesi"/>
+                                <TextBlock x:Name="PanoGovdeText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Yerleşim Alanı"/>
+                                <TextBlock x:Name="PanoAlanText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Kablo"/>
+                                <TextBlock x:Name="KabloText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Gerilim Düşümü"/>
+                                <TextBlock x:Name="GerilimDususText" Classes="valueText" Text="—"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Isı Kaybı"/>
+                                <TextBlock x:Name="IsiKaybiText" Classes="valueText" Text="—"/>
+                                <Border Height="1" Background="#142814" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Üst Pano Çıkış Sigorta"/>
+                                <TextBlock x:Name="UstCikisSigortaText" Classes="valueText" Text="—"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Aydınlatma Panosu özel paneli -->
+                        <Border x:Name="AydinlatmaPanel" Background="#1A1A2A" CornerRadius="6" Padding="10"
+                                BorderBrush="#3A3A5A" BorderThickness="1" IsVisible="False">
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Aydınlatma Panosu" Foreground="#A0B0E0" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock Classes="labelText" Text="Astronomik Zaman Rölesi"/>
+                                <TextBlock x:Name="AzrText" Classes="valueText" Text="—"/>
+                                <Border Height="1" Background="#202830" Margin="0,2"/>
+                                <TextBlock Classes="labelText" Text="Aydınlatma Çıkışı / Kontaktör"/>
+                                <TextBlock x:Name="KontaktorText" Classes="valueText" Text="—" TextWrapping="Wrap" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Busbar Bağlantısı -->
+                        <Border x:Name="BusbarBaglantiPanel" Background="#10261A" CornerRadius="6" Padding="10"
+                                BorderBrush="#1A4A20" BorderThickness="1" IsVisible="False">
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Busbar Bağlantısı" Foreground="#80E0A0" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="BusbarBaglantiText" Classes="valueText" Text="—" TextWrapping="Wrap" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Bu Panodan Çıkan Busbarlar -->
+                        <Border x:Name="CikanBusbarPanel" Background="#0E1A28" CornerRadius="6" Padding="10"
+                                BorderBrush="#1A3A60" BorderThickness="1" IsVisible="False">
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Çıkan Busbar Hatları" Foreground="#80A0E0" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="CikanBusbarText" Classes="valueText" Text="—" TextWrapping="Wrap" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Sayaç -->
+                        <Border x:Name="SayacPanel" Background="#12200C" CornerRadius="6" Padding="10"
+                                BorderBrush="#2A4A18" BorderThickness="1" IsVisible="False">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="Sayaç" Foreground="#A0D070" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="SayacText" Classes="valueText"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Uyarılar -->
+                        <Border x:Name="UyariPanel" Background="#2A1A0C" CornerRadius="6" Padding="10"
+                                BorderBrush="#4A2A08" BorderThickness="1" IsVisible="False">
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Uyarılar" Foreground="#E0A040" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="UyariText" Foreground="#D0A060" FontSize="11" TextWrapping="Wrap"
+                                           MinHeight="18"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Kompanzasyon -->
+                        <Border x:Name="KompanzasyonPanel" Background="#1A2A0C" CornerRadius="6" Padding="10"
+                                BorderBrush="#3A5A18" BorderThickness="1" IsVisible="False">
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Kompanzasyon" Foreground="#B8E068" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="KompGerekliQ" Classes="valueText" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="KompKademeler" Classes="valueText" TextWrapping="Wrap" FontSize="11"/>
+                                <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,4,0,0" ColumnSpacing="6">
+                                    <TextBlock Grid.Column="0" Text="Reaktör (SVC) — 3 kademe" Foreground="#A0C888" FontSize="11" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    <ToggleSwitch Grid.Column="1" x:Name="KompReaktorOzetToggle"
+                                                  OnContent="" OffContent=""
+                                                  IsCheckedChanged="KompReaktorOzetToggle_OnChanged"
+                                                  Padding="0" MinHeight="22"/>
+                                    <TextBlock Grid.Column="2" Text="Aktif" Foreground="#A0C888" FontSize="11" VerticalAlignment="Center"/>
+                                </Grid>
+                                <TextBlock x:Name="KompReaktor" Classes="valueText" TextWrapping="Wrap" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Jeneratör -->
+                        <Border x:Name="JeneratorPanel" Background="#2A1A0C" CornerRadius="6" Padding="10"
+                                BorderBrush="#5A3A18" BorderThickness="1" IsVisible="False">
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="Jeneratör"
+                                               Foreground="#E0B048" FontSize="13" FontWeight="SemiBold"/>
+                                    <Button Grid.Column="1" Content="Düzenle" Padding="8,2" FontSize="11"
+                                            Background="#5A3A18" Foreground="White"
+                                            Click="Jenerator_OnClick"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                      RowSpacing="3" ColumnSpacing="6">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Tip:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="JenTipText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Mod:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="JenModText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Yük:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" x:Name="JenYukText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Gerekli kVA:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" x:Name="JenGerekliText" Classes="valueText" Text="—"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Yeterli mi:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" x:Name="JenYeterliText" Classes="valueText" Text="—"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Yakıt:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="1" x:Name="JenYakitText" Classes="valueText" Text="—"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Transfer Pano:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="1" x:Name="JenTransferPanoText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Transfer Şalter:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="1" x:Name="JenTransferSalterText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="0" Text="Jen → Senkron:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="1" x:Name="JenUnitKabloMesafeText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="9" Grid.Column="0" Text="Senkron → Hedef:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="9" Grid.Column="1" x:Name="JenSenkronHedefMesafeText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Orta Gerilim / Trafo / Köşk -->
+                        <Border x:Name="OrtaGerilimPanel" Background="#2A1A0C" CornerRadius="6" Padding="10"
+                                BorderBrush="#C8702E" BorderThickness="1" IsVisible="False">
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="Orta Gerilim"
+                                               Foreground="#E0A848" FontSize="13" FontWeight="SemiBold"/>
+                                    <Button Grid.Column="1" Content="Düzenle" Padding="8,2" FontSize="11"
+                                            Background="#7A4A18" Foreground="White"
+                                            Click="OrtaGerilim_OnClick"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="92,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                      RowSpacing="3" ColumnSpacing="6">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Köşk:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="OgKoskText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Trafo:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="OgTrafoText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Yeterli mi:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" x:Name="OgYeterliText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Trafo akımı:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" x:Name="OgAkimText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="AG bara Ik:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" x:Name="OgIkText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Hücre sayısı:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="1" x:Name="OgHucreText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="AG bağlantı:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="1" x:Name="OgBaglantiText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Şebeke → Hücre:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="1" x:Name="OgSebekeHucreKabloText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="0" Text="Hücre → Trafo:" Classes="labelText"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="1" x:Name="OgHucreTrafoKabloText" Classes="valueText" Text="—" TextWrapping="Wrap"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    </ScrollViewer>
+                    <!-- Aç/kapat butonu (her zaman görünür, sağ üstte) -->
+                    <Button x:Name="OzetToggleBtn" Content="▸" Width="26" Height="26" Padding="0" FontSize="13"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0"
+                            Click="OzetToggle_OnClick"
+                            Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+                </Grid>
+            </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ROW 3: FOOTER -->
+        <Border Grid.Row="3" BorderBrush="#112010" BorderThickness="0,1,0,0" Background="#060C07" Padding="0,6">
+            <TextBlock Text="Eye4Pro Electric — Tek Hat Şeması v1.0"
+                       FontSize="10" Foreground="#3A5A28" HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

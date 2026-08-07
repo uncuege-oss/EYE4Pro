@@ -1,0 +1,350 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Views.ElectricLauncherWindow"
+        Width="1120" Height="760"
+        MinWidth="940" MinHeight="640"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#080F0A"
+        Title="Eye4Pro Electric - Modül Merkezi">
+
+    <Window.Styles>
+        <Style Selector="Button.moduleAction">
+            <Setter Property="Background" Value="#3A7A18"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <Style Selector="TextBlock.moduleTitle">
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#E8F4E8"/>
+        </Style>
+        <Style Selector="TextBlock.moduleMeta">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#6A8C5A"/>
+        </Style>
+        <Style Selector="TextBlock.moduleBody">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#9AB88A"/>
+            <Setter Property="LineHeight" Value="18"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- HEADER -->
+        <Border Grid.Row="0" BorderBrush="#1A3020" BorderThickness="0,0,0,1">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Color="#090F0B" Offset="0"/>
+                    <GradientStop Color="#0E1E10" Offset="0.55"/>
+                    <GradientStop Color="#080E09" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18" Margin="28,18">
+                <!-- Logo -->
+                <Border Width="230" Height="76" CornerRadius="8"
+                        Background="#F7F9F1"
+                        BorderBrush="#D8E8C8"
+                        BorderThickness="1"
+                        ClipToBounds="True"
+                        VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="60,*" ColumnSpacing="10" Margin="12,8">
+                        <Grid Width="60" Height="48">
+                            <Ellipse Width="48" Height="30" Stroke="#526B1D" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="28" Height="28" Fill="#C6E846" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M18,28 L27,16 L27,25 L37,18 L29,32 L29,23 Z"
+                                  Fill="#425B18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#405719" FontSize="18" FontWeight="Bold"/>
+                            <TextBlock Text="ELECTRIC" Foreground="#91B824" FontSize="10" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                    <TextBlock Text="Elektrik Tasarım Platformu"
+                               Foreground="#E8F4E8"
+                               FontSize="20"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="Elektrik mühendisliği modülleri, hesaplama araçları ve proje iş akışı"
+                               Foreground="#6A8C5A"
+                               FontSize="12"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Content="⬡ Bina Geometrisi"
+                            Click="OpenBinaGeometrisi_OnClick"
+                            Background="#0C2235"
+                            BorderBrush="#1A5A82"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,7"
+                            Foreground="#60C0E8"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            ToolTip.Tip="M50 — Bina geometrisi oluştur / düzenle"/>
+                    <Button Content="Complete Engineering"
+                            Click="BackToEngineeringHome_OnClick"
+                            Background="#0E1A10"
+                            BorderBrush="#1E3A20"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,7"
+                            Foreground="#9AB88A"
+                            FontSize="12"
+                            FontWeight="SemiBold"/>
+                    <Border Background="#0E1A10"
+                            BorderBrush="#1E3A20"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,7">
+                        <TextBlock Text="Electric Engine v1.0"
+                                   Foreground="#7AA060"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- CONTENT -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Grid ColumnDefinitions="300,*" ColumnSpacing="22" Margin="28,24,28,16">
+                <!-- Sol Panel: Bilgi -->
+                <Border Background="#0C1610"
+                        BorderBrush="#1A3020"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="18">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Modül Merkezi"
+                                       Foreground="#E8F4E8"
+                                       FontSize="19"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="Elektrik mühendisliği hesaplama modülleri ve tasarım araçları"
+                                       Foreground="#5E7E50"
+                                       FontSize="12"
+                                       LineHeight="18"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <Border Height="1" Background="#1A3020"/>
+
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#7ACC44" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Tek hat şeması" Foreground="#A8C890" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#7ACC44" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Proje tasarımı" Foreground="#A8C890" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#7ACC44" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Zayıf akım proje tasarımı" Foreground="#A8C890" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#7ACC44" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Zayıf akım tek hat" Foreground="#A8C890" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#7ACC44" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Keşif hazırla" Foreground="#A8C890" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#7ACC44" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Çevre aydınlatma" Foreground="#A8C890" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#5A6A40" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Pano tasarımı" Foreground="#6A8050" FontSize="13"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Width="10" Height="10" CornerRadius="5" Background="#5A6A40" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Kablo seçimi" Foreground="#6A8050" FontSize="13"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <Border Background="#0A130C"
+                                BorderBrush="#163018"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Durum"
+                                           Foreground="#4E6A40"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Text="6 aktif modül, 2 planlanan modül"
+                                           Foreground="#C8E4B0"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Sağ: Modül Kartları -->
+                <UniformGrid Grid.Column="1" Columns="2" Rows="4">
+
+                    <!-- KART 1: Tek Hat Şeması — AKTİF -->
+                    <Border Margin="0,0,10,10" Background="#0D1C0E" CornerRadius="8" BorderBrush="#3A7A18" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#163A10">
+                                    <TextBlock Text="TH" Foreground="#8CDA50" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Tek Hat Şeması"/>
+                                    <TextBlock Classes="moduleMeta" Text="Elektrik diyagram editörü"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenTekHat_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="IEC standartlarına uygun tek hat şeması çizimi, bileşen kütüphanesi ve DXF/Excel dışa aktarım."/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- KART 2: Yük Hesabı — YAKINDA -->
+                    <Border Margin="10,0,0,10" Background="#0D1C0E" CornerRadius="8" BorderBrush="#3A7A18" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#163A10">
+                                    <TextBlock Text="PT" Foreground="#8CDA50" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Proje Tasarımı"/>
+                                    <TextBlock Classes="moduleMeta" Text="Kuvvetli akım plan yerleşimi"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenBasitProjeCiz_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Plan üstü aydınlatma/priz/pano yerleşimi, kablolama, kablo tavası, topraklama ve DXF çıktı (.e4p12)."/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- KART 2b: Zayıf Akım Proje Tasarımı (M16) — AKTİF -->
+                    <Border Margin="0,0,10,10" Background="#0D1C0E" CornerRadius="8" BorderBrush="#3A7A18" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#163A10">
+                                    <TextBlock Text="ZP" Foreground="#8CDA50" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Zayıf Akım Proje Tasarımı"/>
+                                    <TextBlock Classes="moduleMeta" Text="Zayıf akım plan yerleşimi"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenZayifAkimProjeCiz_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Plan üstü Data, TV, Telefon, CCTV, Anons, Diafon ve Yangın Algılama yerleşimi, kablolama ve DXF çıktı (.e4p16)."/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- KART 3: Zayıf Akım Tek Hat Şeması — AKTİF -->
+                    <Border Margin="10,0,0,10" Background="#0D1C0E" CornerRadius="8" BorderBrush="#3A7A18" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#163A10">
+                                    <TextBlock Text="ZA" Foreground="#8CDA50" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Zayıf Akım Tek Hat"/>
+                                    <TextBlock Classes="moduleMeta" Text="Data / TV / CCTV şematik"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenZayifAkimTekHat_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="M12 projelerinden zayıf akım sistemlerini (Data, TV, Telefon, CCTV, Anons, Diafon, Yangın) şematik diyagramlara dönüştürme ve DXF çıktısı."/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- KART 4: Keşif Hazırla — AKTİF -->
+                    <Border Margin="0,10,10,10" Background="#0D1C0E" CornerRadius="8" BorderBrush="#3A7A18" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#163A10">
+                                    <TextBlock Text="KŞ" Foreground="#8CDA50" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Keşif Hazırla"/>
+                                    <TextBlock Classes="moduleMeta" Text="Poz kütüphanesi ve icmal"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenKesifHazirla_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Excel poz kütüphanesi, çoklu keşif tablosu, miktar girişi ve tablo kırılımlı ana icmal."/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- KART 5: Çevre Aydınlatma — AKTİF -->
+                    <Border Margin="10,10,0,10" Background="#0D1C0E" CornerRadius="8" BorderBrush="#3A7A18" BorderThickness="1" Padding="18">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#163A10">
+                                    <TextBlock Text="ÇA" Foreground="#8CDA50" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Çevre Aydınlatma"/>
+                                    <TextBlock Classes="moduleMeta" Text="Park aydınlatma projesi"/>
+                                </StackPanel>
+                            </Grid>
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Click="OpenCevreAydinlatma_OnClick" Content="Başlat"/>
+                            <TextBlock Classes="moduleBody" Text="Park DXF altlığı, yeşil alan/yol yüzeyleri, otomatik direk yerleşimi, lümen hesabı, kablo/topraklama ve M11 tek hat aktarımı."/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- KART 5: Pano Tasarımı — YAKINDA -->
+                    <Border Margin="0,10,10,10" Background="#0C1610" CornerRadius="8" BorderBrush="#1A3020" BorderThickness="1" Padding="18" Opacity="0.60">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#0F2010">
+                                    <TextBlock Text="PT" Foreground="#5A8040" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Pano Tasarımı" Foreground="#6A9050"/>
+                                    <TextBlock Classes="moduleMeta" Text="MCC / DB panel yerleşimi"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border DockPanel.Dock="Bottom" Background="#142010" CornerRadius="6" Padding="12,7" HorizontalAlignment="Right">
+                                <TextBlock Text="Yakında" Foreground="#6A8C50" FontSize="12" FontWeight="SemiBold"/>
+                            </Border>
+                            <TextBlock Classes="moduleBody" Text="Şalt ekipmanı yerleşimi, busbar hesabı ve pano montaj düzeni çizimi."/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- KART 6: Kablo Seçimi — YAKINDA -->
+                    <Border Margin="0,10,10,10" Background="#0C1610" CornerRadius="8" BorderBrush="#1A3020" BorderThickness="1" Padding="18" Opacity="0.60">
+                        <DockPanel LastChildFill="True">
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,0,14">
+                                <Border Width="44" Height="44" CornerRadius="8" Background="#0F2010">
+                                    <TextBlock Text="KS" Foreground="#5A8040" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Classes="moduleTitle" Text="Kablo Seçimi" Foreground="#6A9050"/>
+                                    <TextBlock Classes="moduleMeta" Text="Kesit ve tip optimizasyonu"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border DockPanel.Dock="Bottom" Background="#142010" CornerRadius="6" Padding="12,7" HorizontalAlignment="Right">
+                                <TextBlock Text="Yakında" Foreground="#6A8C50" FontSize="12" FontWeight="SemiBold"/>
+                            </Border>
+                            <TextBlock Classes="moduleBody" Text="Akım taşıma kapasitesi, gerilim düşümü ve kısa devre dayanımı hesaplı kablo seçimi."/>
+                        </DockPanel>
+                    </Border>
+
+                </UniformGrid>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- FOOTER -->
+        <Border Grid.Row="2" BorderBrush="#112010" BorderThickness="0,1,0,0" Background="#060C07" Padding="0,10">
+            <TextBlock Text="Eye4Pro Electric"
+                       FontSize="11"
+                       Foreground="#3A5A28"
+                       HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

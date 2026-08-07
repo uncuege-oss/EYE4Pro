@@ -1,0 +1,467 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Architecture.KonseptPlan.ViewModels"
+        xmlns:local="using:Kst.Acoustics.App.Architecture.KonseptPlan.Views"
+        x:Class="Kst.Acoustics.App.Architecture.KonseptPlan.Views.KonseptPlanWindow"
+        x:DataType="vm:KonseptPlanViewModel"
+        Width="1280" Height="820"
+        MinWidth="1080" MinHeight="700"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#0A1015"
+        Title="Eye4Pro Architecture - Konsept Plan">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#7E93A4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.value">
+            <Setter Property="Foreground" Value="#F2F6F8"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.body">
+            <Setter Property="Foreground" Value="#98AAB8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="18"/>
+        </Style>
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="#101821"/>
+            <Setter Property="BorderBrush" Value="#243646"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#256D7B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#111D26"/>
+            <Setter Property="Foreground" Value="#B9CAD6"/>
+            <Setter Property="BorderBrush" Value="#2A3E50"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12,7"/>
+        </Style>
+        <Style Selector="TextBox, ComboBox">
+            <Setter Property="MinHeight" Value="34"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" BorderBrush="#243646" BorderThickness="0,0,0,1" Background="#0D151D">
+            <Grid ColumnDefinitions="*,Auto" Margin="26,18" ColumnSpacing="16">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="M32 Konsept Plan"
+                               Foreground="#F2F6F8"
+                               FontSize="22"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding PlanOzetiText}"
+                               Foreground="#8CA2B3"
+                               FontSize="12"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Classes="secondary" Click="BackToLauncher_OnClick" Content="Mimari Modüller"/>
+                    <Button Classes="primary" Click="PlanUret_OnClick" Content="Planı Üret"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="310,*,320" ColumnSpacing="18" Margin="22">
+            <Border Classes="panel">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="14">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Tasarım Girdileri" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Classes="label" Text="PROJE ADI"/>
+                            <TextBox Text="{Binding ProjeAdi, Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="label" Text="DOSYA"/>
+                            <TextBlock Text="{Binding DosyaYoluText}"
+                                       Foreground="#B8CCD7"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Classes="secondary" Click="ProjeAc_OnClick" Content="Aç"/>
+                            <Button Grid.Column="1" Classes="secondary" Click="Kaydet_OnClick" Content="Kaydet"/>
+                        </Grid>
+
+                        <Button Classes="secondary"
+                                HorizontalAlignment="Stretch"
+                                Click="FarkliKaydet_OnClick"
+                                Content="Farklı Kaydet"/>
+
+                        <Border Height="1" Background="#243646"/>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="label" Text="BİNA İŞLEVİ"/>
+                            <ComboBox ItemsSource="{Binding BinaIslevleri}"
+                                      SelectedItem="{Binding SeciliBinaIslevi, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:KonseptBinaIsleviSecenekViewModel">
+                                        <TextBlock Text="{Binding Ad}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="label" Text="PROJE TİPİ"/>
+                            <TextBox Text="{Binding ProjeTipi, Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="label" Text="KAPASİTE"/>
+                                <TextBox Text="{Binding KullaniciKapasitesiText, Mode=TwoWay}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="6">
+                                <TextBlock Classes="label" Text="KAT"/>
+                                <TextBox Text="{Binding KatSayisiText, Mode=TwoWay}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Classes="primary" Click="PlanUret_OnClick" Content="Üret"/>
+                            <Button Grid.Column="1" Classes="secondary" Click="YenidenYerlestir_OnClick" Content="Yerleştir"/>
+                        </Grid>
+
+                        <Border Height="1" Background="#243646"/>
+
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Katlar" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                            <ItemsControl ItemsSource="{Binding Katlar}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:KatSecenekViewModel">
+                                        <Border Background="#0B1218"
+                                                BorderBrush="#1F303E"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="10"
+                                                Margin="0,0,0,8"
+                                                PointerPressed="KatSatiri_OnPointerPressed">
+                                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="4">
+                                                <TextBlock Text="{Binding Ad}" Foreground="#E8F0F4" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="Seçili"
+                                                           IsVisible="{Binding Secili}"
+                                                           Foreground="#7FD2C7"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Row="1"
+                                                           Grid.ColumnSpan="2"
+                                                           Text="{Binding Ozet}"
+                                                           Foreground="#8CA2B3"
+                                                           FontSize="11"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <Border Background="#0B1218" BorderBrush="#223341" BorderThickness="1" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="5">
+                                <TextBlock Classes="label" Text="DURUM"/>
+                                <TextBlock Text="{Binding DurumMesaji}" Foreground="#B8CCD7" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="14">
+                <UniformGrid Columns="4">
+                    <Border Classes="panel" Margin="0,0,8,0">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="KAT ALANI"/>
+                            <TextBlock Classes="value" Text="{Binding KatAlaniText}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="panel" Margin="8,0">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="BLOK"/>
+                            <TextBlock Classes="value" Text="{Binding BlokSayisiText}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="panel" Margin="8,0">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="KORİDOR"/>
+                            <TextBlock Classes="value" Text="{Binding KoridorAlaniText}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="panel" Margin="8,0,0,0">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="BAĞLANTISIZ"/>
+                            <TextBlock Classes="value" Text="{Binding BaglantisizBlokText}"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <Border Grid.Row="1"
+                        Background="#0B1218"
+                        BorderBrush="#243646"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="0">
+                    <local:KonseptPlanCanvas Plan="{Binding Plan}"
+                                             Kat="{Binding SeciliKat}"
+                                             SeciliBlok="{Binding SeciliBlok}"
+                                             SeciliDuseyElemanId="{Binding SeciliDuseyElemanId}"
+                                             MinHeight="520"/>
+                </Border>
+            </Grid>
+
+            <Border Grid.Column="2" Classes="panel">
+                <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="14">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Seçili Blok" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding SeciliBlokAdi}" Foreground="#F2F6F8" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBlock Text="{Binding SeciliBlokTipi}" Foreground="#9FB3C1" FontSize="12"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SeciliBlokKilitText}" Foreground="#7FD2C7" FontSize="12" FontWeight="SemiBold"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                        <StackPanel Spacing="3">
+                            <TextBlock Classes="label" Text="SINIF"/>
+                            <TextBlock Text="{Binding SeciliBlokSinifi}" Foreground="#D5E1E7" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="3">
+                            <TextBlock Classes="label" Text="KORİDOR"/>
+                            <TextBlock Text="{Binding SeciliBlokKoridorText}" Foreground="#D5E1E7" FontSize="12"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Spacing="3">
+                            <TextBlock Classes="label" Text="ALAN"/>
+                            <TextBlock Text="{Binding SeciliBlokAlanText}" Foreground="#D5E1E7" FontSize="12"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3">
+                            <TextBlock Classes="label" Text="HEDEF"/>
+                            <TextBlock Text="{Binding SeciliBlokHedefAlanText}" Foreground="#D5E1E7" FontSize="12"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Spacing="3">
+                            <TextBlock Classes="label" Text="FARK"/>
+                            <TextBlock Text="{Binding SeciliBlokAlanFarkiText}" Foreground="#D5E1E7" FontSize="12"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="3">
+                            <TextBlock Classes="label" Text="BOYUT"/>
+                            <TextBlock Text="{Binding SeciliBlokBoyutText}" Foreground="#D5E1E7" FontSize="12"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Spacing="3">
+                            <TextBlock Classes="label" Text="KONUM"/>
+                            <TextBlock Text="{Binding SeciliBlokKonumText}" Foreground="#D5E1E7" FontSize="12"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Spacing="3">
+                            <TextBlock Classes="label" Text="ÖN KONTROL"/>
+                            <TextBlock Text="{Binding SeciliBlokKontrolText}" Foreground="#D5E1E7" FontSize="12"/>
+                        </StackPanel>
+                        <Button Grid.Row="5"
+                                Grid.ColumnSpan="2"
+                                Classes="secondary"
+                                IsEnabled="{Binding SeciliBlokVar}"
+                                Click="KilitDegistir_OnClick"
+                                Content="{Binding SeciliBlokKilitButonText}"/>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Mahaller" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding Bloklar}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:MahalBlokSatiriViewModel">
+                                            <Border Background="#0B1218"
+                                                    BorderBrush="#1F303E"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10"
+                                                    Margin="0,0,0,8"
+                                                    PointerPressed="BlokSatiri_OnPointerPressed">
+                                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="5">
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                        <TextBlock Text="{Binding Ad}" Foreground="#E8F0F4" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="Seçili"
+                                                                   IsVisible="{Binding Secili}"
+                                                                   Foreground="#7FD2C7"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"/>
+                                                    </Grid>
+                                                    <TextBlock Grid.Row="1" Text="{Binding Tip}" Foreground="#8CA2B3" FontSize="11"/>
+                                                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                                                        <TextBlock Text="{Binding Alan}" Foreground="#D5E1E7" FontSize="11"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Kilit}" Foreground="#8CA2B3" FontSize="11"/>
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Koridorlar" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding Koridorlar}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:KoridorSatiriViewModel">
+                                            <Border Background="#0B1218"
+                                                    BorderBrush="#1F303E"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10"
+                                                    Margin="0,0,0,8">
+                                                <StackPanel Spacing="5">
+                                                    <TextBlock Text="{Binding Ad}" Foreground="#E8F0F4" FontWeight="SemiBold"/>
+                                                    <Grid ColumnDefinitions="*,*">
+                                                        <TextBlock Text="{Binding Uzunluk}" Foreground="#D5E1E7" FontSize="11"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Alan}" Foreground="#D5E1E7" FontSize="11"/>
+                                                    </Grid>
+                                                    <TextBlock Text="{Binding BagliBlokSayisi, StringFormat='Bağlı blok: {0}'}" Foreground="#8CA2B3" FontSize="11"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Çekirdek ve Şaft" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding CekirdekOzetText}"
+                                               Foreground="#8ACCC5"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="Wrap"/>
+                                </Grid>
+
+                                <Border Background="#0B1218"
+                                        BorderBrush="#223341"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10"
+                                        IsVisible="{Binding SeciliDuseyElemanVar}">
+                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                                        <TextBlock Text="{Binding SeciliDuseyElemanAdi}" Foreground="#E8F0F4" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="1" Text="{Binding SeciliDuseyElemanTipi}" Foreground="#8CA2B3" FontSize="11"/>
+                                        <TextBlock Grid.Row="2" Text="{Binding SeciliDuseyElemanKatAraligi, StringFormat='Kat aralığı: {0}'}" Foreground="#D5E1E7" FontSize="11"/>
+                                        <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{Binding SeciliDuseyElemanBaglanti}" Foreground="#D5E1E7" FontSize="11"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SeciliDuseyElemanKontrolText}" Foreground="#E5B56B" FontSize="11"/>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+
+                                <ItemsControl ItemsSource="{Binding DuseyElemanlar}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:DuseyElemanSatiriViewModel">
+                                            <Border Background="#0B1218"
+                                                    BorderBrush="#1F303E"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10"
+                                                    Margin="0,0,0,8"
+                                                    PointerPressed="DuseyElemanSatiri_OnPointerPressed">
+                                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="5">
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                        <TextBlock Text="{Binding Ad}" Foreground="#E8F0F4" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="Seçili"
+                                                                   IsVisible="{Binding Secili}"
+                                                                   Foreground="#7FD2C7"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"/>
+                                                    </Grid>
+                                                    <TextBlock Grid.Row="1" Text="{Binding Tip}" Foreground="#8CA2B3" FontSize="11"/>
+                                                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                                                        <TextBlock Text="{Binding Alan}" Foreground="#D5E1E7" FontSize="11"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Baglanti}" Foreground="#8CA2B3" FontSize="11"/>
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Yerleşim Uyarıları" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding PlanKontrolOzetiText}"
+                                               Foreground="#7FD2C7"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding PlanKontrolSonuclari}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:PlanKontrolSonucuSatiriViewModel">
+                                            <Border Background="#0B1218"
+                                                    BorderBrush="#1F303E"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10"
+                                                    Margin="0,0,0,8"
+                                                    PointerPressed="KontrolSatiri_OnPointerPressed">
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                        <TextBlock Text="{Binding Seviye}" Foreground="#E5B56B" FontWeight="SemiBold"/>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="Seçili öğe"
+                                                                   IsVisible="{Binding SeciliBlokEtiketiGoster}"
+                                                                   Foreground="#7FD2C7"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"/>
+                                                    </Grid>
+                                                    <TextBlock Text="{Binding Kod}" Foreground="#7E93A4" FontSize="11" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding Mesaj}" Foreground="#D5E1E7" FontSize="12" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding Cozum}"
+                                                               IsVisible="{Binding CozumVar}"
+                                                               Foreground="#9BAEBB"
+                                                               FontSize="11"
+                                                               TextWrapping="Wrap"/>
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Text="{Binding Kaynak}" Foreground="#7E93A4" FontSize="11" TextWrapping="Wrap"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Etki}" Foreground="#8CA2B3" FontSize="11"/>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <TextBlock Grid.Row="3"
+                               Text="M32 taslak yerleşim"
+                               HorizontalAlignment="Center"
+                               Foreground="#5E7282"
+                               FontSize="11"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Background="#070C11" BorderBrush="#1B2A36" BorderThickness="0,1,0,0" Padding="0,10">
+            <TextBlock Text="Eye4Pro Architecture"
+                       HorizontalAlignment="Center"
+                       Foreground="#5E7282"
+                       FontSize="11"/>
+        </Border>
+    </Grid>
+</Window>

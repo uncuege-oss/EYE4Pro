@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Kst.Acoustics.App.ViewModels"
+        xmlns:models="clr-namespace:Kst.Acoustics.Core.SoundInsulation;assembly=Kst.Acoustics.Core"
+        x:Class="Kst.Acoustics.App.Views.SoundInsulationLibraryWindow"
+        Title="Malzeme Kütüphanesi Yönetimi"
+        Width="800" Height="600"
+        WindowStartupLocation="CenterOwner"
+        Background="#0F1722">
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="20">
+        <TextBlock Text="Malzeme Kütüphanesi" FontSize="20" FontWeight="Bold" Foreground="#E0EFFF" Margin="0,0,0,20"/>
+
+        <DataGrid Grid.Row="1" ItemsSource="{Binding FilteredMaterials}" AutoGenerateColumns="False" 
+                  IsReadOnly="False" Background="#162536" GridLinesVisibility="All" 
+                  BorderBrush="#334455" BorderThickness="1"
+                  x:CompileBindings="False">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="Fav" Binding="{Binding IsFavorite}"/>
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Malzeme Adı" Binding="{Binding Name}" Width="*"/>
+	                <DataGridTextColumn Header="Kategori" Binding="{Binding Category}"/>
+	                <DataGridTextColumn Header="Alt Kategori" Binding="{Binding SubCategory}"/>
+	                <DataGridTextColumn Header="Yoğunluk (kg/m³)" Binding="{Binding Density}"/>
+	                <DataGridTextColumn Header="E Modülü (Pa)" Binding="{Binding YoungModulus}"/>
+	                <DataGridTextColumn Header="Kayıp" Binding="{Binding LossFactor}"/>
+	                <DataGridTextColumn Header="Akış Direnci" Binding="{Binding FlowResistivity}"/>
+	                <DataGridTextColumn Header="Kaynak" Binding="{Binding Source}"/>
+	                <DataGridTextColumn Header="Güven" Binding="{Binding Reliability}"/>
+	                <DataGridTextColumn Header="Referans" Binding="{Binding Reference}"/>
+	            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Kapat" Click="Close_OnClick" Background="#2A3C52" Padding="20,8"/>
+        </StackPanel>
+    </Grid>
+</Window>

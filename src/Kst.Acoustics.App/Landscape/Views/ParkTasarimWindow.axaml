@@ -1,0 +1,78 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Kst.Acoustics.App.Landscape.Views"
+        x:Class="Kst.Acoustics.App.Landscape.Views.ParkTasarimWindow"
+        Width="1180" Height="780"
+        MinWidth="980" MinHeight="640"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#0D1117"
+        Title="EYE4PRO Landscape - M70 Park Tasarımı">
+
+    <Window.Styles>
+        <Style Selector="Button.act">
+            <Setter Property="Background" Value="#2E7D4F"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="Foreground" Value="#9FD3B4"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" BorderBrush="#143222" BorderThickness="0,0,0,1" Padding="24,14" Background="#0F1C14">
+            <StackPanel Spacing="2">
+                <TextBlock Text="EYE4PRO LANDSCAPE — M70 Park Tasarımı" Foreground="#7BD3A0" FontSize="17" FontWeight="Bold"/>
+                <TextBlock Text="Araziyi ve binayı salt-okunur yükle; sert zemin yerleşimi + alan/oran. Çıktı: .e4park.json" Foreground="#6FB78E" FontSize="11"/>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,320" Margin="14">
+            <Border Grid.Column="0" Background="#0A140D" BorderBrush="#1C3A28" BorderThickness="1" CornerRadius="8" Margin="0,0,12,0">
+                <views:ParkPreview x:Name="Onizleme"/>
+            </Border>
+
+            <ScrollViewer Grid.Column="1">
+                <StackPanel Spacing="9">
+                    <Button Classes="act" Background="#256D7B" Click="AraziYukle_OnClick" Content="Arazi Yükle (.e4arazi)"/>
+                    <StackPanel Spacing="3">
+                        <TextBlock Classes="lbl" Text="Yapı yaklaşma / setback (m)"/>
+                        <TextBox x:Name="SetbackBox" Text="3"/>
+                    </StackPanel>
+                    <Button Classes="act" Background="#256D7B" Click="BinaYukle_OnClick" Content="Bina Yükle (.e4bina)"/>
+
+                    <Border Height="1" Background="#1C3A28" Margin="0,4"/>
+
+                    <Button Classes="act" Click="Yenile_OnClick" Content="Alanı Hesapla / Yenile"/>
+                    <Button Classes="act" Background="#3A4750" Click="ParkAc_OnClick" Content="Park Aç (.e4p70)"/>
+                    <Button Classes="act" Click="ParkKaydet_OnClick" Content="Park Kaydet (.e4p70)"/>
+                    <Button Classes="act" Background="#1F5E3A" Click="Paylas_OnClick" Content="Paylaş (.e4park.json)"/>
+
+                    <Border Height="1" Background="#1C3A28" Margin="0,4"/>
+
+                    <TextBlock Classes="lbl" Text="Rapor"/>
+                    <Border Background="#0A140D" BorderBrush="#1C3A28" BorderThickness="1" CornerRadius="6" Padding="10" MinHeight="220">
+                        <TextBlock x:Name="RaporText" Foreground="#C7E8D5" FontSize="12" TextWrapping="Wrap"
+                                   Text="Araziyi (ve varsa binayı) yükleyip Hesapla'ya basın."/>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <Border Grid.Row="2" Background="#070D13" BorderBrush="#1C2B3A" BorderThickness="0,1,0,0" Padding="20,10">
+            <Grid ColumnDefinitions="Auto,*">
+                <Button Grid.Column="0" Content="← Landscape Modül Merkezi" Click="Geri_OnClick"
+                        Background="#1B2A1F" Foreground="#9FD3B4" BorderThickness="0" CornerRadius="6" Padding="14,7"/>
+                <TextBlock Grid.Column="1" x:Name="DurumText" VerticalAlignment="Center" Margin="16,0,0,0"
+                           Foreground="#6FB78E" FontSize="12" Text="Hazır."/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

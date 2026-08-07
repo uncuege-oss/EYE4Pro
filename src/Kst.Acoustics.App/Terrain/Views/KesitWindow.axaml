@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:terrain="using:Kst.Acoustics.App.Terrain.Views"
+        x:Class="Kst.Acoustics.App.Terrain.Views.KesitWindow"
+        Width="1100" Height="640"
+        MinWidth="700" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="#EAF1FA"
+        Title="EYE4PRO Terrain — Kotlu Kesit">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="#0A1610" Padding="14,9">
+            <TextBlock x:Name="BaslikText" Foreground="#9FD3B4" FontSize="13" FontWeight="SemiBold"
+                       Text="Bina-Arazi Kotlu Kesit"/>
+        </Border>
+        <terrain:KesitControl x:Name="Kesit" Grid.Row="1"/>
+        <Border Grid.Row="2" Background="#0A1610" Padding="14,8">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Foreground="#5FA0C0" FontSize="11" VerticalAlignment="Center"
+                           Text="Üniform ölçek · kırmızı kesik çizgi = ±0.00 · kahverengi = tabii zemin"/>
+                <Button Grid.Column="1" Content="Kapat" Click="Kapat_OnClick"
+                        Background="#1B2A1F" Foreground="#9FD3B4" BorderThickness="0"
+                        CornerRadius="6" Padding="14,6"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

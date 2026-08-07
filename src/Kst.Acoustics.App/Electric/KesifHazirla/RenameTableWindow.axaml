@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.KesifHazirla.RenameTableWindow"
+        Title="Tablo Adını Değiştir"
+        Width="350" Height="150"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#071108"
+        Foreground="#E8F4E8">
+  <Window.Styles>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#0E3A1A"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#168A38"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="12,6"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="#15572A"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#2AD864"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="#071108"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#1E6A32"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid Margin="16" RowDefinitions="*,Auto" RowSpacing="12">
+    <StackPanel Spacing="6">
+      <TextBlock Text="Yeni Tablo Adı:" Foreground="#DFF1D9" FontSize="13" FontWeight="SemiBold"/>
+      <TextBox Name="TxtName" KeyDown="TxtName_KeyDown"/>
+    </StackPanel>
+    
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="İptal" Click="Cancel_Click"/>
+      <Button Content="Kaydet" Click="Save_Click"/>
+    </StackPanel>
+  </Grid>
+</Window>

@@ -1,0 +1,1826 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.ViewModels"
+        xmlns:controls="using:Kst.Acoustics.App.Controls"
+        xmlns:projects="using:Kst.Acoustics.Core.Projects"
+        xmlns:views="using:Kst.Acoustics.App.Views"
+        xmlns:converters="using:Kst.Acoustics.App.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="800"
+        x:Class="Kst.Acoustics.App.Views.ProjectWindow"
+        x:DataType="vm:ProjectWindowViewModel"
+        Width="1400"
+        MinWidth="1000" MinHeight="600"
+        Background="#0E1824"
+        Title="{Binding IsDirty, Converter={StaticResource DirtyTitleConverter}, ConverterParameter='EYE4PRO Acoustics — Proje'}">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.panelTitle">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#7A9AB8"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+        <Style Selector="Border.treeSection">
+            <Setter Property="Background" Value="#131F2E"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style Selector="Button.toolBtn">
+            <Setter Property="Background" Value="#1E3048"/>
+            <Setter Property="Foreground" Value="#C8DCF0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="#8AAAC8"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Foreground" Value="#E8F4FF"/>
+        </Style>
+
+        <!-- DataGrid: Fluent Light teması karanlık arka plan üzerinde okunaksız olduğundan override -->
+        <Style Selector="DataGrid">
+            <Setter Property="Background" Value="#0E1824"/>
+            <Setter Property="Foreground" Value="#C8DCF0"/>
+        </Style>
+        <Style Selector="DataGridRow">
+            <Setter Property="Background" Value="#111E2C"/>
+            <Setter Property="Foreground" Value="#C8DCF0"/>
+        </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="Foreground" Value="#C8DCF0"/>
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="#0A1520"/>
+            <Setter Property="Foreground" Value="#8AAAC8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+            <Setter Property="Fill" Value="#1E4A6E"/>
+        </Style>
+        <Style Selector="ToggleButton.collapsibleHeader">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="ToggleButton.collapsibleHeader:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="ToggleButton.collapsibleHeader:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="TabControl.noHeaders /template/ ItemsPresenter#PART_ItemsPresenter">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector="TabStrip">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="TabStripItem">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#8AAAC8"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="TabStripItem:pointerover">
+            <Setter Property="Foreground" Value="#B0D0F0"/>
+        </Style>
+        <Style Selector="TabStripItem:selected">
+            <Setter Property="Foreground" Value="#E8F4FF"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderBrush" Value="#20C3D8"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+        </Style>
+    </Window.Styles>
+
+    <Window.Resources>
+        <converters:BoolToGridLengthConverter x:Key="BoolToGridLengthConverter"/>
+        <converters:ProjectionModeTurkishConverter x:Key="ProjectionModeTurkishConverter"/>
+        <converters:DirectivityPatternTurkishConverter x:Key="DirectivityPatternTurkishConverter"/>
+    </Window.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- ═══════ TOOLBAR ═══════ -->
+        <Border Background="#091320" Padding="14,10">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                <!-- Sol: Başlık + Dosya İşlemleri -->
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Click="BackToMain_OnClick"
+                            Background="#1A3050" Foreground="#90C0E8"
+                            FontWeight="SemiBold" FontSize="12"
+                            CornerRadius="6" Padding="12,6"
+                            Content="← Geri"/>
+                    <Border Width="160" Height="52"
+                            CornerRadius="7"
+                            Background="#F3F7FA"
+                            BorderBrush="#C9D7E4"
+                            BorderThickness="1"
+                            ClipToBounds="True"
+                            VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="45,*" ColumnSpacing="10" Margin="10,4">
+                        <Grid Width="45" Height="36">
+                            <Ellipse Width="38" Height="24" Stroke="#0B547B" StrokeThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="22" Height="22" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M11,18 L16,18 M20,13 L20,23 M25,10 L25,26 M30,14 L30,22 M34,18 L39,18"
+                                  Stroke="#0A4C72"
+                                  StrokeThickness="1.5"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="14" FontWeight="Bold"/>
+                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="9" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                    </Border>
+                    <Border Background="#1A3050" CornerRadius="6" Padding="8,3">
+                        <TextBlock Text="{Binding ProjectName}"
+                                   FontSize="13" Foreground="#90C0E8" FontWeight="SemiBold"/>
+                    </Border>
+                    <Border Background="#1A3050" CornerRadius="6" Padding="6,3">
+                        <TextBlock Text="{Binding UnitShortName}"
+                                   FontSize="11" Foreground="#607080"/>
+                    </Border>
+                    <Border Width="1" Height="20" Background="#1C354A" Margin="6,0"/>
+                    <Button Click="OpenProjectButton_OnClick"
+                            Background="#1A2A3A" Foreground="#80C8F0"
+                            FontWeight="SemiBold" FontSize="12"
+                            CornerRadius="6" Padding="12,6"
+                            Content="Aç"/>
+                    <Button Click="SaveProjectButton_OnClick"
+                            Background="#1A4A2A" Foreground="#80EFA0"
+                            FontWeight="SemiBold" FontSize="12"
+                            CornerRadius="6" Padding="12,6"
+                            Content="Kaydet"/>
+                    <Button Click="SaveAsProjectButton_OnClick"
+                            Background="#1A3050" Foreground="#90C0E8"
+                            FontWeight="SemiBold" FontSize="12"
+                            CornerRadius="6" Padding="12,6"
+                            Content="Farklı Kaydet"/>
+                    <TextBlock Text="● Kaydedilmemiş değişiklikler"
+                               FontSize="11" Foreground="#F5A623" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsDirty}"/>
+                </StackPanel>
+
+                <!-- Sağ: Sekme Başlıkları -->
+                <TabStrip x:Name="ModuleTabStrip" Grid.Column="2" SelectedIndex="{Binding #ModuleTabControl.SelectedIndex, Mode=TwoWay}" Background="Transparent" VerticalAlignment="Center">
+                    <TabStrip.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="12"/>
+                        </ItemsPanelTemplate>
+                    </TabStrip.ItemsPanel>
+                    <TabStripItem Content="Panel"/>
+                    <TabStripItem Content="Nokta"/>
+                    <TabStripItem Content="Işık"/>
+                    <TabStripItem Content="Materyal"/>
+                    <TabStripItem Content="Simülasyon"/>
+                    <TabStripItem Content="Sonuç"/>
+                    <TabStripItem Content="Rapor"/>
+                </TabStrip>
+            </Grid>
+        </Border>
+
+        <!-- ═══════ ANA İÇERİK: Sol | Merkez | Sağ ═══════ -->
+        <Grid Grid.Row="1" Margin="8,6,8,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding #LeftPanelToggle.IsChecked, Converter={StaticResource BoolToGridLengthConverter}, ConverterParameter=240}"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="{Binding #RightPanelToggle.IsChecked, Converter={StaticResource BoolToGridLengthConverter}, ConverterParameter=380}"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ─── SOL PANEL: Proje Ağacı ─── -->
+            <Border Grid.Column="0" Background="#0C1826" CornerRadius="12" Padding="10"
+                    IsVisible="{Binding #LeftPanelToggle.IsChecked}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="4">
+                        <!-- Geometri -->
+                        <Border Classes="treeSection">
+                            <StackPanel>
+                                <ToggleButton x:Name="GeometriToggle" IsChecked="True" Classes="collapsibleHeader">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="panelTitle" Text="GEOMETRİ" Margin="0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#GeometriToggle.IsChecked}"/>
+                                        <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #GeometriToggle.IsChecked}"/>
+                                    </Grid>
+                                </ToggleButton>
+                                <StackPanel IsVisible="{Binding #GeometriToggle.IsChecked}">
+                                    <ItemsControl ItemsSource="{Binding CategoryNodes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:CategoryNodeViewModel">
+                                                <StackPanel>
+ 
+                                                    <!-- Kategori başlığı satırı -->
+                                                    <Grid ColumnDefinitions="16,*,20" Margin="0,1,0,1">
+ 
+                                                        <!-- Genişlet butonu -->
+                                                        <Button Content="{Binding ExpandGlyph}"
+                                                                Click="CategoryExpand_OnClick"
+                                                                Background="Transparent"
+                                                                BorderThickness="0"
+                                                                Padding="0" FontSize="9"
+                                                                Foreground="#5080A0"
+                                                                Width="16" Height="18"/>
+ 
+                                                        <!-- Kategori adı -->
+                                                        <Button Grid.Column="1"
+                                                                Content="{Binding Label}"
+                                                                Click="CategoryExpand_OnClick"
+                                                                Background="Transparent"
+                                                                BorderThickness="0"
+                                                                Padding="2,0"
+                                                                FontSize="12"
+                                                                Foreground="#A8C8E8"
+                                                                HorizontalContentAlignment="Left"/>
+ 
+                                                        <!-- Görünürlük butonu -->
+                                                        <Button Grid.Column="2"
+                                                                Content="{Binding VisibilityGlyph}"
+                                                                Click="CategoryVisibility_OnClick"
+                                                                Background="Transparent"
+                                                                BorderThickness="0"
+                                                                Padding="0" FontSize="11"
+                                                                Foreground="#60A080"
+                                                                Width="20" Height="18"
+                                                                ToolTip.Tip="Görünürlüğü aç/kapat"/>
+                                                    </Grid>
+ 
+                                                    <!-- Genişletilmiş yüzey listesi -->
+                                                    <ItemsControl ItemsSource="{Binding Surfaces}"
+                                                                  IsVisible="{Binding IsExpanded}"
+                                                                  Margin="14,0,0,2">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:SurfaceNodeViewModel">
+                                                                <Button Content="{Binding Name}"
+                                                                        Click="SurfaceNode_OnClick"
+                                                                        Background="Transparent"
+                                                                        BorderThickness="0"
+                                                                        Padding="4,2"
+                                                                        FontSize="11"
+                                                                        Foreground="#7090A8"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        HorizontalContentAlignment="Left"
+                                                                        TextBlock.TextTrimming="CharacterEllipsis"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+ 
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+ 
+                        <!-- Kaynaklar -->
+                        <Border Classes="treeSection">
+                            <StackPanel>
+                                <ToggleButton x:Name="KaynaklarToggle" IsChecked="True" Classes="collapsibleHeader">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="panelTitle" Text="KAYNAKLAR" Margin="0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#KaynaklarToggle.IsChecked}"/>
+                                        <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #KaynaklarToggle.IsChecked}"/>
+                                    </Grid>
+                                </ToggleButton>
+                                <StackPanel IsVisible="{Binding #KaynaklarToggle.IsChecked}">
+                                    <ItemsControl ItemsSource="{Binding SourcePoints}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="projects:AcousticPoint">
+                                                <Border Padding="4,2">
+                                                    <TextBlock FontSize="12" Foreground="#F0A860"
+                                                               TextTrimming="CharacterEllipsis">
+                                                        <TextBlock.Text>
+                                                            <MultiBinding StringFormat="Kaynak: {0}">
+                                                                <Binding Path="Label"/>
+                                                            </MultiBinding>
+                                                        </TextBlock.Text>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock FontSize="11" Foreground="#3A5060"
+                                               IsVisible="{Binding !SourcePoints.Count}"
+                                               Text="Kaynak tanımlanmadı" Margin="4,2"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+ 
+                        <!-- Alıcılar -->
+                        <Border Classes="treeSection">
+                            <StackPanel>
+                                <ToggleButton x:Name="AlicilarToggle" IsChecked="True" Classes="collapsibleHeader">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="panelTitle" Text="ALICILAR" Margin="0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#AlicilarToggle.IsChecked}"/>
+                                        <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #AlicilarToggle.IsChecked}"/>
+                                    </Grid>
+                                </ToggleButton>
+                                <StackPanel IsVisible="{Binding #AlicilarToggle.IsChecked}">
+                                    <ItemsControl ItemsSource="{Binding ReceiverPoints}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="projects:AcousticPoint">
+                                                <Border Padding="4,2">
+                                                    <TextBlock FontSize="12" Foreground="#50D8E0"
+                                                               TextTrimming="CharacterEllipsis">
+                                                        <TextBlock.Text>
+                                                            <MultiBinding StringFormat="Alıcı: {0}">
+                                                                <Binding Path="Label"/>
+                                                            </MultiBinding>
+                                                        </TextBlock.Text>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock FontSize="11" Foreground="#3A5060"
+                                               IsVisible="{Binding !ReceiverPoints.Count}"
+                                               Text="Alıcı tanımlanmadı" Margin="4,2"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+ 
+                        <!-- Materyaller -->
+                        <Border Classes="treeSection">
+                            <StackPanel>
+                                <ToggleButton x:Name="MateryallerToggle" IsChecked="True" Classes="collapsibleHeader">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="panelTitle" Text="MATERYALLER" Margin="0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#MateryallerToggle.IsChecked}"/>
+                                        <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #MateryallerToggle.IsChecked}"/>
+                                    </Grid>
+                                </ToggleButton>
+                                <StackPanel IsVisible="{Binding #MateryallerToggle.IsChecked}">
+                                    <ItemsControl ItemsSource="{Binding CategoryMaterialRows}" Margin="4,2">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="*,*" Margin="0,1" ColumnSpacing="6">
+                                                    <TextBlock Text="{Binding Category}" 
+                                                               FontSize="11" Foreground="#7090A8" 
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" 
+                                                               Text="{Binding SelectedMaterial.DisplayName}" 
+                                                               FontSize="10" Foreground="#60C090" 
+                                                               TextTrimming="CharacterEllipsis"
+                                                               HorizontalAlignment="Right"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+ 
+                        <!-- Hızlı Hesap -->
+                        <Border Classes="treeSection">
+                            <StackPanel>
+                                <ToggleButton x:Name="HizliHesapToggle" IsChecked="True" Classes="collapsibleHeader">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="panelTitle" Text="⏱  HIZLI HESAP (RT60)" Margin="0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#HizliHesapToggle.IsChecked}"/>
+                                        <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #HizliHesapToggle.IsChecked}"/>
+                                    </Grid>
+                                </ToggleButton>
+                                <StackPanel Spacing="6" IsVisible="{Binding #HizliHesapToggle.IsChecked}">
+                                    <Grid ColumnDefinitions="*,Auto" Margin="4,0,4,4">
+                                        <TextBlock Text="Oda Hacmi (m³):" FontSize="11" Foreground="#7090A8" VerticalAlignment="Center"/>
+                                        <NumericUpDown Grid.Column="1" Value="{Binding RoomVolume}" Minimum="0" Maximum="999999" Increment="10" FormatString="F1" FontSize="11" Width="80" Padding="4,2" ShowButtonSpinner="False"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding RoomVolumeSourceText}" FontSize="9" Foreground="#7090A8" Margin="4,-4,4,4" TextWrapping="Wrap"/>
+
+                                    <!-- Sabine -->
+                                    <TextBlock Text="Sabine" FontSize="9" Foreground="#5A8BB5" FontWeight="SemiBold" Margin="4,0,0,0"/>
+                                    <ItemsControl ItemsSource="{Binding SabineBands}" Margin="0,0,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#0D1A2A" CornerRadius="6" Margin="2" Padding="2,6" BorderBrush="#1C354A" BorderThickness="1">
+                                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="3">
+                                                        <TextBlock Text="{Binding Label}" FontSize="9" Foreground="#5A8BB5" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding ValueText}" FontSize="12" Foreground="#E0B050" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+ 
+                                    <!-- Eyring-Norris -->
+                                    <TextBlock Text="Eyring-Norris" FontSize="9" Foreground="#70B070" FontWeight="SemiBold" Margin="4,4,0,0"/>
+                                    <ItemsControl ItemsSource="{Binding EyringBands}" Margin="0,0,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#0D1A0D" CornerRadius="6" Margin="2" Padding="2,6" BorderBrush="#1C3A1C" BorderThickness="1">
+                                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="3">
+                                                        <TextBlock Text="{Binding Label}" FontSize="9" Foreground="#5AB55A" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding ValueText}" FontSize="12" Foreground="#90E090" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+ 
+                                    <!-- Schroeder Frekansı -->
+                                    <Grid ColumnDefinitions="*,Auto" Margin="4,4,4,0">
+                                        <TextBlock Text="Schroeder frekansı (fₛ):" FontSize="11" Foreground="#7090A8" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding SchroederFrequencyText}"
+                                                   FontSize="11" FontWeight="SemiBold" Foreground="#A0C8FF" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="6" Background="Transparent" 
+                          ResizeBehavior="PreviousAndNext" ShowsPreview="True" Margin="2,0"
+                          IsVisible="{Binding #LeftPanelToggle.IsChecked}"/>
+
+            <!-- ─── MERKEZ: 3D Viewport ─── -->
+            <Border Grid.Column="2" Background="#0A1520" CornerRadius="12" ClipToBounds="True">
+                <Panel>
+                    <!-- Viewport -->
+                    <controls:GeometryPreviewControl x:Name="GeometryPreview"
+                                                     Surfaces="{Binding VisibleSurfaces}"
+                                                     HighlightedSurfaceId="{Binding HighlightedSurfaceId, Mode=TwoWay}"
+                                                     SelectedSurfaceIds="{Binding SelectedSurfaceIds, Mode=TwoWay}"
+                                                     SourcePoints="{Binding SourcePoints}"
+                                                     ReceiverPoints="{Binding ReceiverPoints}"
+                                                     PlacementMode="{Binding PlacementMode}"
+                                                     UnitLabel="{Binding UnitShortName}"
+                                                     Projection="{Binding ProjectionMode}"
+                                                     HitIntensityMap="{Binding LightHitMap}"
+                                                     RayPaths="{Binding LightRayPaths}"
+                                                     MirrorSurfaceIds="{Binding LightMirrorIds}"
+                                                     ReceiverSurfaceIds="{Binding LightReceiverIds}"
+                                                     ReceiverHitPoints="{Binding LightHitPoints}"/>
+
+                    <!-- Sol Üst: 3D Görünüm + Sıfırla -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10">
+                        <Border Background="#E0132032" CornerRadius="8" Padding="8,4" BorderThickness="1" BorderBrush="#40FFFFFF">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="Görünüm" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <ComboBox ItemsSource="{Binding ProjectionModes}"
+                                          SelectedItem="{Binding ProjectionMode}" 
+                                          FontSize="11" 
+                                          Padding="4,2" 
+                                          Background="#2A3C52" 
+                                          Foreground="White"
+                                          BorderThickness="0"
+                                          Height="24"
+                                          VerticalAlignment="Center">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource ProjectionModeTurkishConverter}}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                    <ComboBox.Styles>
+                                        <Style Selector="ComboBoxItem">
+                                            <Setter Property="Foreground" Value="#13283E"/>
+                                        </Style>
+                                    </ComboBox.Styles>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+                        <Button Click="ResetViewButton_OnClick" Content="Sıfırla"
+                                Background="#E0132032" Foreground="White" BorderThickness="1" BorderBrush="#40FFFFFF"
+                                CornerRadius="8" Padding="10,4" FontSize="11" Height="30" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Sağ Alt: Yardım Metni -->
+                    <Border Background="#A0132032" CornerRadius="6" Padding="8,4" BorderThickness="1" BorderBrush="#20FFFFFF"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
+                        <TextBlock FontSize="10" Foreground="#E0FFFFFF"
+                                   Text="Tekerlek: yakınlaştır  |  Sol tuş: kaydır  |  Sağ tuş: döndür"/>
+                    </Border>
+
+                    <!-- Sol Orta: Sol Paneli Aç/Kapat Butonu -->
+                    <ToggleButton x:Name="LeftPanelToggle" IsChecked="True"
+                                  Width="20" Height="50"
+                                  Background="#E00D1E2E" Foreground="White"
+                                  BorderThickness="1" BorderBrush="#40FFFFFF"
+                                  CornerRadius="0,8,8,0"
+                                  Padding="0"
+                                  HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Panel>
+                            <TextBlock Text="◀" IsVisible="{Binding #LeftPanelToggle.IsChecked}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11"/>
+                            <TextBlock Text="▶" IsVisible="{Binding !#LeftPanelToggle.IsChecked}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11"/>
+                        </Panel>
+                    </ToggleButton>
+
+                    <!-- Sağ Orta: Sağ Paneli Aç/Kapat Butonu -->
+                    <ToggleButton x:Name="RightPanelToggle" IsChecked="True"
+                                  Width="20" Height="50"
+                                  Background="#E00D1E2E" Foreground="White"
+                                  BorderThickness="1" BorderBrush="#40FFFFFF"
+                                  CornerRadius="8,0,0,8"
+                                  Padding="0"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Panel>
+                            <TextBlock Text="▶" IsVisible="{Binding #RightPanelToggle.IsChecked}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11"/>
+                            <TextBlock Text="◀" IsVisible="{Binding !#RightPanelToggle.IsChecked}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11"/>
+                        </Panel>
+                    </ToggleButton>
+                </Panel>
+            </Border>
+
+            <GridSplitter Grid.Column="3" Width="6" Background="Transparent" 
+                          ResizeBehavior="PreviousAndNext" ShowsPreview="True" Margin="2,0"
+                          IsVisible="{Binding #RightPanelToggle.IsChecked}"/>
+
+            <!-- ─── SAĞ PANEL ─── -->
+            <Grid Grid.Column="4" RowDefinitions="*,Auto" RowSpacing="8"
+                  IsVisible="{Binding #RightPanelToggle.IsChecked}">
+                <!-- Üst kısım: Modül sekmeleri -->
+                <Border Grid.Row="0" Background="#0C1826" CornerRadius="12">
+                    <TabControl x:Name="ModuleTabControl" Classes="noHeaders" Padding="4">
+
+                    <!-- PANEL sekmesi -->
+                    <TabItem Header="Panel">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="8" Margin="6">
+                                <Border Classes="treeSection">
+                                    <StackPanel>
+                                        <ToggleButton x:Name="PanelKonfigToggle" IsChecked="True" Classes="collapsibleHeader">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Classes="panelTitle" Text="PANEL KONFİGÜRASYONU" Margin="0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#PanelKonfigToggle.IsChecked}"/>
+                                                <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #PanelKonfigToggle.IsChecked}"/>
+                                            </Grid>
+                                        </ToggleButton>
+                                        <StackPanel Spacing="6" IsVisible="{Binding #PanelKonfigToggle.IsChecked}">
+                                            <TextBlock Text="Sahne Önü (Ön Duvar):" FontSize="11" Foreground="#7090A8"/>
+                                            <ComboBox ItemsSource="{Binding SahneOnuSecenekleri}"
+                                                      SelectedItem="{Binding SeciliSahneOnu}"
+                                                      FontSize="11" HorizontalAlignment="Stretch" Padding="6,4"/>
+
+                                            <TextBlock Text="Hedef Yüzeyler (boşsa otomatik):" FontSize="11" Foreground="#7090A8" Margin="0,4,0,0"/>
+                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto" RowSpacing="3">
+                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Tavan:" FontSize="11" Foreground="#A0C0E0" VerticalAlignment="Center"/>
+                                                <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding HedefYuzeySecenekleri}"
+                                                          SelectedItem="{Binding SeciliTavanYuzey}"
+                                                          FontSize="11" HorizontalAlignment="Stretch" Padding="6,3"/>
+                                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Sol duvar:" FontSize="11" Foreground="#A0C0E0" VerticalAlignment="Center"/>
+                                                <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding HedefYuzeySecenekleri}"
+                                                          SelectedItem="{Binding SeciliSolDuvarYuzey}"
+                                                          FontSize="11" HorizontalAlignment="Stretch" Padding="6,3"/>
+                                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Sağ duvar:" FontSize="11" Foreground="#A0C0E0" VerticalAlignment="Center"/>
+                                                <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding HedefYuzeySecenekleri}"
+                                                          SelectedItem="{Binding SeciliSagDuvarYuzey}"
+                                                          FontSize="11" HorizontalAlignment="Stretch" Padding="6,3"/>
+                                            </Grid>
+                                            <TextBlock Text="{Binding HedefYuzeyOzeti}" FontSize="10" Foreground="#5A8AAA" TextWrapping="Wrap" Margin="0,2,0,4"/>
+
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,4">
+                                                <StackPanel>
+                                                    <TextBlock Text="Panel Eni (m):" FontSize="11" Foreground="#7090A8"/>
+                                                    <NumericUpDown Value="{Binding PanelEniM}" Minimum="0.1" Maximum="10" Increment="0.1" FormatString="F2" FontSize="11" Padding="4"
+                                                                   IsVisible="{Binding TekTipPanelEniAktif}"/>
+                                                    <StackPanel Spacing="4" IsVisible="{Binding SiraliPanelEniAktif}">
+                                                        <DataGrid AutoGenerateColumns="False"
+                                                                  CanUserSortColumns="False"
+                                                                  GridLinesVisibility="Horizontal"
+                                                                  HeadersVisibility="Column"
+                                                                  MaxHeight="130"
+                                                                  FontSize="11"
+                                                                  ItemsSource="{Binding PanelEniSatirlari}"
+                                                                  SelectedItem="{Binding SeciliPanelEniSatiri, Mode=TwoWay}">
+                                                            <DataGrid.Columns>
+                                                                <DataGridTextColumn Header="Sıra" Binding="{Binding Sira}" Width="46" IsReadOnly="True"/>
+                                                                <DataGridTemplateColumn Header="En (m)" Width="*">
+                                                                    <DataGridTemplateColumn.CellTemplate>
+                                                                        <DataTemplate>
+                                                                            <NumericUpDown Value="{Binding EnM, Mode=TwoWay}"
+                                                                                           Minimum="0.1" Maximum="10"
+                                                                                           Increment="0.1" FormatString="F2"
+                                                                                           FontSize="11" Padding="3"
+                                                                                           ShowButtonSpinner="False"/>
+                                                                        </DataTemplate>
+                                                                    </DataGridTemplateColumn.CellTemplate>
+                                                                </DataGridTemplateColumn>
+                                                            </DataGrid.Columns>
+                                                        </DataGrid>
+                                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                                            <Button Content="+ Ekle"
+                                                                    Command="{Binding PanelEniSatiriEkle}"
+                                                                    Background="#163A55" Foreground="#BFE4FF"
+                                                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                                    BorderThickness="0" CornerRadius="4" Padding="5,3" FontSize="10"/>
+                                                            <Button Grid.Column="1" Content="Sil"
+                                                                    Command="{Binding SeciliPanelEniSatiriniSil}"
+                                                                    Background="#3A1A1A" Foreground="#E08080"
+                                                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                                    BorderThickness="0" CornerRadius="4" Padding="5,3" FontSize="10"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="Sarkma/Çıkma (m):" FontSize="11" Foreground="#7090A8"/>
+                                                    <NumericUpDown Value="{Binding SarkmaCikmaM}" Minimum="0.01" Maximum="5" Increment="0.05" FormatString="F2" FontSize="11" Padding="4"/>
+                                                </StackPanel>
+                                            </Grid>
+ 
+                                            <CheckBox IsChecked="{Binding SiraliPanelEniAktif}" Content="Sıralı panel enleri kullan" FontSize="11" Foreground="#A0C0E0"/>
+                                            <TextBlock Text="{Binding PanelEniDurumText}" FontSize="10" Foreground="#7090A8" TextWrapping="Wrap"/>
+ 
+                                            <CheckBox IsChecked="{Binding TavanPanelAktif}" Content="Tavan Paneli (Yatay)" FontSize="11" Foreground="#A0C0E0"/>
+                                            <CheckBox IsChecked="{Binding DikeyDuvarPanelAktif}" Content="Panel (Dikey)" FontSize="11" Foreground="#A0C0E0"/>
+ 
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,6,0,0">
+                                                <Button Content="Üret / Yenile"
+                                                        Command="{Binding PanelOlustur}"
+                                                        Background="#0A4C72" Foreground="White"
+                                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                        BorderThickness="0" CornerRadius="5" Padding="6" FontSize="11"/>
+                                                <Button Grid.Column="1" Content="Temizle"
+                                                        Command="{Binding PanelleriTemizle}"
+                                                        Background="#4A1A1A" Foreground="#E08080"
+                                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                        BorderThickness="0" CornerRadius="5" Padding="6" FontSize="11"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+ 
+                                <Border Classes="treeSection">
+                                    <StackPanel>
+                                        <ToggleButton x:Name="UretilenPanellerToggle" IsChecked="True" Classes="collapsibleHeader">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Classes="panelTitle" Text="ÜRETİLEN PANELLER" Margin="0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#UretilenPanellerToggle.IsChecked}"/>
+                                                <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #UretilenPanellerToggle.IsChecked}"/>
+                                            </Grid>
+                                        </ToggleButton>
+                                        <StackPanel Spacing="6" IsVisible="{Binding #UretilenPanellerToggle.IsChecked}">
+                                            <DataGrid AutoGenerateColumns="False"
+                                                      CanUserSortColumns="False"
+                                                      GridLinesVisibility="Horizontal"
+                                                      HeadersVisibility="Column"
+                                                      MaxHeight="200"
+                                                      FontSize="11"
+                                                      ItemsSource="{Binding PanelListesi}"
+                                                      SelectedItem="{Binding SeciliPanelSatiri, Mode=TwoWay}">
+                                                <DataGrid.Columns>
+                                                    <DataGridCheckBoxColumn Header="Seç" Binding="{Binding IsSelected}" Width="40"/>
+                                                    <DataGridTextColumn Header="Etiket" Binding="{Binding Etiket}" Width="*" IsReadOnly="True"/>
+                                                    <DataGridTextColumn Header="En" Binding="{Binding PanelEniText}" Width="64" IsReadOnly="True"/>
+                                                    <DataGridTextColumn Header="Açı (°)" Binding="{Binding AciText}" Width="72" IsReadOnly="True"/>
+                                                    <DataGridTextColumn Header="S/Ç (m)" Binding="{Binding SarkmaCikmaText}" Width="72" IsReadOnly="True"/>
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+ 
+                                            <TextBlock Text="Seçili Paneller İçin:" FontSize="11" Foreground="#7090A8" Margin="0,6,0,2"/>
+                                            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="6">
+                                                <TextBlock Text="Açı Δ (°):" FontSize="11" Foreground="#A0C0E0" VerticalAlignment="Center"/>
+                                                <NumericUpDown Grid.Column="1" Value="{Binding SeciliPanellerAciDegeri}" Minimum="-180" Maximum="180" Increment="5" FormatString="F1" FontSize="11" Padding="4"/>
+                                                
+                                                <TextBlock Grid.Column="2" Text="S/Ç (m):" FontSize="11" Foreground="#A0C0E0" VerticalAlignment="Center"/>
+                                                <NumericUpDown Grid.Column="3" Value="{Binding SeciliPanellerSarkmaDegeri}" Minimum="0" Maximum="5" Increment="0.1" FormatString="F2" FontSize="11" Padding="4"/>
+                                            </Grid>
+                                            
+                                            <Button Content="✓ Seçililere Uygula"
+                                                    Command="{Binding SeciliPanelleriGuncelle}"
+                                                    Background="#1A4A2A" Foreground="#80EFA0"
+                                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                    BorderThickness="0" CornerRadius="5" Padding="6" FontSize="11" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- NOKTA sekmesi -->
+                    <TabItem Header="Nokta">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="8" Margin="6">
+                                <Border Classes="treeSection">
+                                    <StackPanel>
+                                        <ToggleButton x:Name="NoktaKaynaklarToggle" IsChecked="True" Classes="collapsibleHeader">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Classes="panelTitle" Text="KAYNAKLAR" Margin="0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#NoktaKaynaklarToggle.IsChecked}"/>
+                                                <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #NoktaKaynaklarToggle.IsChecked}"/>
+                                            </Grid>
+                                        </ToggleButton>
+                                        <StackPanel Spacing="6" IsVisible="{Binding #NoktaKaynaklarToggle.IsChecked}">
+                                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                                                <TextBlock Text="{Binding PlacementStatusText}"
+                                                           FontSize="10" Foreground="#705030"
+                                                           TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Content="Kütüphane"
+                                                        Click="LoudspeakerLibraryButton_OnClick"
+                                                        Background="#233850" Foreground="White"
+                                                        BorderThickness="0" CornerRadius="5" Padding="7,4" FontSize="10"
+                                                        ToolTip.Tip="Hoparlör kütüphanesini aç"/>
+                                                <Button Grid.Column="2" Content="Yüzeye Yakala"
+                                                        Click="SnapSourceButton_OnClick"
+                                                        Background="#6B3D00" Foreground="White"
+                                                        BorderThickness="0" CornerRadius="5" Padding="7,4" FontSize="10"/>
+                                                <Button Grid.Column="3" Content="Görünümden"
+                                                        Click="PlaceSourceButton_OnClick"
+                                                        Background="#CC6600" Foreground="White"
+                                                        BorderThickness="0" CornerRadius="5" Padding="7,4" FontSize="10"/>
+                                            </Grid>
+
+                                            <DataGrid x:Name="ProjectSourceDataGrid"
+                                                      AutoGenerateColumns="False"
+                                                      CanUserSortColumns="False"
+                                                      GridLinesVisibility="Horizontal"
+                                                      HeadersVisibility="Column"
+                                                      MaxHeight="150"
+                                                      FontSize="11"
+                                                      SelectedItem="{Binding SelectedSource, Mode=TwoWay}"
+                                                      CellEditEnded="PointDataGrid_OnCellEditEnded"
+                                                      ItemsSource="{Binding Sources}">
+                                                <DataGrid.Columns>
+                                                    <DataGridTextColumn Header="No" Binding="{Binding Id}" Width="36" IsReadOnly="True"/>
+                                                    <DataGridTextColumn Header="Etiket" Binding="{Binding Label}" Width="*"/>
+                                                    <DataGridTextColumn Header="X" Binding="{Binding XText}" Width="54"/>
+                                                    <DataGridTextColumn Header="Y" Binding="{Binding YText}" Width="54"/>
+                                                    <DataGridTextColumn Header="Z" Binding="{Binding ZText}" Width="54"/>
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+
+                                            <Border Background="#101D2A" CornerRadius="6" Padding="8,6"
+                                                    BorderBrush="#20384E" BorderThickness="1">
+                                                <StackPanel Spacing="5">
+                                                    <TextBlock Text="Seçili kaynak yönlülüğü"
+                                                               FontSize="10" FontWeight="SemiBold" Foreground="#85B5DF"/>
+                                                    <ComboBox ItemsSource="{Binding DirectivityOptions}"
+                                                              SelectedItem="{Binding SelectedSource.Directivity}"
+                                                              LostFocus="PointDirection_OnCommit"
+                                                              FontSize="10" Padding="5,2">
+                                                        <ComboBox.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Converter={StaticResource DirectivityPatternTurkishConverter}}"/>
+                                                            </DataTemplate>
+                                                        </ComboBox.ItemTemplate>
+                                                    </ComboBox>
+                                                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                                                        <TextBox Text="{Binding SelectedSource.AzimuthText}"
+                                                                 PlaceholderText="Yatay açı (°)" LostFocus="PointDirection_OnCommit"
+                                                                 FontSize="10" Padding="4,2"/>
+                                                        <TextBox Grid.Column="1" Text="{Binding SelectedSource.ElevationText}"
+                                                                 PlaceholderText="Düşey açı (°)" LostFocus="PointDirection_OnCommit"
+                                                                 FontSize="10" Padding="4,2"/>
+                                                        <TextBox Grid.Column="2" Text="{Binding SelectedSource.RollText}"
+                                                                 PlaceholderText="Eksen açısı (°)" LostFocus="PointDirection_OnCommit"
+                                                                 FontSize="10" Padding="4,2"/>
+                                                    </Grid>
+                                                    <TextBox Text="{Binding SelectedSource.LoudspeakerId}"
+                                                             PlaceholderText="Hoparlör kimliği (boşsa analitik desen)"
+                                                             LostFocus="PointDirection_OnCommit"
+                                                             FontSize="10" Padding="4,2"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Grid ColumnDefinitions="*,*,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="4" RowSpacing="4">
+                                                <TextBox Grid.ColumnSpan="4" PlaceholderText="Etiket (boş=S1...)" Text="{Binding NewSourceLabel}" FontSize="11" Padding="5,3"/>
+                                                <TextBox Grid.Row="1" PlaceholderText="X" Text="{Binding NewSourceX}" FontSize="11" Padding="5,3"/>
+                                                <TextBox Grid.Row="1" Grid.Column="1" PlaceholderText="Y" Text="{Binding NewSourceY}" FontSize="11" Padding="5,3"/>
+                                                <TextBox Grid.Row="1" Grid.Column="2" PlaceholderText="Z" Text="{Binding NewSourceZ}" FontSize="11" Padding="5,3"/>
+                                                <Button Grid.Row="1" Grid.Column="3" Content="+ Ekle"
+                                                        Click="AddSourceButton_OnClick"
+                                                        Background="#CC6600" Foreground="White"
+                                                        BorderThickness="0" CornerRadius="5" Padding="8,4" FontSize="10"/>
+                                            </Grid>
+
+                                            <Button Content="Seçili Kaynağı Sil"
+                                                    Click="RemoveSourceButton_OnClick"
+                                                    Background="#3A1A1A" Foreground="#E08080"
+                                                    BorderThickness="0" CornerRadius="5" Padding="8,4" FontSize="10"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="treeSection">
+                                    <StackPanel>
+                                        <ToggleButton x:Name="NoktaAlicilarToggle" IsChecked="True" Classes="collapsibleHeader">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Classes="panelTitle" Text="ALICILAR" Margin="0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#NoktaAlicilarToggle.IsChecked}"/>
+                                                <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #NoktaAlicilarToggle.IsChecked}"/>
+                                            </Grid>
+                                        </ToggleButton>
+                                        <StackPanel Spacing="6" IsVisible="{Binding #NoktaAlicilarToggle.IsChecked}">
+                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                                <TextBlock Text="Alıcıları burada ekle; simülasyon ve sonuçlar anında bu listeyi kullanır."
+                                                           FontSize="10" Foreground="#305860"
+                                                           TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Content="Yüzeye Yakala"
+                                                        Click="SnapReceiverButton_OnClick"
+                                                        Background="#004050" Foreground="White"
+                                                        BorderThickness="0" CornerRadius="5" Padding="7,4" FontSize="10"/>
+                                                <Button Grid.Column="2" Content="Görünümden"
+                                                        Click="PlaceReceiverButton_OnClick"
+                                                        Background="#007080" Foreground="White"
+                                                        BorderThickness="0" CornerRadius="5" Padding="7,4" FontSize="10"/>
+                                            </Grid>
+
+                                            <DataGrid x:Name="ProjectReceiverDataGrid"
+                                                      AutoGenerateColumns="False"
+                                                      CanUserSortColumns="False"
+                                                      GridLinesVisibility="Horizontal"
+                                                      HeadersVisibility="Column"
+                                                      MaxHeight="150"
+                                                      FontSize="11"
+                                                      SelectedItem="{Binding SelectedReceiver, Mode=TwoWay}"
+                                                      CellEditEnded="PointDataGrid_OnCellEditEnded"
+                                                      ItemsSource="{Binding Receivers}">
+                                                <DataGrid.Columns>
+                                                    <DataGridTextColumn Header="No" Binding="{Binding Id}" Width="36" IsReadOnly="True"/>
+                                                    <DataGridTextColumn Header="Etiket" Binding="{Binding Label}" Width="*"/>
+                                                    <DataGridTextColumn Header="X" Binding="{Binding XText}" Width="54"/>
+                                                    <DataGridTextColumn Header="Y" Binding="{Binding YText}" Width="54"/>
+                                                    <DataGridTextColumn Header="Z" Binding="{Binding ZText}" Width="54"/>
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+
+                                            <Grid ColumnDefinitions="*,*,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="4" RowSpacing="4">
+                                                <TextBox Grid.ColumnSpan="4" PlaceholderText="Etiket (boş=R1...)" Text="{Binding NewReceiverLabel}" FontSize="11" Padding="5,3"/>
+                                                <TextBox Grid.Row="1" PlaceholderText="X" Text="{Binding NewReceiverX}" FontSize="11" Padding="5,3"/>
+                                                <TextBox Grid.Row="1" Grid.Column="1" PlaceholderText="Y" Text="{Binding NewReceiverY}" FontSize="11" Padding="5,3"/>
+                                                <TextBox Grid.Row="1" Grid.Column="2" PlaceholderText="Z" Text="{Binding NewReceiverZ}" FontSize="11" Padding="5,3"/>
+                                                <Button Grid.Row="1" Grid.Column="3" Content="+ Ekle"
+                                                        Click="AddReceiverButton_OnClick"
+                                                        Background="#007080" Foreground="White"
+                                                        BorderThickness="0" CornerRadius="5" Padding="8,4" FontSize="10"/>
+                                            </Grid>
+
+                                            <Button Content="Seçili Alıcıyı Sil"
+                                                    Click="RemoveReceiverButton_OnClick"
+                                                    Background="#3A1A1A" Foreground="#E08080"
+                                                    BorderThickness="0" CornerRadius="5" Padding="8,4" FontSize="10"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- IŞIK İZLEME sekmesi -->
+                    <TabItem Header="Işık">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="6" Margin="6">
+                                                 <!-- Kaynak -->
+                                <Border Classes="treeSection">
+                                    <StackPanel>
+                                        <ToggleButton x:Name="IsikKaynagiToggle" IsChecked="True" Classes="collapsibleHeader">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Classes="panelTitle" Text="IŞIK KAYNAĞI" Margin="0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#IsikKaynagiToggle.IsChecked}"/>
+                                                <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #IsikKaynagiToggle.IsChecked}"/>
+                                            </Grid>
+                                        </ToggleButton>
+                                        <StackPanel Spacing="5" IsVisible="{Binding #IsikKaynagiToggle.IsChecked}">
+                                            <ComboBox ItemsSource="{Binding SourcePoints}"
+                                                      SelectedItem="{Binding SelectedLightSource, Mode=TwoWay}"
+                                                      DisplayMemberBinding="{Binding Label}"
+                                                      HorizontalAlignment="Stretch"
+                                                      FontSize="12" Padding="6,3"/>
+                                            <TextBlock FontSize="11" Foreground="#705030"
+                                                       IsVisible="{Binding !SourcePoints.Count}"
+                                                       TextWrapping="Wrap"
+                                                       Text="Kaynak tanımlanmadı. Önce sol panelde kaynak ekleyin."/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Yüzey listesi: ayna + alıcı -->
+                                <Border Classes="treeSection">
+                                    <StackPanel>
+                                        <ToggleButton x:Name="AynaAliciYuzeylerToggle" IsChecked="True" Classes="collapsibleHeader">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Classes="panelTitle" Text="AYNA / ALICI YÜZEYLER" Margin="0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#AynaAliciYuzeylerToggle.IsChecked}"/>
+                                                <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #AynaAliciYuzeylerToggle.IsChecked}"/>
+                                            </Grid>
+                                        </ToggleButton>
+                                        <StackPanel Spacing="5" IsVisible="{Binding #AynaAliciYuzeylerToggle.IsChecked}">
+                                            <TextBlock FontSize="10" Foreground="#3A5060" TextWrapping="Wrap"
+                                                       Text="Ayna: speküler yansıma yapar. Alıcı: sadece buraya düşen ışınlar gösterilir."/>
+
+                                            <!-- Sütun başlıkları -->
+                                            <Grid ColumnDefinitions="*,34,34">
+                                                <TextBlock Grid.Column="1" Text="Ayna" FontSize="11"
+                                                           HorizontalAlignment="Center" Foreground="#C8A840"
+                                                           ToolTip.Tip="Ayna yüzey"/>
+                                                <TextBlock Grid.Column="2" Text="Alıcı" FontSize="9"
+                                                           HorizontalAlignment="Center" Foreground="#40C8B8"
+                                                           ToolTip.Tip="Alıcı yüzey"/>
+                                            </Grid>
+
+                                            <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                                <ItemsControl ItemsSource="{Binding MirrorSurfaceOptions}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:MirrorSurfaceViewModel">
+                                                            <Grid ColumnDefinitions="*,34,34" Margin="0,1">
+                                                                <TextBlock Text="{Binding Label}"
+                                                                           FontSize="11" Foreground="#7090A8"
+                                                                           VerticalAlignment="Center"
+                                                                           TextTrimming="CharacterEllipsis"/>
+                                                                <CheckBox Grid.Column="1"
+                                                                          IsChecked="{Binding IsMirror, Mode=TwoWay}"
+                                                                          HorizontalAlignment="Center"
+                                                                          ToolTip.Tip="Ayna yüzey"/>
+                                                                <CheckBox Grid.Column="2"
+                                                                          IsChecked="{Binding IsReceiver, Mode=TwoWay}"
+                                                                          HorizontalAlignment="Center"
+                                                                          ToolTip.Tip="Alıcı yüzey"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Parametreler -->
+                                <Border Classes="treeSection">
+                                    <StackPanel>
+                                        <ToggleButton x:Name="IsikParametreToggle" IsChecked="True" Classes="collapsibleHeader">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Classes="panelTitle" Text="⚙ PARAMETRELER" Margin="0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#IsikParametreToggle.IsChecked}"/>
+                                                <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #IsikParametreToggle.IsChecked}"/>
+                                            </Grid>
+                                        </ToggleButton>
+                                        <StackPanel Spacing="6" IsVisible="{Binding #IsikParametreToggle.IsChecked}">
+                                            <Grid ColumnDefinitions="*,120" ColumnSpacing="6">
+                                                <TextBlock Text="Işın sayısı" FontSize="11"
+                                                           Foreground="#7AAAC8" VerticalAlignment="Center"/>
+                                                <NumericUpDown Grid.Column="1"
+                                                               Value="{Binding LightRayCount}"
+                                                               Minimum="100" Maximum="50000"
+                                                               Increment="500" FontSize="11"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="*,120" ColumnSpacing="6">
+                                                <TextBlock Text="Maks. sekme" FontSize="11"
+                                                           Foreground="#7AAAC8" VerticalAlignment="Center"/>
+                                                <NumericUpDown Grid.Column="1"
+                                                               Value="{Binding LightMaxBounces}"
+                                                               Minimum="1" Maximum="30"
+                                                               Increment="1" FontSize="11"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Çalıştır / Temizle -->
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                                    <Button Content="Işık İzlemeyi Başlat"
+                                            IsEnabled="{Binding CanRunLight}"
+                                            Click="RunLightTracingButton_OnClick"
+                                            Background="#1A3A20" Foreground="#60D890"
+                                            CornerRadius="6" Padding="0,7"
+                                            FontSize="12" FontWeight="SemiBold"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="✕"
+                                            Click="ClearLightTracingButton_OnClick"
+                                            Background="#2A1A1A" Foreground="#E07070"
+                                            CornerRadius="6" Padding="12,7"
+                                            FontSize="12"
+                                            ToolTip.Tip="Sonuçları temizle"/>
+                                </Grid>
+                                <TextBlock Text="{Binding LightStatusText}"
+                                           FontSize="11" Foreground="#4A7090" TextWrapping="Wrap"/>
+
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- MATERYAL sekmesi -->
+                    <TabItem Header="Materyal">
+                        <Grid RowDefinitions="Auto,2*,Auto,3*,Auto" Margin="8,8,8,8" RowSpacing="6">
+
+                            <!-- Başlık + durum -->
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock FontSize="13" FontWeight="SemiBold"
+                                               Foreground="#D0E8FF" Text="Kategori → Materyal Ataması"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="Kütüphane"
+                                            Click="OpenMaterialLibraryButton_OnClick"
+                                            Background="#1A2840" Foreground="#607090"
+                                            BorderThickness="0" CornerRadius="5"
+                                            Padding="8,4" FontSize="11"/>
+                                </Grid>
+                                <!-- Frekans başlıkları -->
+                                <Border Background="#0D1E30" CornerRadius="6" Padding="8,4">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{Binding MaterialStatusText}"
+                                                   FontSize="11" Foreground="#5080A0"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="125  250  500  1k    2k    4k"
+                                                   FontSize="10" Foreground="#5A8AAA"
+                                                   FontFamily="Courier New"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Kategori listesi -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding CategoryMaterialRows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:CategoryMaterialViewModel">
+                                            <Border Background="#0D1A28" CornerRadius="8"
+                                                    Padding="10,8" Margin="0,0,0,4">
+                                                <StackPanel Spacing="5">
+
+                                                    <!-- Kategori adı + override sayacı -->
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Text="{Binding CategoryLabel}"
+                                                                   FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="#7AAAC8"/>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="{Binding OverrideBadgeText}"
+                                                                   FontSize="10" Foreground="#E0A070"
+                                                                   FontStyle="Italic"
+                                                                   VerticalAlignment="Center"/>
+                                                    </Grid>
+
+                                                    <!-- Materyal seçici -->
+                                                    <ComboBox ItemsSource="{Binding AvailableMaterials}"
+                                                              SelectedItem="{Binding SelectedMaterial, Mode=TwoWay}"
+                                                              DisplayMemberBinding="{Binding DisplayName}"
+                                                              FontSize="12"
+                                                              HorizontalAlignment="Stretch"
+                                                              Padding="6,3"/>
+
+                                                    <!-- Alpha + saçılım -->
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Text="{Binding AlphaRow}"
+                                                                   FontSize="10"
+                                                                   FontFamily="Courier New"
+                                                                   Foreground="#50A080"/>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="{Binding ScatteringText}"
+                                                                   FontSize="10"
+                                                                   FontFamily="Courier New"
+                                                                   Foreground="#607090"/>
+                                                    </Grid>
+
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <!-- Yüzey listesi paneli başlığı -->
+                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                <TextBlock FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#D0E8FF" Text="Yüzey → Materyal (Override)"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding SurfaceMaterialOverrideSummary}"
+                                           FontSize="10" Foreground="#5A8AAA"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <!-- Yüzey listesi paneli -->
+                            <Grid Grid.Row="3" RowDefinitions="Auto,*,Auto" RowSpacing="4">
+
+                                <!-- Filtre satırı -->
+                                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,2*" ColumnSpacing="6">
+                                    <TextBlock Text="Kategori:" FontSize="11" Foreground="#7090A8"
+                                               VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding SurfaceMaterialCategoryFilters}"
+                                              SelectedItem="{Binding SelectedSurfaceMaterialCategoryFilter}"
+                                              FontSize="11" Padding="6,3"
+                                              HorizontalAlignment="Stretch"/>
+                                    <TextBlock Grid.Column="2" Text="Ara:" FontSize="11" Foreground="#7090A8"
+                                               VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                    <TextBox Grid.Column="3"
+                                             Text="{Binding SurfaceMaterialSearchText, Mode=TwoWay}"
+                                             PlaceholderText="Yüzey no / ad / kategori..."
+                                             FontSize="11" Padding="6,3"/>
+                                </Grid>
+
+                                <!-- Yüzey tablosu — satıra tıkla = 3D viewport'ta seç + atama hedefi -->
+                                <DataGrid Grid.Row="1"
+                                          x:Name="SurfaceMaterialDataGrid"
+                                          ItemsSource="{Binding SurfaceMaterialRows}"
+                                          AutoGenerateColumns="False"
+                                          CanUserSortColumns="True"
+                                          GridLinesVisibility="Horizontal"
+                                          HeadersVisibility="Column"
+                                          SelectionMode="Extended"
+                                          SelectionChanged="SurfaceMaterialDataGrid_OnSelectionChanged"
+                                          FontSize="11">
+                                    <DataGrid.Columns>
+                                        <DataGridCheckBoxColumn Header="✓"   Binding="{Binding IsSelected, Mode=TwoWay}" Width="32"/>
+                                        <DataGridTextColumn     Header="No"  Binding="{Binding Id}"       Width="48" IsReadOnly="True"/>
+                                        <DataGridTextColumn     Header="Ad"  Binding="{Binding Name}"     Width="*"  IsReadOnly="True"/>
+                                        <DataGridTextColumn     Header="Kat" Binding="{Binding Category}" Width="100" IsReadOnly="True"/>
+                                        <DataGridTextColumn     Header="★"   Binding="{Binding OverrideBadge}" Width="24" IsReadOnly="True"/>
+                                        <DataGridTextColumn     Header="Materyal" Binding="{Binding MaterialDisplay}" Width="2*" IsReadOnly="True"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <!-- Atama kontrolleri -->
+                                <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="6">
+                                    <TextBlock Text="Materyal:" FontSize="11" Foreground="#7090A8"
+                                               VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding SurfaceMaterialChoices}"
+                                              SelectedItem="{Binding SelectedSurfaceMaterialChoice}"
+                                              DisplayMemberBinding="{Binding DisplayName}"
+                                              FontSize="11" Padding="6,3"
+                                              HorizontalAlignment="Stretch"/>
+                                    <Button Grid.Column="2" Content="✓ Seçilenlere Ata"
+                                            Click="AssignMaterialToSurfacesButton_OnClick"
+                                            Background="#0A4C72" Foreground="White"
+                                            BorderThickness="0" CornerRadius="5" Padding="8,4" FontSize="11"/>
+                                    <Button Grid.Column="3" Content="↺ Varsayılana"
+                                            Click="ResetSurfaceMaterialsButton_OnClick"
+                                            Background="#4A1A1A" Foreground="#E08080"
+                                            BorderThickness="0" CornerRadius="5" Padding="8,4" FontSize="11"/>
+                                </Grid>
+                            </Grid>
+
+                            <!-- Alt bilgi -->
+                            <Border Grid.Row="4" Background="#0A1520" CornerRadius="6" Padding="8,6">
+                                <TextBlock FontSize="10" Foreground="#304050"
+                                           TextWrapping="Wrap"
+                                           Text="★ = yüzey override'ı | Override yapan yüzey kategori değişimini takip etmez."/>
+                            </Border>
+
+                        </Grid>
+                    </TabItem>
+
+                    <!-- SİMÜLASYON sekmesi -->
+                    <TabItem Header="Simülasyon">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="8,8,8,8" RowSpacing="8">
+
+                            <!-- Başlık -->
+                            <TextBlock FontSize="13" FontWeight="SemiBold"
+                                       Foreground="#D0E8FF" Text="Geometrik Işın İzleme"/>
+
+                            <!-- Parametreler -->
+                            <Border Grid.Row="1" Background="#0D1E30" CornerRadius="8" Padding="12,10">
+                                <StackPanel Spacing="8">
+
+                                    <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                                        <TextBlock Text="Işın sayısı"
+                                                   FontSize="12" Foreground="#7AAAC8"
+                                                   VerticalAlignment="Center"/>
+                                        <NumericUpDown Grid.Column="1"
+                                                       Value="{Binding RayCount}"
+                                                       Minimum="100" Maximum="100000"
+                                                       Increment="1000"
+                                                       FormatString="N0"
+                                                       FontSize="12"
+                                                       ShowButtonSpinner="False"/>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                                        <TextBlock Text="Maks. yansıma sırası"
+                                                   FontSize="12" Foreground="#7AAAC8"
+                                                   VerticalAlignment="Center"/>
+                                        <NumericUpDown Grid.Column="1"
+                                                       Value="{Binding MaxOrder}"
+                                                       Minimum="10" Maximum="500"
+                                                       Increment="10"
+                                                       FontSize="12"
+                                                       ShowButtonSpinner="False"/>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                                        <TextBlock Text="Alıcı yarıçapı (m)"
+                                                   FontSize="12" Foreground="#7AAAC8"
+                                                   VerticalAlignment="Center"/>
+                                        <NumericUpDown Grid.Column="1"
+                                                       Value="{Binding ReceiverRadius}"
+                                                       Minimum="0.01" Maximum="10"
+                                                       Increment="0.1"
+                                                       FormatString="F2"
+                                                       FontSize="12"
+                                                       ShowButtonSpinner="False"/>
+                                    </Grid>
+
+                                    <!-- Separator -->
+                                    <Separator Background="#1A3050" Height="1"/>
+
+                                    <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                                        <TextBlock Text="Hava sıcaklığı (°C)"
+                                                   FontSize="12" Foreground="#7AAAC8"
+                                                   VerticalAlignment="Center"/>
+                                        <NumericUpDown Grid.Column="1"
+                                                       Value="{Binding AirTemperatureCelsius}"
+                                                       Minimum="-20" Maximum="50"
+                                                       Increment="1"
+                                                       FormatString="F1"
+                                                       FontSize="12"
+                                                       ShowButtonSpinner="False"/>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                                        <TextBlock Text="Bağıl nem (%)"
+                                                   FontSize="12" Foreground="#7AAAC8"
+                                                   VerticalAlignment="Center"/>
+                                        <NumericUpDown Grid.Column="1"
+                                                       Value="{Binding RelativeHumidity}"
+                                                       Minimum="10" Maximum="100"
+                                                       Increment="5"
+                                                       FormatString="F0"
+                                                       FontSize="12"
+                                                       ShowButtonSpinner="False"/>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <TextBlock Text="ISM mertebesi"
+                                                   FontSize="12" Foreground="#7AAAC8"
+                                                   VerticalAlignment="Center"/>
+                                        <ComboBox Grid.Column="1"
+                                                  ItemsSource="{Binding IsmOrderOptions}"
+                                                  SelectedIndex="{Binding IsmOrder}"
+                                                  FontSize="11"
+                                                  HorizontalAlignment="Stretch"
+                                                  Padding="6,3"/>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                                        <TextBlock Text="Geçiş mertebesi"
+                                                   FontSize="12" Foreground="#7AAAC8"
+                                                   VerticalAlignment="Center"
+                                                   ToolTip.Tip="Bu yansıma sayısından sonra istatistiksel diffüz kuyruk eklenir (geç yansıma hassasiyeti)"/>
+                                        <NumericUpDown Grid.Column="1"
+                                                       Value="{Binding TransitionOrder}"
+                                                       Minimum="5" Maximum="150"
+                                                       Increment="5"
+                                                       FontSize="12"
+                                                       ShowButtonSpinner="False"/>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                                        <TextBlock Text="Yakınsama modu"
+                                                   FontSize="12" Foreground="#7AAAC8"
+                                                   VerticalAlignment="Center"
+                                                   ToolTip.Tip="Yakınsama analizi stabil sonuç bulursa ağır son koşuyu otomatik atlar; Hassas modda atlamaz."/>
+                                        <ComboBox Grid.Column="1"
+                                                  ItemsSource="{Binding ConvergenceModeOptions}"
+                                                  SelectedIndex="{Binding ConvergenceModeIndex}"
+                                                  FontSize="11"
+                                                  HorizontalAlignment="Stretch"
+                                                  Padding="6,3"/>
+                                    </Grid>
+
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Izgara harita parametreleri -->
+                            <Border Grid.Row="2" Background="#0D1E30" CornerRadius="8" Padding="12,10">
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <TextBlock Text="Izgara Harita (RT60/C80/Tahmini STI)"
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="#85B5DF" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" IsChecked="{Binding GridMapEnabled}"
+                                                  Content="Etkin" FontSize="11" Foreground="#7AAAC8"/>
+                                    </Grid>
+
+                                    <StackPanel IsVisible="{Binding GridMapEnabled}" Spacing="6">
+                                        <Grid ColumnDefinitions="*,80,80" ColumnSpacing="4">
+                                            <TextBlock Text="Z yüksekliği" FontSize="11" Foreground="#7090A8" VerticalAlignment="Center"/>
+                                            <NumericUpDown Grid.Column="1" Value="{Binding GridPlaneZ}"
+                                                           FormatString="F1" FontSize="11" ShowButtonSpinner="False" Padding="4,2"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding UnitShortName}"
+                                                       FontSize="11" Foreground="#506070" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,80,4,80,Auto" ColumnSpacing="4">
+                                            <TextBlock Text="X aralığı" FontSize="11" Foreground="#7090A8" VerticalAlignment="Center"/>
+                                            <NumericUpDown Grid.Column="1" Value="{Binding GridXMin}"
+                                                           FormatString="F1" FontSize="11" ShowButtonSpinner="False" Padding="4,2"/>
+                                            <TextBlock Grid.Column="2" Text="–" FontSize="11" Foreground="#506070" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            <NumericUpDown Grid.Column="3" Value="{Binding GridXMax}"
+                                                           FormatString="F1" FontSize="11" ShowButtonSpinner="False" Padding="4,2"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding UnitShortName}"
+                                                       FontSize="11" Foreground="#506070" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,80,4,80,Auto" ColumnSpacing="4">
+                                            <TextBlock Text="Y aralığı" FontSize="11" Foreground="#7090A8" VerticalAlignment="Center"/>
+                                            <NumericUpDown Grid.Column="1" Value="{Binding GridYMin}"
+                                                           FormatString="F1" FontSize="11" ShowButtonSpinner="False" Padding="4,2"/>
+                                            <TextBlock Grid.Column="2" Text="–" FontSize="11" Foreground="#506070" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            <NumericUpDown Grid.Column="3" Value="{Binding GridYMax}"
+                                                           FormatString="F1" FontSize="11" ShowButtonSpinner="False" Padding="4,2"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding UnitShortName}"
+                                                       FontSize="11" Foreground="#506070" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,80,Auto" ColumnSpacing="4">
+                                            <TextBlock Text="Hücre boyutu" FontSize="11" Foreground="#7090A8" VerticalAlignment="Center"/>
+                                            <NumericUpDown Grid.Column="1" Value="{Binding GridCellSize}"
+                                                           Minimum="{Binding MinimumGridCellSize}" FormatString="F2"
+                                                           FontSize="11" ShowButtonSpinner="False" Padding="4,2"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding UnitShortName}"
+                                                       FontSize="11" Foreground="#506070" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </Grid>
+                                        <CheckBox IsChecked="{Binding MaskGridOutsideRoom}"
+                                                  Content="Kapalı kabukta oda dışı hücreleri dışla"
+                                                  FontSize="10" Foreground="#7090A8"/>
+                                        <TextBlock Text="{Binding GridEstimatedWorkText}"
+                                                   FontSize="10" Foreground="#6F9AB8" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Çalıştır / İptal + ilerleme -->
+                            <StackPanel Grid.Row="3" Spacing="6">
+                                <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
+                                    <Button x:Name="RunSimulationButton"
+                                            Content="Simülasyonu Başlat"
+                                            IsEnabled="{Binding CanRunSimulation}"
+                                            Click="RunSimulationButton_OnClick"
+                                            Background="#1A4A28" Foreground="#80E8A0"
+                                            CornerRadius="6" Padding="10,6"
+                                            FontSize="12" FontWeight="SemiBold"
+                                            HorizontalAlignment="Stretch"/>
+                                    <Button Grid.Column="1"
+                                            Content="◆  Yakınsama Analizi"
+                                            IsEnabled="{Binding CanRunSimulation}"
+                                            Click="RunConvergenceButton_OnClick"
+                                            Background="#263A5A" Foreground="#9FC8FF"
+                                            CornerRadius="6" Padding="10,6"
+                                            FontSize="12" FontWeight="SemiBold"
+                                            HorizontalAlignment="Stretch"/>
+                                    <Button Grid.Column="2"
+                                            Content="■"
+                                            IsVisible="{Binding IsSimulating}"
+                                            Click="CancelSimulationButton_OnClick"
+                                            Background="#4A1A1A" Foreground="#E88080"
+                                            CornerRadius="6" Padding="10,6"
+                                            FontSize="12" ToolTip.Tip="İptal Et"/>
+                                </Grid>
+                                <ProgressBar Value="{Binding SimulationProgress}"
+                                             Maximum="100"
+                                             IsVisible="{Binding IsSimulating}"
+                                             Height="6" CornerRadius="3"
+                                             Foreground="#40D080"/>
+                                <TextBlock Text="{Binding SimulationStatusText}"
+                                           FontSize="11" Foreground="#5080A0"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding ConvergenceSummaryText}"
+                                           FontSize="10" Foreground="#8FB8D8"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding MaterialAuditText}"
+                                           FontSize="10" Foreground="#E0B86A"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding SimulationResultStateText}"
+                                           FontSize="10" Foreground="#8FB8D8"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <!-- Çalıştırmadan önce girdi kontrolü -->
+                            <Border Grid.Row="4" Background="#1A1A0A" CornerRadius="6" Padding="10,8">
+                                <TextBlock FontSize="11" Foreground="#705030"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding SimulationPreflightText}"/>
+                            </Border>
+
+                            <Border Grid.Row="5" Background="#28190C" CornerRadius="6" Padding="10,8"
+                                    IsVisible="{Binding HasImportWarnings}">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="İçe aktarma uyarıları"
+                                               FontSize="10" FontWeight="SemiBold" Foreground="#E0B86A"/>
+                                    <TextBlock Text="{Binding ImportWarningsSummary}"
+                                               FontSize="10" Foreground="#B88A52" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                        </Grid>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- SONUÇLAR sekmesi -->
+                    <TabItem Header="Sonuç">
+                        <ScrollViewer>
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="6,6,6,6" RowSpacing="6">
+
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{Binding SimulationResultStateText}"
+                                               FontSize="10" Foreground="#E0B86A" TextWrapping="Wrap"/>
+                                    <ComboBox ItemsSource="{Binding EchogramPairLabels}"
+                                              SelectedIndex="{Binding SelectedPairIndex}"
+                                              IsVisible="{Binding EchogramPairLabels.Count}"
+                                              FontSize="11" HorizontalAlignment="Stretch" Padding="6,3"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{Binding ResultsSummaryText}"
+                                                   FontSize="11" Foreground="#4A7090"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding GlobalIndicesText}"
+                                                   FontSize="11" Foreground="#85B5DF" FontWeight="SemiBold"/>
+                                    </Grid>
+                                    <Border Background="#0A1824" BorderBrush="#24455F" BorderThickness="1"
+                                            CornerRadius="6" Padding="7,5"
+                                            IsVisible="{Binding HasReliabilityReport}">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="3">
+                                            <StackPanel>
+                                                <TextBlock Text="Güvenilirlik"
+                                                           FontSize="8.5" FontWeight="SemiBold"
+                                                           Foreground="#5A8BB5"/>
+                                                <TextBlock Text="{Binding ReliabilitySummaryText}"
+                                                           FontSize="10" Foreground="#B8D2E8"
+                                                           TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <Border Grid.Column="1" CornerRadius="4" Padding="7,3"
+                                                    BorderBrush="{Binding ReliabilityColor}" BorderThickness="1"
+                                                    Background="#08131E"
+                                                    VerticalAlignment="Top">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="{Binding ReliabilityScoreText}"
+                                                               FontSize="13" FontWeight="Bold"
+                                                               Foreground="{Binding ReliabilityColor}"
+                                                               FontFamily="Courier New"
+                                                               HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding ReliabilityLabelText}"
+                                                               FontSize="8" Foreground="{Binding ReliabilityColor}"
+                                                               HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <ItemsControl Grid.Row="1" Grid.ColumnSpan="2"
+                                                          ItemsSource="{Binding ReliabilityWarnings}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" FontSize="9"
+                                                                   Foreground="#E0B86A"
+                                                                   TextWrapping="Wrap"
+                                                                   Margin="0,1,0,0"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <ItemsControl Grid.Row="2" Grid.ColumnSpan="2"
+                                                          ItemsSource="{Binding QualityActionItems}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" FontSize="9"
+                                                                   Foreground="#8FB8D8"
+                                                                   TextWrapping="Wrap"
+                                                                   Margin="0,1,0,0"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Grid>
+                                    </Border>
+                                    <TextBlock Text="{Binding ResultComparisonText}"
+                                               FontSize="10" Foreground="#8FB8D8"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <!-- Parametre tablosu -->
+                                <Border Grid.Row="1" Background="#0A1824" CornerRadius="6"
+                                        IsVisible="{Binding ParameterRows.Count}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding TargetRtText}" FontSize="10" Foreground="#E0E080" Margin="4,4,4,6" FontWeight="SemiBold"/>
+                                        <!-- Sütun başlıkları -->
+                                        <Border Background="#0D1E30" Padding="4,3">
+                                            <Grid ColumnDefinitions="52,*,*,*,*,*,*,*,*,*,48">
+                                                <TextBlock Text="Param." FontSize="9" Foreground="#40607A" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Column="1" Text="63"  FontSize="9" Foreground="#40607A" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="125" FontSize="9" Foreground="#40607A" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="3" Text="250" FontSize="9" Foreground="#40607A" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="4" Text="500" FontSize="9" Foreground="#40607A" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="5" Text="1k"  FontSize="9" Foreground="#40607A" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="6" Text="2k"  FontSize="9" Foreground="#40607A" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="7" Text="4k"  FontSize="9" Foreground="#40607A" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="8" Text="8k"  FontSize="9" Foreground="#40607A" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="9" Text="Ort." FontSize="9" Foreground="#5A8BB5" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Column="10" Text="Güv." FontSize="9" Foreground="#5A8BB5" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                            </Grid>
+                                        </Border>
+                                        <!-- Satırlar -->
+                                        <ItemsControl ItemsSource="{Binding ParameterRows}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ParameterRowViewModel">
+                                                    <Border Padding="4,2" BorderThickness="0,0,0,1"
+                                                            BorderBrush="#0D1E30">
+                                                        <Grid ColumnDefinitions="52,*,*,*,*,*,*,*,*,*,48">
+                                                            <TextBlock Text="{Binding Name}"
+                                                                        FontSize="9" Foreground="#7AAAC8"
+                                                                        FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding V63Hz}"  FontSize="9" Foreground="{Binding V63Brush}"  HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                                            <TextBlock Grid.Column="2" Text="{Binding V125Hz}" FontSize="9" Foreground="{Binding V125Brush}" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                                            <TextBlock Grid.Column="3" Text="{Binding V250Hz}" FontSize="9" Foreground="{Binding V250Brush}" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                                            <TextBlock Grid.Column="4" Text="{Binding V500Hz}" FontSize="9" Foreground="{Binding V500Brush}" HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                                            <TextBlock Grid.Column="5" Text="{Binding V1kHz}"  FontSize="9" Foreground="{Binding V1kBrush}"  HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                                            <TextBlock Grid.Column="6" Text="{Binding V2kHz}"  FontSize="9" Foreground="{Binding V2kBrush}"  HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                                            <TextBlock Grid.Column="7" Text="{Binding V4kHz}"  FontSize="9" Foreground="{Binding V4kBrush}"  HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                                            <TextBlock Grid.Column="8" Text="{Binding V8kHz}"  FontSize="9" Foreground="{Binding V8kBrush}"  HorizontalAlignment="Center" FontFamily="Courier New"/>
+                                                            <TextBlock Grid.Column="9" Text="{Binding VAverage}" FontSize="9" Foreground="{Binding VAvgBrush}" HorizontalAlignment="Center" FontFamily="Courier New" FontWeight="SemiBold"/>
+                                                            <TextBlock Grid.Column="10" Text="{Binding ReliabilityLabel}" FontSize="8.5" Foreground="{Binding ReliabilityColor}" HorizontalAlignment="Center" FontWeight="SemiBold"
+                                                                       ToolTip.Tip="{Binding ReliabilityReason}"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- STI Kartı -->
+                                <Border Grid.Row="2" CornerRadius="6" Padding="8,5"
+                                        IsVisible="{Binding HasStiResult}"
+                                        Background="#0A1E14">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Tahmini STI" FontSize="8" FontWeight="SemiBold"
+                                                       Foreground="#3A8860"/>
+                                            <TextBlock Text="Anlaşılabilirlik"
+                                                       FontSize="8" Foreground="#2A5840"/>
+                                            <TextBlock Text="{Binding StiReliabilityText}"
+                                                       FontSize="8" Foreground="{Binding StiReliabilityColor}"
+                                                       FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding StiValueText}"
+                                                   FontSize="20" FontWeight="Bold"
+                                                   Foreground="#40EFA0"
+                                                   VerticalAlignment="Center"
+                                                   FontFamily="Courier New"/>
+                                        <Border Grid.Column="2" CornerRadius="4" Padding="6,3"
+                                                Background="#0D3020" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding StiCategoryText}"
+                                                       FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="#60D090"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Auralizasyon Kartları -->
+                                <StackPanel Grid.Row="3" Spacing="4">
+                                    <Button Content="Dürtü Yanıtını (IR) Dinle"
+                                            IsVisible="{Binding ParameterRows.Count}"
+                                            IsEnabled="{Binding CanAuralizeSelectedPair}"
+                                            Command="{Binding ExportAuralizationCommand}"
+                                            Background="#152A3A" Foreground="#70B0E0"
+                                            CornerRadius="6" Padding="8,5"
+                                            FontSize="9" FontWeight="SemiBold"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center"/>
+                                    <TextBlock Text="{Binding ImpulseResponseAvailabilityText}"
+                                               IsVisible="{Binding ParameterRows.Count}"
+                                               FontSize="8.5" Foreground="#60809A" TextWrapping="Wrap"/>
+
+                                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="3">
+                                        <Button Content="Yükle"
+                                                Click="AuralizeCustomWavButton_OnClick"
+                                                Background="#1A2A3A" Foreground="#70A0E0"
+                                                CornerRadius="6" Padding="0,7"
+                                                FontSize="8.5" FontWeight="SemiBold"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"/>
+
+                                        <Button Grid.Column="1" Content="Ham Ses"
+                                                Command="{Binding PlayOriginalAudioCommand}"
+                                                IsEnabled="{Binding HasCustomAudio}"
+                                                Background="#1A3A2A" Foreground="#70E0A0"
+                                                CornerRadius="6" Padding="0,7"
+                                                FontSize="8.5" FontWeight="SemiBold"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"/>
+
+                                        <Button Grid.Column="2" Content="Oda Etkisi"
+                                                Command="{Binding AuralizeCustomAudioCommand}"
+                                                IsEnabled="{Binding HasCustomAudio}"
+                                                Background="#3A2A1A" Foreground="#E0A070"
+                                                CornerRadius="6" Padding="0,7"
+                                                FontSize="8.5" FontWeight="SemiBold"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Bant seçimi -->
+                                <ComboBox Grid.Row="4"
+                                          ItemsSource="{Binding BandLabels}"
+                                          SelectedIndex="{Binding SelectedBandIndex}"
+                                          IsVisible="{Binding ParameterRows.Count}"
+                                          FontSize="11" HorizontalAlignment="Stretch" Padding="6,3"/>
+
+                                <!-- Çizim (decay curve + echogram) -->
+                                <Grid Grid.Row="5" RowDefinitions="*,*" RowSpacing="4"
+                                      IsVisible="{Binding ParameterRows.Count}">
+                                    <controls:AcousticPlotControl
+                                        BandData="{Binding SelectedBandData}"
+                                        BandIndex="{Binding SelectedBandIndex}"
+                                        PlotMode="DecayCurve"
+                                        MinHeight="90"/>
+                                    <controls:AcousticPlotControl Grid.Row="1"
+                                        Arrivals="{Binding PlotArrivals}"
+                                        BandIndex="{Binding SelectedBandIndex}"
+                                        PlotMode="Echogram"
+                                        MinHeight="90"/>
+                                </Grid>
+
+                            <!-- Izgara Harita -->
+                            <Border Grid.Row="6" IsVisible="{Binding HasGridMap}"
+                                    Background="#060F18" CornerRadius="8" Padding="0" Margin="0,8,0,0">
+                                <Grid RowDefinitions="Auto,*">
+                                    <Grid ColumnDefinitions="*,Auto,120" Margin="8,6,8,4">
+                                        <TextBlock Text="Izgara Akustik Haritası"
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="#6090C0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="Parametre:" FontSize="10"
+                                                   Foreground="#406070" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <ComboBox Grid.Column="2"
+                                                  ItemsSource="{Binding GridMapParameterOptions}"
+                                                  SelectedIndex="{Binding SelectedGridParameterIndex}"
+                                                  FontSize="10" Padding="4,2" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <controls:GridMapControl Grid.Row="1"
+                                        MapData="{Binding GridMapData}"
+                                        SelectedParameter="{Binding SelectedGridParameter}"
+                                        MinHeight="220"/>
+                                </Grid>
+                            </Border>
+                            </Grid>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- RAPOR sekmesi -->
+                    <TabItem Header="Rapor">
+                        <Grid RowDefinitions="Auto,*,Auto" Margin="8,8,8,8" RowSpacing="8">
+                            <TextBlock Text="Akustik Analiz Raporu" FontSize="14" FontWeight="SemiBold" Foreground="#85B5DF"/>
+                            
+                            <ScrollViewer Grid.Row="1" Background="#0A1824" CornerRadius="8" Padding="12">
+                                <StackPanel Spacing="16">
+                                    <TextBlock Text="{Binding ReportFullText}" FontSize="11" Foreground="#C8DCF0" TextWrapping="Wrap" FontFamily="Courier New"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                            
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <Button Content="Modeli Dışa Aktar (.dxf)" 
+                                        Command="{Binding ExportGeometryDxfCommand}"
+                                        Classes="toolBtn"/>
+                                <Button Content="Raporu Dışa Aktar (.txt)" 
+                                        Command="{Binding ExportReportCommand}"
+                                        Classes="toolBtn"/>
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+
+                </TabControl>
+            </Border>
+
+            <!-- Alt kısım: Seçili Yüzey Dönüşüm Paneli -->
+            <Border Grid.Row="1" Background="#0C1826" CornerRadius="12" Padding="10">
+                <StackPanel Spacing="4">
+                    <ToggleButton x:Name="SeciliYuzeyDonusumToggle" IsChecked="True" Classes="collapsibleHeader">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Classes="panelTitle" Text="SEÇİLİ YÜZEY DÜZENLEME" Margin="0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="▼" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding !#SeciliYuzeyDonusumToggle.IsChecked}"/>
+                            <TextBlock Grid.Column="1" Text="▲" FontSize="9" Foreground="#5080A0" VerticalAlignment="Center" IsVisible="{Binding #SeciliYuzeyDonusumToggle.IsChecked}"/>
+                        </Grid>
+                    </ToggleButton>
+                    <StackPanel Spacing="8" IsVisible="{Binding #SeciliYuzeyDonusumToggle.IsChecked}">
+                        
+                        <!-- Seçili Yüzey Bilgisi ve Sil Butonu -->
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <Border Background="#121F2F" CornerRadius="6" Padding="8,5" BorderThickness="1" BorderBrush="#1A2D42">
+                                <TextBlock Text="{Binding SelectedSurfaceName, FallbackValue='Seçili yüzey yok'}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="#94C3E8"
+                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            </Border>
+                            <Button Grid.Column="1" Content="Sil"
+                                    IsEnabled="{Binding CanDeleteSelectedSurface}"
+                                    Click="DeleteSelectedSurfaceButton_OnClick"
+                                    Background="#3A1515" Foreground="#F09A9A"
+                                    CornerRadius="4" Padding="12,5" FontSize="11" FontWeight="SemiBold"
+                                    BorderThickness="1" BorderBrush="#5A2424"/>
+                        </Grid>
+
+                        <!-- Döndür Alt Grubu -->
+                        <Border Background="#0C1D2E" CornerRadius="6" Padding="10,8" BorderThickness="1" BorderBrush="#16304A">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="Auto,*,*" ColumnSpacing="6">
+                                    <TextBlock Text="Döndür:" FontSize="11" FontWeight="Bold" Foreground="#6CA8D8" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding RotationAxisOptions}"
+                                              SelectedIndex="{Binding RotationAxisIndex}"
+                                              FontSize="11" Padding="6,2" HorizontalAlignment="Stretch"/>
+                                    <NumericUpDown Grid.Column="2" Value="{Binding RotationAngleDeg}"
+                                                   Minimum="-360" Maximum="360" Increment="5" FormatString="F1"
+                                                   FontSize="11" Padding="4,2" ShowButtonSpinner="False"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                                    <Button Content="Uygula"
+                                            IsEnabled="{Binding CanApplyTransform}"
+                                            Click="ApplyRotationButton_OnClick"
+                                            Background="#14426A" Foreground="#A8D5F8"
+                                            CornerRadius="4" Padding="0,5" FontSize="10.5" FontWeight="SemiBold"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="Geri Al"
+                                            IsEnabled="{Binding CanUndo}"
+                                            Click="UndoRotationButton_OnClick"
+                                            Background="#251616" Foreground="#D07575"
+                                            CornerRadius="4" Padding="0,5" FontSize="10" FontWeight="SemiBold"
+                                            BorderThickness="1" BorderBrush="#3A2222"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                    <Button Grid.Column="2" Content="Sıfırla"
+                                            Click="ResetTransformsButton_OnClick"
+                                            Background="#161A25" Foreground="#7590D0"
+                                            CornerRadius="4" Padding="0,5" FontSize="10" FontWeight="SemiBold"
+                                            BorderThickness="1" BorderBrush="#22283A"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Taşı Alt Grubu -->
+                        <Border Background="#0D2418" CornerRadius="6" Padding="10,8" BorderThickness="1" BorderBrush="#183D2A">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="↔ Taşı" FontSize="11" FontWeight="Bold" Foreground="#52BA80"/>
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                                    <!-- X -->
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <Border Background="#153625" CornerRadius="4,0,0,4" Padding="5,4" BorderThickness="1,1,0,1" BorderBrush="#204A35">
+                                            <TextBlock Text="X" FontSize="10" FontWeight="Bold" Foreground="#70D09B" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <NumericUpDown Grid.Column="1" Value="{Binding TranslateDX}" Minimum="-9999" Maximum="9999" Increment="0.1" FormatString="F2" FontSize="10" Padding="3" CornerRadius="0,4,4,0" ShowButtonSpinner="False"/>
+                                    </Grid>
+                                    <!-- Y -->
+                                    <Grid Grid.Column="1" ColumnDefinitions="Auto,*">
+                                        <Border Background="#153625" CornerRadius="4,0,0,4" Padding="5,4" BorderThickness="1,1,0,1" BorderBrush="#204A35">
+                                            <TextBlock Text="Y" FontSize="10" FontWeight="Bold" Foreground="#70D09B" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <NumericUpDown Grid.Column="1" Value="{Binding TranslateDY}" Minimum="-9999" Maximum="9999" Increment="0.1" FormatString="F2" FontSize="10" Padding="3" CornerRadius="0,4,4,0" ShowButtonSpinner="False"/>
+                                    </Grid>
+                                    <!-- Z -->
+                                    <Grid Grid.Column="2" ColumnDefinitions="Auto,*">
+                                        <Border Background="#153625" CornerRadius="4,0,0,4" Padding="5,4" BorderThickness="1,1,0,1" BorderBrush="#204A35">
+                                            <TextBlock Text="Z" FontSize="10" FontWeight="Bold" Foreground="#70D09B" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <NumericUpDown Grid.Column="1" Value="{Binding TranslateDZ}" Minimum="-9999" Maximum="9999" Increment="0.1" FormatString="F2" FontSize="10" Padding="3" CornerRadius="0,4,4,0" ShowButtonSpinner="False"/>
+                                    </Grid>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                                    <Button Content="Uygula"
+                                            IsEnabled="{Binding CanApplyTransform}"
+                                            Click="ApplyTranslationButton_OnClick"
+                                            Background="#164A30" Foreground="#95E8BA"
+                                            CornerRadius="4" Padding="0,5" FontSize="10.5" FontWeight="SemiBold"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="Geri Al"
+                                            IsEnabled="{Binding CanUndo}"
+                                            Click="UndoRotationButton_OnClick"
+                                            Background="#251616" Foreground="#D07575"
+                                            CornerRadius="4" Padding="0,5" FontSize="10" FontWeight="SemiBold"
+                                            BorderThickness="1" BorderBrush="#3A2222"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                    <Button Grid.Column="2" Content="Sıfırla"
+                                            Click="ResetTransformsButton_OnClick"
+                                            Background="#161A25" Foreground="#7590D0"
+                                            CornerRadius="4" Padding="0,5" FontSize="10" FontWeight="SemiBold"
+                                            BorderThickness="1" BorderBrush="#22283A"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        </Grid>
+
+        <!-- ═══════ DURUM ÇUBUĞU ═══════ -->
+        <Border Grid.Row="2" Background="#070E18" Padding="14,7">
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontSize="12" Foreground="#4A7090"
+                       TextTrimming="CharacterEllipsis"/>
+        </Border>
+
+    </Grid>
+</Window>

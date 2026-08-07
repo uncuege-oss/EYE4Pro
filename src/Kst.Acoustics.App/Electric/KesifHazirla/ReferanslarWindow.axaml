@@ -1,0 +1,87 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Electric.KesifHazirla"
+        x:Class="Kst.Acoustics.App.Electric.KesifHazirla.ReferanslarWindow"
+        x:DataType="vm:KesifHazirlaViewModel"
+        x:CompileBindings="False"
+        Title="Referanslar — Metraj Excel Dosyaları"
+        Width="820" Height="560"
+        MinWidth="600" MinHeight="400"
+        CanResize="True"
+        Background="#071108"
+        WindowStartupLocation="CenterOwner">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.sectionTitle">
+      <Setter Property="Foreground" Value="#DFF1D9"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.subtle">
+      <Setter Property="Foreground" Value="#7FA06F"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#0E3A1A"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#168A38"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="10,6"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="#15572A"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#2AD864"/>
+    </Style>
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="#071108"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+      <Setter Property="BorderBrush" Value="#17351D"/>
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Background" Value="#0B1C0E"/>
+      <Setter Property="Foreground" Value="#DFF1D9"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12" Margin="16">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="sectionTitle" Text="Metraj Referansları"/>
+        <TextBlock Classes="subtle" Text="Bu keşfe metraj alınan excel dosyaları. Yüklenince eşleşen kalemler otomatik keşfe işlenir." TextWrapping="Wrap"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="Kapat" Click="Kapat_OnClick" VerticalAlignment="Top"/>
+    </Grid>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+      <Button Content="Excel Yükle" Click="ExcelYukle_OnClick"/>
+      <Button Content="Excel Sil" Click="ExcelSil_OnClick"/>
+      <Button Content="Excel Şablonu" Click="ExcelSablonu_OnClick"/>
+    </StackPanel>
+
+    <DataGrid Grid.Row="2"
+              ItemsSource="{Binding ReferansDosyalari}"
+              SelectedItem="{Binding SeciliReferans}"
+              AutoGenerateColumns="False"
+              CanUserSortColumns="True"
+              CanUserResizeColumns="True"
+              IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="↕ Dosya Adı" Binding="{Binding DosyaAdi}" SortMemberPath="DosyaAdi" Width="*"/>
+        <DataGridTextColumn Header="↕ Kaynak" Binding="{Binding KaynakModul}" SortMemberPath="KaynakModul" Width="80"/>
+        <DataGridTextColumn Header="↕ Sayfa" Binding="{Binding SayfaAdi}" SortMemberPath="SayfaAdi" Width="140"/>
+        <DataGridTextColumn Header="↕ Satır" Binding="{Binding SatirSayisi}" SortMemberPath="SatirSayisi" Width="70"/>
+        <DataGridTextColumn Header="↕ Yükleme" Binding="{Binding YuklemeTarihi, StringFormat={}{0:dd.MM.yyyy HH:mm}}" SortMemberPath="YuklemeTarihi" Width="130"/>
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <TextBlock Grid.Row="3" Classes="subtle"
+               Text="Not: Bir excel silinince ondan üretilen otomatik satırlar kaldırılır; ancak Poz Atama'da öğrenilen eşleşmeler korunur."
+               TextWrapping="Wrap"/>
+  </Grid>
+</Window>

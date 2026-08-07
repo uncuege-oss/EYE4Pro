@@ -1,0 +1,98 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="Kst.Acoustics.ThemeLab.ThemeLabWindow"
+        Width="1100" Height="760"
+        Title="EYE4PRO — Tema Kıyaslama Laboratuvarı">
+
+    <DockPanel Margin="0">
+        <!-- Üst bar: tema seçici -->
+        <Border DockPanel.Dock="Top" Padding="16,12" BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <StackPanel Orientation="Vertical" Spacing="6">
+                <StackPanel x:Name="ThemeButtons" Orientation="Horizontal" Spacing="8"/>
+                <TextBlock x:Name="ThemeHint" VerticalAlignment="Center" Opacity="0.7"/>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer>
+            <StackPanel Margin="20" Spacing="20">
+
+                <TextBlock Text="EYE4PRO Kontrol Galerisi" FontSize="24" FontWeight="Bold"/>
+                <TextBlock Text="Aşağıdaki kontroller seçili temanın varsayılan görünümünü gösterir. Modül migrasyonu sonrası tüm pencereler bu görünümü alır."
+                           TextWrapping="Wrap" Opacity="0.75"/>
+
+                <!-- Butonlar -->
+                <HeaderedContentControl>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="Birincil İşlem" Classes="accent"/>
+                        <Button Content="İkincil"/>
+                        <Button Content="Devre Dışı" IsEnabled="False"/>
+                        <ToggleButton Content="Aç/Kapa"/>
+                        <DropDownButton Content="Menü"/>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+                <!-- Girişler -->
+                <WrapPanel Orientation="Horizontal">
+                    <StackPanel Width="320" Spacing="8" Margin="0,0,24,0">
+                        <TextBlock Text="Metin Girişi" FontWeight="SemiBold"/>
+                        <TextBox PlaceholderText="Proje adı giriniz..."/>
+                        <TextBox Text="Örnek değer 12.5 m²"/>
+                        <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
+                            <ComboBoxItem>Akustik Modülü</ComboBoxItem>
+                            <ComboBoxItem>Elektrik Modülü</ComboBoxItem>
+                            <ComboBoxItem>Mimari BIM</ComboBoxItem>
+                        </ComboBox>
+                        <NumericUpDown Value="3.20" Increment="0.1" Minimum="0"/>
+                    </StackPanel>
+                    <StackPanel Width="320" Spacing="10">
+                        <TextBlock Text="Seçimler" FontWeight="SemiBold"/>
+                        <CheckBox Content="Otomatik metraj" IsChecked="True"/>
+                        <CheckBox Content="Rapor üret"/>
+                        <RadioButton Content="Açık tema" GroupName="g" IsChecked="True"/>
+                        <RadioButton Content="Koyu tema" GroupName="g"/>
+                        <Slider Minimum="0" Maximum="100" Value="65"/>
+                        <ProgressBar Minimum="0" Maximum="100" Value="65"/>
+                    </StackPanel>
+                </WrapPanel>
+
+                <!-- Sekmeler -->
+                <TabControl>
+                    <TabItem Header="Genel">
+                        <TextBlock Text="Sekme içeriği örneği." Margin="0,12"/>
+                    </TabItem>
+                    <TabItem Header="Hesap">
+                        <TextBlock Text="İkinci sekme." Margin="0,12"/>
+                    </TabItem>
+                    <TabItem Header="Rapor"/>
+                </TabControl>
+
+                <!-- Kart / panel örneği -->
+                <Border CornerRadius="8" Padding="16"
+                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Sonuç Kartı" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="Rw = 52 dB   ·   C = -1   ·   Ctr = -5" FontFamily="monospace"/>
+                        <TextBlock Text="Bu panel tema yüzey (surface) rengini kullanır." Opacity="0.7"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- DataGrid -->
+                <TextBlock Text="Tablo (DataGrid)" FontWeight="SemiBold"/>
+                <DataGrid x:Name="Grid" Height="220" IsReadOnly="True"
+                          x:CompileBindings="False"
+                          GridLinesVisibility="All" CanUserResizeColumns="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Poz" Binding="{Binding Poz}" Width="120"/>
+                        <DataGridTextColumn Header="Tanım" Binding="{Binding Tanim}" Width="*"/>
+                        <DataGridTextColumn Header="Miktar" Binding="{Binding Miktar}" Width="120"/>
+                        <DataGridTextColumn Header="Birim" Binding="{Binding Birim}" Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

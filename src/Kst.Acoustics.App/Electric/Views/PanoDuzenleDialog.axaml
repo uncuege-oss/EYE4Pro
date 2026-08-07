@@ -1,0 +1,134 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.Views.PanoDuzenleDialog"
+        Width="560" Height="760"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#080F0A"
+        Title="Panoyu Düzenle">
+    <Window.Styles>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="Foreground" Value="#7AA060"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="TextBox, ComboBox">
+            <Setter Property="Background" Value="#101C10"/>
+            <Setter Property="Foreground" Value="#D0E8C0"/>
+            <Setter Property="BorderBrush" Value="#2A4A20"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <TextBlock Grid.Row="0" x:Name="BaslikText" Text="Panoyu Düzenle"
+                   Foreground="#C8E4B0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="10">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Pano Adı"/>
+                <TextBox x:Name="AdBox"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Kat"/>
+                <ComboBox x:Name="KatCombo" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+
+            <StackPanel x:Name="DiversitePanel" Spacing="4">
+                <TextBlock Classes="lbl" Text="Eşzamanlılık Faktörü (ks, 0–1) — üst panoya yansıyan talep"/>
+                <TextBox x:Name="DiversiteBox"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Pano Tipi"/>
+                <ComboBox x:Name="TipCombo" SelectionChanged="Tip_OnChanged">
+                    <ComboBoxItem Content="Tali Pano"/>
+                    <ComboBoxItem Content="Ana Pano"/>
+                    <ComboBoxItem Content="Aydınlatma Panosu"/>
+                    <ComboBoxItem Content="Kompanzasyon"/>
+                    <ComboBoxItem Content="Kontrol Panosu"/>
+                    <ComboBoxItem Content="Yangın Panosu"/>
+                </ComboBox>
+            </StackPanel>
+
+            <Border Height="1" Background="#203820" Margin="0,4"/>
+
+            <TextBlock Text="Gövde ve Boyutlandırma" Foreground="#B8D8A0"
+                       FontSize="13" FontWeight="SemiBold"/>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Gövde Tipi"/>
+                <ComboBox x:Name="GovdeTipiCombo" SelectionChanged="GovdeTipi_OnChanged">
+                    <ComboBoxItem Content="Duvar Tipi"/>
+                    <ComboBoxItem Content="Dikili Tip"/>
+                </ComboBox>
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                <TextBlock Grid.Row="0" Grid.Column="0" Classes="lbl" Text="Modül Yerleşim Alanı"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="ModulAlaniText" Foreground="#D0E8C0"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Classes="lbl" Text="Klemens Alanı"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="KlemensAlaniText" Foreground="#D0E8C0"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Classes="lbl" Text="Gerekli Pano Alanı"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="GerekliAlanText" Foreground="#C8E890" FontWeight="SemiBold"/>
+            </Grid>
+
+            <CheckBox x:Name="OtomatikOlcuCheck" Content="Pano ölçüsünü otomatik seç"
+                      Foreground="#A0C888" IsCheckedChanged="OtomatikOlcu_OnChanged"/>
+
+            <StackPanel x:Name="PanoOlcuPanel" Spacing="4">
+                <TextBlock x:Name="PanoOlcuLabel" Classes="lbl" Text="Pano Ölçüsü"/>
+                <ComboBox x:Name="PanoOlcuCombo" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+
+            <StackPanel x:Name="DikiliDerinlikPanel" Spacing="4" IsVisible="False">
+                <TextBlock Classes="lbl" Text="Dikili Pano Derinliği"/>
+                <ComboBox x:Name="DikiliDerinlikCombo" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+
+            <CheckBox x:Name="SayacliCheck" Content="Sayaçlı (Aydınlatma Panosu)"
+                      Foreground="#A0C888" IsVisible="False"/>
+
+            <StackPanel x:Name="HarmonikPanel" Spacing="4" IsVisible="False">
+                <CheckBox x:Name="HarmonikFiltreliCheck" Content="Harmonik Filtreli (Kompanzasyon)"
+                          Foreground="#A0C888"
+                          IsCheckedChanged="HarmonikFiltreli_OnChanged"/>
+                <StackPanel x:Name="HarmonikSecimPanel" Spacing="4" IsVisible="False">
+                    <TextBlock Classes="lbl" Text="Harmonik Filtre Tipi"/>
+                    <ComboBox x:Name="HarmonikCombo" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Kompanzasyon Bileşen Override Paneli -->
+            <Border x:Name="KompOverridePanel" Background="#1A2A0C" CornerRadius="6" Padding="10"
+                    BorderBrush="#3A5A18" BorderThickness="1" IsVisible="False">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="⚡ Kompanzasyon Bileşenleri (Override)"
+                               Foreground="#B8E068" FontSize="12" FontWeight="SemiBold"/>
+                    <CheckBox x:Name="ElleAyarCheck" Content="Bileşenleri elle ayarla (otomatik seçimi kapat)"
+                              Foreground="#A0C888" FontSize="11"/>
+
+                    <TextBlock Classes="lbl" Text="Kompanzasyon Rölesi"/>
+                    <ComboBox x:Name="KompRoleCombo" HorizontalAlignment="Stretch"/>
+
+                    <TextBlock Classes="lbl" Text="Reaktör (SVC)"/>
+                    <ComboBox x:Name="ReaktorCombo" HorizontalAlignment="Stretch"/>
+
+                    <TextBlock Classes="lbl" Text="SVC Yük Sürücü"/>
+                    <ComboBox x:Name="SvcCombo" HorizontalAlignment="Stretch"/>
+
+                    <TextBlock Classes="lbl" Text="Giriş NH Bıçaklı Sigorta"/>
+                    <ComboBox x:Name="BicakliCombo" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+            <Button Content="İptal" Click="Iptal_OnClick"
+                    Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+            <Button Content="Kaydet" Click="Kaydet_OnClick"
+                    Background="#3A7A18" Foreground="White" FontWeight="SemiBold"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,180 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Kst.Acoustics.App.ViewModels"
+        xmlns:nb="clr-namespace:Kst.Acoustics.Core.NoiseBarrier;assembly=Kst.Acoustics.Core"
+        x:Class="Kst.Acoustics.App.Views.NoiseBarrierLibraryWindow"
+        x:DataType="vm:NoiseBarrierViewModel"
+        Title="Ses Bariyeri Malzeme Kütüphanesi"
+        Width="1000" Height="700"
+        WindowStartupLocation="CenterOwner"
+        Background="#0E1824">
+
+    <Window.Styles>
+        <Style Selector="DataGridRow">
+            <Setter Property="Foreground" Value="#DCEBF5"/>
+        </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#091320" Padding="15">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <PathIcon Data="M12,18H6V14H12M21,14V18H15V14M12,8H6V4H12M21,4V8H15V4" Foreground="#3498DB"/>
+                    <TextBlock Text="Malzeme Kütüphanesi" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                </StackPanel>
+                
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10">
+                    <Button Content="Excel Şablonu" Command="{Binding ExportBarrierMaterialTemplateCommand}" Background="#2C3E50"/>
+                    <Button Content="Excelden Aktar" Command="{Binding ImportBarrierMaterialsFromExcelCommand}" Background="#1A5898"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Main Content: DataGrid -->
+        <Border Grid.Row="1" Margin="10" Background="#0B131C" CornerRadius="8" BorderBrush="#1B406A" BorderThickness="1">
+            <DataGrid ItemsSource="{Binding Materials}" 
+                      SelectedItem="{Binding SelectedMaterial}"
+                      IsReadOnly="False"
+                      CanUserResizeColumns="True"
+                      GridLinesVisibility="All"
+                      BorderThickness="0"
+                      Background="Transparent"
+                      Foreground="#DCEBF5">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Ad" Binding="{Binding Name}" Width="180"/>
+                    <DataGridTextColumn Header="Kategori" Binding="{Binding Category}" Width="100"/>
+                    <DataGridTextColumn Header="Rw" Binding="{Binding Rw}" FontWeight="Bold"/>
+                    <DataGridTextColumn Header="NRC" Binding="{Binding Nrc}" FontWeight="Bold"/>
+                    
+                    <!-- TL Bands -->
+                    <DataGridTextColumn Header="63 TL" Binding="{Binding Tl63}"/>
+                    <DataGridTextColumn Header="125 TL" Binding="{Binding Tl125}"/>
+                    <DataGridTextColumn Header="250 TL" Binding="{Binding Tl250}"/>
+                    <DataGridTextColumn Header="500 TL" Binding="{Binding Tl500}"/>
+                    <DataGridTextColumn Header="1k TL" Binding="{Binding Tl1k}"/>
+                    <DataGridTextColumn Header="2k TL" Binding="{Binding Tl2k}"/>
+                    <DataGridTextColumn Header="4k TL" Binding="{Binding Tl4k}"/>
+                    <DataGridTextColumn Header="8k TL" Binding="{Binding Tl8k}"/>
+
+                    <!-- Alpha Bands -->
+                    <DataGridTextColumn Header="63 α" Binding="{Binding Alpha63}"/>
+                    <DataGridTextColumn Header="125 α" Binding="{Binding Alpha125}"/>
+                    <DataGridTextColumn Header="250 α" Binding="{Binding Alpha250}"/>
+                    <DataGridTextColumn Header="500 α" Binding="{Binding Alpha500}"/>
+                    <DataGridTextColumn Header="1k α" Binding="{Binding Alpha1k}"/>
+                    <DataGridTextColumn Header="2k α" Binding="{Binding Alpha2k}"/>
+                    <DataGridTextColumn Header="4k α" Binding="{Binding Alpha4k}"/>
+                    <DataGridTextColumn Header="8k α" Binding="{Binding Alpha8k}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Footer: Manual Entry -->
+        <Border Grid.Row="2" Background="#091320" Padding="15" BorderBrush="#1B406A" BorderThickness="0,1,0,0">
+            <StackPanel Spacing="15">
+                <Grid ColumnDefinitions="*,120,120,Auto">
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="Malzeme Adı" Foreground="#7F8C8D" FontSize="11" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding NewMaterialName}" PlaceholderText="Özel Bariyer Paneli"/>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                        <TextBlock Text="Ort. Rw" Foreground="#7F8C8D" FontSize="11" Margin="0,0,0,5"/>
+                        <NumericUpDown Value="{Binding NewMaterialRw}" Minimum="0" Maximum="100"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                        <TextBlock Text="Ort. NRC" Foreground="#7F8C8D" FontSize="11" Margin="0,0,0,5"/>
+                        <NumericUpDown Value="{Binding NewMaterialNrc}" Minimum="0" Maximum="1" Increment="0.01"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="3" Content="+ Kütüphaneye Ekle" 
+                            Command="{Binding AddManualMaterialCommand}"
+                            Classes="accent"
+                            VerticalAlignment="Bottom" Height="38" Padding="20,0"/>
+                </Grid>
+
+                <Separator Background="#1B406A" Opacity="0.3"/>
+                
+                <TextBlock Text="Spektrum Verileri (63Hz - 8kHz)" Foreground="#3498DB" FontSize="12" FontWeight="Bold"/>
+                
+                <Grid ColumnDefinitions="*,*,*,*,*,*,*,*" RowDefinitions="Auto,Auto">
+                    <!-- TL Row -->
+                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="2">
+                        <TextBlock Text="63 TL" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialTl63}" ShowButtonSpinner="False" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="2">
+                        <TextBlock Text="125 TL" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialTl125}" ShowButtonSpinner="False" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="2" Margin="2">
+                        <TextBlock Text="250 TL" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialTl250}" ShowButtonSpinner="False" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="3" Margin="2">
+                        <TextBlock Text="500 TL" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialTl500}" ShowButtonSpinner="False" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="4" Margin="2">
+                        <TextBlock Text="1k TL" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialTl1k}" ShowButtonSpinner="False" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="5" Margin="2">
+                        <TextBlock Text="2k TL" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialTl2k}" ShowButtonSpinner="False" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="6" Margin="2">
+                        <TextBlock Text="4k TL" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialTl4k}" ShowButtonSpinner="False" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="7" Margin="2">
+                        <TextBlock Text="8k TL" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialTl8k}" ShowButtonSpinner="False" FontSize="11"/>
+                    </StackPanel>
+
+                    <!-- Alpha Row -->
+                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="2">
+                        <TextBlock Text="63 α" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialAlpha63}" ShowButtonSpinner="False" FontSize="11" Increment="0.01"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="2">
+                        <TextBlock Text="125 α" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialAlpha125}" ShowButtonSpinner="False" FontSize="11" Increment="0.01"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="2" Margin="2">
+                        <TextBlock Text="250 α" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialAlpha250}" ShowButtonSpinner="False" FontSize="11" Increment="0.01"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="3" Margin="2">
+                        <TextBlock Text="500 α" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialAlpha500}" ShowButtonSpinner="False" FontSize="11" Increment="0.01"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="4" Margin="2">
+                        <TextBlock Text="1k α" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialAlpha1k}" ShowButtonSpinner="False" FontSize="11" Increment="0.01"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="5" Margin="2">
+                        <TextBlock Text="2k α" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialAlpha2k}" ShowButtonSpinner="False" FontSize="11" Increment="0.01"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="6" Margin="2">
+                        <TextBlock Text="4k α" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialAlpha4k}" ShowButtonSpinner="False" FontSize="11" Increment="0.01"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="7" Margin="2">
+                        <TextBlock Text="8k α" Foreground="#7F8C8D" FontSize="9" HorizontalAlignment="Center"/>
+                        <NumericUpDown Value="{Binding NewMaterialAlpha8k}" ShowButtonSpinner="False" FontSize="11" Increment="0.01"/>
+                    </StackPanel>
+                </Grid>
+                
+                <TextBlock Text="{Binding MaterialStatusText}" 
+                           Foreground="#27AE60" FontSize="12" HorizontalAlignment="Right"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

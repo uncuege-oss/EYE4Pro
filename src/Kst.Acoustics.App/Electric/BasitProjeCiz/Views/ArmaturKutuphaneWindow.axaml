@@ -1,0 +1,379 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Electric.BasitProjeCiz.ViewModels"
+        x:Class="Kst.Acoustics.App.Electric.BasitProjeCiz.Views.ArmaturKutuphaneWindow"
+        x:DataType="vm:BasitProjeCizViewModel"
+        x:CompileBindings="False"
+        Width="1100" Height="620"
+        MinWidth="860" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        Background="#081009"
+        Title="Armatür ve Eleman Kütüphanesi">
+
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+        <Style Selector="DataGrid">
+            <Setter Property="Background" Value="#050C06"/>
+            <Setter Property="Foreground" Value="#DDEED2"/>
+            <Setter Property="BorderBrush" Value="#1A3A1A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style Selector="DataGridRow">       <Setter Property="Foreground" Value="#DDEED2"/> </Style>
+        <Style Selector="DataGridCell">      <Setter Property="Foreground" Value="#DDEED2"/> </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="#0E2211"/>
+            <Setter Property="Foreground" Value="#78A060"/>
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="Foreground" Value="#78A060"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#78A060"/>
+        </Style>
+        <Style Selector="TextBlock.val">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#DDEED2"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="12">
+
+        <!-- Başlık + durum -->
+        <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,8">
+            <TextBlock Text="ARMATÜR VE ELEMAN KÜTÜPHANESİ"
+                       Foreground="#6CC870" FontSize="14" FontWeight="Bold"/>
+            <ScrollViewer MaxHeight="120" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <TextBox Text="{ReflectionBinding KutuphaneMesaji}"
+                         Foreground="#9AB7CC" FontSize="11"
+                         IsReadOnly="True" BorderThickness="0" Background="Transparent"
+                         TextWrapping="Wrap" AcceptsReturn="True"/>
+            </ScrollViewer>
+        </StackPanel>
+
+        <!-- İçerik -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,8,360">
+
+            <!-- Sol: TabControl -->
+            <TabControl Grid.Column="0" x:Name="KutuphaneTabControl"
+                        SelectionChanged="TabControl_SelectionChanged">
+
+                <!-- ── Tab 1: Aydınlatma ── -->
+                <TabItem Header="💡 Aydınlatma">
+                    <Grid RowDefinitions="Auto,*">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,4,0,6">
+                            <Button Command="{ReflectionBinding KutuphaneArmatürEkleCommand}"
+                                    Content="Yeni" Background="#123A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphaneArmatürSilCommand}"
+                                    Content="Sil"  Background="#3A1A1A" Foreground="#FFB0B0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphaneKaydetCommand}"
+                                    Content="Kaydet" Background="#163A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <DataGrid Grid.Row="1" x:Name="ArmatürGrid"
+                                  ItemsSource="{ReflectionBinding Armatürler}"
+                                  SelectedItem="{ReflectionBinding SeciliKutuphaneArmatür}"
+                                  AutoGenerateColumns="False"
+                                  CanUserReorderColumns="True" CanUserResizeColumns="True"
+                                  GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Ad"         Binding="{Binding Ad}"               Width="140"/>
+                                <DataGridTextColumn Header="Ekran Adı"  Binding="{Binding EkranAdi}"          Width="130"/>
+                                <DataGridTextColumn Header="Blok Adı"   Binding="{Binding BlokAdi}"           Width="145"/>
+                                <DataGridTextColumn Header="Sembol"     Binding="{Binding SembolAdi}"         Width="55"/>
+                                <DataGridTextColumn Header="Montaj"     Binding="{Binding MontajTipi}"        Width="85"/>
+                                <DataGridTextColumn Header="W"          Binding="{Binding GucW}"              Width="50"/>
+                                <DataGridTextColumn Header="Grid m"     Binding="{Binding GridAraligiM}"      Width="60"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ── Tab 2: Anahtarlar ── -->
+                <TabItem Header="🔲 Anahtarlar">
+                    <Grid RowDefinitions="Auto,*">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,4,0,6">
+                            <Button Command="{ReflectionBinding KutuphaneAnahtarEkleCommand}"
+                                    Content="Yeni" Background="#123A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphaneAnahtarSilCommand}"
+                                    Content="Sil"  Background="#3A1A1A" Foreground="#FFB0B0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphaneKaydetCommand}"
+                                    Content="Kaydet" Background="#163A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <DataGrid Grid.Row="1" x:Name="AnahtarGrid"
+                                  ItemsSource="{ReflectionBinding Anahtarlar}"
+                                  SelectedItem="{ReflectionBinding SeciliKutuphaneAnahtar}"
+                                  AutoGenerateColumns="False"
+                                  CanUserReorderColumns="True" CanUserResizeColumns="True"
+                                  GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Ad"        Binding="{Binding Ad}"        Width="170"/>
+                                <DataGridTextColumn Header="Ekran Adı" Binding="{Binding EkranAdi}"   Width="150"/>
+                                <DataGridTextColumn Header="Blok Adı"  Binding="{Binding BlokAdi}"   Width="160"/>
+                                <DataGridTextColumn Header="Sembol"    Binding="{Binding SembolAdi}"  Width="65"/>
+                                <DataGridTextColumn Header="Montaj"    Binding="{Binding MontajTipi}" Width="110"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ── Tab 3: Pano ── -->
+                <TabItem Header="⬛ Pano">
+                    <Grid RowDefinitions="Auto,*">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,4,0,6">
+                            <Button Command="{ReflectionBinding KutuphanePanoEkleCommand}"
+                                    Content="Yeni" Background="#123A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphanePanoSilCommand}"
+                                    Content="Sil"  Background="#3A1A1A" Foreground="#FFB0B0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphaneKaydetCommand}"
+                                    Content="Kaydet" Background="#163A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <DataGrid Grid.Row="1" x:Name="PanoGrid"
+                                  ItemsSource="{ReflectionBinding Panolar}"
+                                  SelectedItem="{ReflectionBinding SeciliKutuphanePano}"
+                                  AutoGenerateColumns="False"
+                                  CanUserReorderColumns="True" CanUserResizeColumns="True"
+                                  GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Ad"        Binding="{Binding Ad}"        Width="170"/>
+                                <DataGridTextColumn Header="Ekran Adı" Binding="{Binding EkranAdi}"   Width="150"/>
+                                <DataGridTextColumn Header="Blok Adı"  Binding="{Binding BlokAdi}"   Width="170"/>
+                                <DataGridTextColumn Header="Sembol"    Binding="{Binding SembolAdi}"  Width="65"/>
+                                <DataGridTextColumn Header="Montaj"    Binding="{Binding MontajTipi}" Width="110"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ── Tab 4: Prizler ── -->
+                <TabItem Header="🔌 Prizler">
+                    <Grid RowDefinitions="Auto,*">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,4,0,6">
+                            <Button Command="{ReflectionBinding KutuphanePrizEkleCommand}"
+                                    Content="Yeni" Background="#123A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphanePrizSilCommand}"
+                                    Content="Sil"  Background="#3A1A1A" Foreground="#FFB0B0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphaneKaydetCommand}"
+                                    Content="Kaydet" Background="#163A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <DataGrid Grid.Row="1" x:Name="PrizGrid"
+                                  ItemsSource="{ReflectionBinding Prizler}"
+                                  SelectedItem="{ReflectionBinding SeciliKutuphanePriz}"
+                                  AutoGenerateColumns="False"
+                                  CanUserReorderColumns="True" CanUserResizeColumns="True"
+                                  GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Ad"        Binding="{Binding Ad}"        Width="170"/>
+                                <DataGridTextColumn Header="Ekran Adı" Binding="{Binding EkranAdi}"   Width="150"/>
+                                <DataGridTextColumn Header="Blok Adı"  Binding="{Binding BlokAdi}"   Width="170"/>
+                                <DataGridTextColumn Header="Sembol"    Binding="{Binding SembolAdi}"  Width="65"/>
+                                <DataGridTextColumn Header="Montaj"    Binding="{Binding MontajTipi}" Width="80"/>
+                                <DataGridTextColumn Header="Güç (W)"   Binding="{Binding GucW}"       Width="80"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ── Tab 5: Klimalar ── -->
+                <TabItem Header="⚙️ Klimalar">
+                    <Grid RowDefinitions="Auto,*">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,4,0,6">
+                            <Button Command="{ReflectionBinding KutuphaneKlimaEkleCommand}"
+                                    Content="Yeni" Background="#123A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphaneKlimaSilCommand}"
+                                    Content="Sil"  Background="#3A1A1A" Foreground="#FFB0B0" FontWeight="SemiBold"/>
+                            <Button Command="{ReflectionBinding KutuphaneKaydetCommand}"
+                                    Content="Kaydet" Background="#163A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <DataGrid Grid.Row="1" x:Name="KlimaGrid"
+                                  ItemsSource="{ReflectionBinding Klimalar}"
+                                  SelectedItem="{ReflectionBinding SeciliKutuphaneKlima}"
+                                  AutoGenerateColumns="False"
+                                  CanUserReorderColumns="True" CanUserResizeColumns="True"
+                                  GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Ad"        Binding="{Binding Ad}"        Width="170"/>
+                                <DataGridTextColumn Header="Ekran Adı" Binding="{Binding EkranAdi}"   Width="150"/>
+                                <DataGridTextColumn Header="Blok Adı"  Binding="{Binding BlokAdi}"   Width="170"/>
+                                <DataGridTextColumn Header="Sembol"    Binding="{Binding SembolAdi}"  Width="65"/>
+                                <DataGridTextColumn Header="Montaj"    Binding="{Binding MontajTipi}" Width="80"/>
+                                <DataGridTextColumn Header="Güç (W)"   Binding="{Binding GucW}"       Width="80"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ── Tab 6: Zayıf Akım (sistem başlıkları altında, salt-okunur) ── -->
+                <TabItem Header="📡 Zayıf Akım">
+                    <Grid RowDefinitions="Auto,*">
+                        <TextBlock Grid.Row="0" Margin="0,6,0,6"
+                                   Text="Sabit zayıf akım malzemeleri — sistem başlıkları altında gruplanmıştır (salt-okunur)."
+                                   Foreground="#78A060" FontSize="11"/>
+                        <DataGrid Grid.Row="1" x:Name="ZayifGrid"
+                                  ItemsSource="{ReflectionBinding ZayifAkimMalzemeler}"
+                                  SelectedItem="{ReflectionBinding SeciliZayifMalzeme}"
+                                  IsReadOnly="True"
+                                  AutoGenerateColumns="False"
+                                  CanUserReorderColumns="True" CanUserResizeColumns="True"
+                                  GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Malzeme"  Binding="{Binding Ad}"         Width="200"/>
+                                <DataGridTextColumn Header="Sembol"   Binding="{Binding SembolAdi}"  Width="80"/>
+                                <DataGridTextColumn Header="Blok Adı" Binding="{Binding BlokAdi}"    Width="180"/>
+                                <DataGridTextColumn Header="Montaj"   Binding="{Binding MontajTipi}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ── Yeni global katalog köprüsü ── -->
+                <TabItem Header="▤ Global">
+                    <Grid RowDefinitions="Auto,*">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,4,0,6">
+                            <Button Command="{ReflectionBinding KutuphaneKaydetCommand}"
+                                    Content="Kaydet" Background="#163A2A" Foreground="#A8FFD0" FontWeight="SemiBold"/>
+                            <TextBlock Text="Yeni kütüphane omurgası: tüm kuvvetli ve zayıf akım malzemeleri tek listede."
+                                       Foreground="#78A060" VerticalAlignment="Center" FontSize="11"/>
+                        </StackPanel>
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{ReflectionBinding Malzemeler}"
+                                  SelectedItem="{ReflectionBinding AktifKutuphaneEleman}"
+                                  AutoGenerateColumns="False"
+                                  CanUserReorderColumns="True" CanUserResizeColumns="True"
+                                  GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Grup" Binding="{Binding KutuphaneGrubu}" Width="105"/>
+                                <DataGridTextColumn Header="Kategori" Binding="{Binding KutuphaneKategorisi}" Width="125"/>
+                                <DataGridTextColumn Header="Standart Malzeme Adı" Binding="{Binding Ad}" Width="190"/>
+                                <DataGridTextColumn Header="Ekran Adı" Binding="{Binding EkranAdi}" Width="90"/>
+                                <DataGridTextColumn Header="Blok Adı" Binding="{Binding BlokAdi}" Width="170"/>
+                                <DataGridTextColumn Header="Sembol" Binding="{Binding SembolAdi}" Width="70"/>
+                                <DataGridTextColumn Header="Montaj" Binding="{Binding MontajTipi}" Width="80"/>
+                                <DataGridTextColumn Header="W" Binding="{Binding GucW}" Width="55"/>
+                                <DataGridTextColumn Header="Özel Alan" Binding="{Binding OzelAlanTuru}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+            </TabControl>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="4" Background="#0E2211" HorizontalAlignment="Stretch"/>
+
+            <!-- Sağ: DXF blok önizleme -->
+            <Border Grid.Column="2" Background="#050C06" CornerRadius="8" Margin="4,0,0,0">
+                <Grid RowDefinitions="Auto,*,Auto">
+
+                    <Border Grid.Row="0" Background="#081009"
+                            BorderBrush="#1A3A1A" BorderThickness="1"
+                            CornerRadius="6" Margin="10,10,10,6" Height="240">
+                        <Grid>
+                            <Viewbox Stretch="Uniform" Margin="14">
+                                <Canvas x:Name="SembolCanvas" Width="200" Height="200"/>
+                            </Viewbox>
+                            <TextBlock x:Name="SembolYokText" Text="Eleman seçin"
+                                       Foreground="#2A4A2A" FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" Margin="10,0,10,6">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="DÜZELT" Foreground="#78A060" FontSize="10" FontWeight="Bold" Margin="0,4,0,0"/>
+
+                            <TextBlock Classes="lbl" Text="Ad"/>
+                            <TextBox Text="{ReflectionBinding DuzeltAd, Mode=TwoWay}"
+                                     Background="#050C06" Foreground="#DDEED2"
+                                     BorderBrush="#245424" BorderThickness="1"
+                                     FontSize="11" Padding="5,3"/>
+
+                            <TextBlock Classes="lbl" Text="Ekran Adı (DXF etiketi)"/>
+                            <TextBox Text="{ReflectionBinding DuzeltEkranAdi, Mode=TwoWay}"
+                                     Background="#050C06" Foreground="#DDEED2"
+                                     BorderBrush="#245424" BorderThickness="1"
+                                     FontSize="11" Padding="5,3"
+                                     PlaceholderText="Boşsa Ad kullanılır"/>
+
+                            <TextBlock Classes="lbl" Text="Blok Adı"/>
+                            <TextBox Text="{ReflectionBinding DuzeltBlokAdi, Mode=TwoWay}"
+                                     Background="#050C06" Foreground="#DDEED2"
+                                     BorderBrush="#245424" BorderThickness="1"
+                                     FontSize="11" Padding="5,3"/>
+
+                            <TextBlock Classes="lbl" Text="Sembol Kodu"/>
+                            <TextBox Text="{ReflectionBinding DuzeltSembolAdi, Mode=TwoWay}"
+                                     Background="#050C06" Foreground="#DDEED2"
+                                     BorderBrush="#245424" BorderThickness="1"
+                                     FontSize="11" Padding="5,3"/>
+
+                            <TextBlock Classes="lbl" Text="Montaj Tipi"/>
+                            <TextBox Text="{ReflectionBinding DuzeltMontajTipi, Mode=TwoWay}"
+                                     Background="#050C06" Foreground="#DDEED2"
+                                     BorderBrush="#245424" BorderThickness="1"
+                                     FontSize="11" Padding="5,3"/>
+
+                            <TextBlock Classes="lbl" Text="Güç (W)"/>
+                            <NumericUpDown Value="{ReflectionBinding DuzeltGucW, Mode=TwoWay}"
+                                           Minimum="0" Increment="1" FormatString="F0"
+                                           Background="#050C06" Foreground="#DDEED2"
+                                           BorderBrush="#245424" BorderThickness="1"/>
+
+                            <Expander x:Name="YerlesimMantigiExpander" Header="Grid Dizilim" IsExpanded="False"
+                                      Foreground="#78A060" FontSize="11" FontWeight="SemiBold"
+                                      Background="#081009"
+                                      BorderBrush="#245424" BorderThickness="1"
+                                      Padding="0" Margin="0,4,0,0">
+                                <StackPanel Spacing="5" Margin="0,6,0,2">
+                                    <TextBlock Classes="lbl" Text="Grid X Aralığı (m)"/>
+                                    <NumericUpDown Value="{ReflectionBinding DuzeltGridAraligiM, Mode=TwoWay}"
+                                                   Minimum="0.5" Increment="0.5" FormatString="F1"
+                                                   Background="#050C06" Foreground="#DDEED2"
+                                                   BorderBrush="#245424" BorderThickness="1"/>
+                                    <TextBlock Classes="lbl" Text="Grid Y Aralığı (m) — boş = X ile aynı"/>
+                                    <NumericUpDown Value="{ReflectionBinding DuzeltGridAraligiYM, Mode=TwoWay}"
+                                                   Minimum="0.5" Increment="0.5" FormatString="F1"
+                                                   PlaceholderText="X ile aynı"
+                                                   Background="#050C06" Foreground="#DDEED2"
+                                                   BorderBrush="#245424" BorderThickness="1"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <TextBlock x:Name="SembolCizgiSayText" Classes="lbl" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Border Grid.Row="2" Background="#0A1C0A"
+                            BorderBrush="#142814" BorderThickness="1"
+                            CornerRadius="4" Margin="10,0,10,10" Padding="8,6">
+                        <TextBlock Text="IEC 60617 tabanlı • E4P sembol seti • Lisans gerektirmez"
+                                   FontSize="10" Foreground="#3A5A3A"
+                                   TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Alt toolbar: DXF şablon export/import + bilgi -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8" Margin="0,8,0,0">
+            <Button Grid.Column="0" Content="📤 Şablon DXF Dışa Aktar"
+                    Click="SablonDxfExport_OnClick"
+                    Background="#0E3A2A" Foreground="#A8FFD0" BorderBrush="#1A6A4A" BorderThickness="1"
+                    FontSize="11"/>
+            <Button Grid.Column="1" Content="📥 DXF'ten Sembolleri Yükle"
+                    Click="SembolDxfImport_OnClick"
+                    Background="#3A2E0A" Foreground="#FFD080" BorderBrush="#6A5A1A" BorderThickness="1"
+                    FontSize="11"/>
+            <TextBlock Grid.Column="2"
+                       Text="Armatür yerleşimi: Grid dizilim veya manuel ekleme"
+                       Foreground="#3A5A3A" FontSize="10"
+                       VerticalAlignment="Center" HorizontalAlignment="Right"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,176 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Architecture.Materials.ViewModels"
+        x:Class="Kst.Acoustics.App.Architecture.Materials.Views.MalzemeAtamaWindow"
+        x:DataType="vm:MalzemeAtamaViewModel"
+        Width="1280" Height="820"
+        MinWidth="1080" MinHeight="700"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#0A1015"
+        Title="Eye4Pro Architecture - Malzeme ve Yapı Elemanı Ataması">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#7E93A4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="Foreground" Value="#ECF3F7"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="#101821"/>
+            <Setter Property="BorderBrush" Value="#243646"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#256D7B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#111D26"/>
+            <Setter Property="Foreground" Value="#B9CAD6"/>
+            <Setter Property="BorderBrush" Value="#2A3E50"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <!-- Başlık -->
+        <Border Grid.Row="0" BorderBrush="#243646" BorderThickness="0,0,0,1" Background="#0D151D">
+            <Grid ColumnDefinitions="*,Auto" Margin="24,16">
+                <StackPanel Spacing="3">
+                    <TextBlock Text="M36 Detay, Malzeme ve Yapı Elemanı"
+                               Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="3D eleman hedeflerine yapı elemanı tipi ve malzeme ataması"
+                               Foreground="#7890A2" FontSize="12"/>
+                </StackPanel>
+                <Button Grid.Column="1" Classes="secondary" Content="Modül Merkezi"
+                        Click="BackToLauncher_OnClick" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Araç çubuğu -->
+        <Border Grid.Row="1" Background="#0B121A" BorderBrush="#1B2A36" BorderThickness="0,0,0,1" Padding="24,12">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Text="Proje" Classes="label" VerticalAlignment="Center"/>
+                    <TextBox Width="240" Text="{Binding ProjeAdi}" PlaceholderText="Proje adı"/>
+                    <TextBlock Text="{Binding DosyaYoluText}" Foreground="#7890A2" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                    <Button Classes="secondary" Content="Örnek Proje" Click="OrnekProje_OnClick"/>
+                    <Button Classes="secondary" Content="Proje Aç" Click="ProjeAc_OnClick"/>
+                    <Button Classes="secondary" Content="Farklı Kaydet" Click="FarkliKaydet_OnClick"/>
+                    <Button Classes="primary" Content="Kaydet" Click="Kaydet_OnClick"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Gövde -->
+        <Grid Grid.Row="2" ColumnDefinitions="1.3*,1*,1.1*" ColumnSpacing="16" Margin="24,16">
+            <!-- Hedef elemanlar -->
+            <Border Grid.Column="0" Classes="panel">
+                <DockPanel LastChildFill="True">
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <TextBlock Classes="sectionTitle" Text="Hedef Elemanlar"/>
+                        <TextBlock Grid.Column="1" Text="{Binding AtamaOzetiText}" Foreground="#7FD2C7" FontSize="12" VerticalAlignment="Center"/>
+                    </Grid>
+                    <ListBox ItemsSource="{Binding Hedefler}" SelectedItem="{Binding SeciliHedef}"
+                             Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AtamaHedefiSatiri">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,4">
+                                    <Border Background="#15313B" CornerRadius="5" Padding="7,3" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding TurAdi}" Foreground="#7FD2C7" FontSize="11" FontWeight="SemiBold"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding Etiket}" Foreground="#E7EFF4" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding AtananTipAdi}" Foreground="#9BB6C2" FontSize="12" VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- Atama paneli -->
+            <Border Grid.Column="1" Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="sectionTitle" Text="Atama"/>
+                    <TextBlock Text="{Binding SeciliHedefBilgisi}" Foreground="#9BB6C2" FontSize="12" TextWrapping="Wrap"/>
+                    <Border Height="1" Background="#243646"/>
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="label" Text="YAPI ELEMANI TİPİ"/>
+                        <ComboBox ItemsSource="{Binding UygunTipler}" SelectedItem="{Binding SeciliTip}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:YapiElemaniTipiSatiri">
+                                    <TextBlock Text="{Binding Gosterim}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="label" Text="MALZEME KATEGORİSİ"/>
+                        <ComboBox ItemsSource="{Binding KategoriSecenekleri}" SelectedItem="{Binding SeciliKategori}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MalzemeKategoriSecenegi">
+                                    <TextBlock Text="{Binding Ad}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="label" Text="MALZEME (İSTEĞE BAĞLI)"/>
+                        <ComboBox ItemsSource="{Binding Malzemeler}" SelectedItem="{Binding SeciliMalzeme}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MalzemeSatiri">
+                                    <TextBlock Text="{Binding Gosterim}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <Border Height="1" Background="#243646"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="primary" Content="Ata" Click="Ata_OnClick"/>
+                        <Button Classes="secondary" Content="Atamayı Kaldır" Click="AtamayiKaldir_OnClick"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Malzeme kataloğu -->
+            <Border Grid.Column="2" Classes="panel">
+                <DockPanel LastChildFill="True">
+                    <TextBlock DockPanel.Dock="Top" Classes="sectionTitle" Text="Malzeme Kataloğu" Margin="0,0,0,10"/>
+                    <ListBox ItemsSource="{Binding Malzemeler}" SelectedItem="{Binding SeciliMalzeme}"
+                             Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:MalzemeSatiri">
+                                <StackPanel Margin="0,4" Spacing="1">
+                                    <TextBlock Text="{Binding Ad}" Foreground="#E7EFF4" FontSize="13"/>
+                                    <TextBlock Text="{Binding Kod}" Foreground="#7890A2" FontSize="11"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- Durum -->
+        <Border Grid.Row="3" BorderBrush="#1B2A36" BorderThickness="0,1,0,0" Background="#070C11" Padding="24,10">
+            <TextBlock Text="{Binding DurumMesaji}" Foreground="#9BAEBB" FontSize="12"/>
+        </Border>
+    </Grid>
+</Window>

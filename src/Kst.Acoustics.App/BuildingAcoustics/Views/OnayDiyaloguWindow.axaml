@@ -1,0 +1,25 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.BuildingAcoustics.Views.OnayDiyaloguWindow"
+        Title="Onay"
+        Width="460" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#11161C">
+    <Border Padding="20" BorderBrush="#2A4252" BorderThickness="1">
+        <StackPanel Spacing="16">
+            <TextBlock x:Name="BaslikLabel" Text="Onay"
+                       Foreground="#FFD27A" FontSize="15" FontWeight="Bold"/>
+            <TextBlock x:Name="MesajLabel" Text=""
+                       Foreground="#D8E6EF" FontSize="12" TextWrapping="Wrap" LineHeight="18"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                <Button x:Name="IptalBtn" Content="İptal" Click="Iptal_OnClick"
+                        Padding="16,7" Background="#2A3038" Foreground="#D8E6EF" BorderThickness="0"/>
+                <Button x:Name="EkstraBtn" Content="" Click="Ekstra_OnClick" IsVisible="False"
+                        Padding="16,7" Background="#2A3F2A" Foreground="#D8F6E0" BorderThickness="0"/>
+                <Button x:Name="TamamBtn" Content="Tamam" Click="Tamam_OnClick"
+                        Padding="16,7" Background="#B5471E" Foreground="White" FontWeight="Bold" BorderThickness="0"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

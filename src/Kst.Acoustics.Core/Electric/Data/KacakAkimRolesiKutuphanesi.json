@@ -1,0 +1,21 @@
+[
+  { "Ad": "30mA 2P 25A AC",   "SensitiviteMa": 30,   "AnmaAkimA": 25,  "KutupSayisi": 2, "Tip": "AC" },
+  { "Ad": "30mA 2P 40A AC",   "SensitiviteMa": 30,   "AnmaAkimA": 40,  "KutupSayisi": 2, "Tip": "AC" },
+  { "Ad": "30mA 4P 25A AC",   "SensitiviteMa": 30,   "AnmaAkimA": 25,  "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "30mA 4P 40A AC",   "SensitiviteMa": 30,   "AnmaAkimA": 40,  "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "30mA 4P 63A AC",   "SensitiviteMa": 30,   "AnmaAkimA": 63,  "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "30mA Troid Röle 630A A",   "SensitiviteMa": 30,  "AnmaAkimA": 630,  "KutupSayisi": 4, "Tip": "A", "TroidTipiMi": true, "AkimTrafosuSekonderA": 5, "MinAkimTrafosuIcCapMm": 70 },
+  { "Ad": "30mA Troid Röle 1250A A",  "SensitiviteMa": 30,  "AnmaAkimA": 1250, "KutupSayisi": 4, "Tip": "A", "TroidTipiMi": true, "AkimTrafosuSekonderA": 5, "MinAkimTrafosuIcCapMm": 105 },
+  { "Ad": "30mA 2P 25A A",    "SensitiviteMa": 30,   "AnmaAkimA": 25,  "KutupSayisi": 2, "Tip": "A" },
+  { "Ad": "30mA 2P 40A A",    "SensitiviteMa": 30,   "AnmaAkimA": 40,  "KutupSayisi": 2, "Tip": "A" },
+  { "Ad": "100mA 4P 63A AC",  "SensitiviteMa": 100,  "AnmaAkimA": 63,  "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "100mA 4P 100A AC", "SensitiviteMa": 100,  "AnmaAkimA": 100, "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "100mA Troid Röle 630A A",  "SensitiviteMa": 100, "AnmaAkimA": 630,  "KutupSayisi": 4, "Tip": "A", "TroidTipiMi": true, "AkimTrafosuSekonderA": 5, "MinAkimTrafosuIcCapMm": 70 },
+  { "Ad": "300mA 4P 63A AC",  "SensitiviteMa": 300,  "AnmaAkimA": 63,  "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "300mA 4P 100A AC", "SensitiviteMa": 300,  "AnmaAkimA": 100, "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "300mA 4P 160A AC", "SensitiviteMa": 300,  "AnmaAkimA": 160, "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "300mA 4P 250A AC", "SensitiviteMa": 300,  "AnmaAkimA": 250, "KutupSayisi": 4, "Tip": "AC" },
+  { "Ad": "300mA Troid Röle 630A A",  "SensitiviteMa": 300, "AnmaAkimA": 630,  "KutupSayisi": 4, "Tip": "A", "TroidTipiMi": true, "AkimTrafosuSekonderA": 5, "MinAkimTrafosuIcCapMm": 70 },
+  { "Ad": "300mA Troid Röle 1250A A", "SensitiviteMa": 300, "AnmaAkimA": 1250, "KutupSayisi": 4, "Tip": "A", "TroidTipiMi": true, "AkimTrafosuSekonderA": 5, "MinAkimTrafosuIcCapMm": 105 },
+  { "Ad": "300mA Troid Röle 2500A A", "SensitiviteMa": 300, "AnmaAkimA": 2500, "KutupSayisi": 4, "Tip": "A", "TroidTipiMi": true, "AkimTrafosuSekonderA": 5, "MinAkimTrafosuIcCapMm": 140 }
+]

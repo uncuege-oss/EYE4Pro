@@ -1,0 +1,341 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:models="using:Kst.Acoustics.Core.BuildingAcoustics.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="240"
+             x:Class="Kst.Acoustics.App.BuildingAcoustics.Views.BolmeMalzemePanel"
+             x:DataType="models:Mekan">
+
+    <Grid ColumnDefinitions="220, 1, *, 6, 340">
+
+        <!-- ── Sol: Duvar Listesi ── -->
+        <Grid Grid.Column="0" RowDefinitions="Auto, Auto, Auto, *">
+
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8,6,8,4" Spacing="6">
+                <TextBlock Text="DUVARLAR" Foreground="#888888" FontSize="10" FontWeight="Bold"
+                           VerticalAlignment="Center"/>
+                <TextBlock x:Name="BolmeSayisiLabel" Foreground="#556677" FontSize="10"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Grid Grid.Row="1" RowDefinitions="Auto,Auto" Margin="6,0,6,5">
+                <Border Grid.Row="0" Background="#102230" CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="DÖŞEME" Foreground="#88AABB" FontSize="9" FontWeight="Bold"/>
+                        <ComboBox x:Name="DosemeCombo"
+                                  HorizontalAlignment="Stretch"
+                                  Background="#0E2233" Foreground="White"
+                                  BorderBrush="#20C3D8" BorderThickness="1"
+                                  FontSize="10"
+                                  SelectionChanged="DosemeCombo_SelectionChanged"/>
+                    </StackPanel>
+                </Border>
+                <Button Grid.Row="1" x:Name="DosemeKataUygulaBtn"
+                        Content="Döşemeyi tüm kata uygula"
+                        HorizontalAlignment="Stretch"
+                        Padding="6,4"
+                        FontSize="10"
+                        Background="#16304A"
+                        Foreground="#B8E4FF"
+                        Click="DosemeKataUygulaBtn_OnClick"/>
+            </Grid>
+
+            <StackPanel Grid.Row="2" Margin="6,0,6,4" Spacing="3">
+                <Button x:Name="TumunuUygulaBtn"
+                        Content="Tümüne seçili malzemeyi ata"
+                        HorizontalAlignment="Stretch"
+                        Padding="6,4" FontSize="10" Background="#1A2A3A" Foreground="#88AACC"
+                        ToolTip.Tip="Bu odadaki TÜM duvarlara seçili malzemeyi atar (mevcut atamaları da değiştirir)."
+                        Click="TumunuUygula_OnClick"/>
+                <Button x:Name="BosaUygulaBtn"
+                        Content="Yalnız boş duvarlara ata"
+                        HorizontalAlignment="Stretch"
+                        Padding="6,4" FontSize="10" Background="#16331F" Foreground="#9FE3B5"
+                        ToolTip.Tip="Yalnız malzemesi atanmamış duvarlara seçili malzemeyi atar; mevcut atamaları korur."
+                        Click="BosaUygula_OnClick"/>
+            </StackPanel>
+
+            <ListBox Grid.Row="3" x:Name="BolmeListesi"
+                     Background="Transparent" BorderThickness="0"
+                     SelectionChanged="BolmeListesi_SelectionChanged">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:Bolme">
+                        <Grid RowDefinitions="Auto, Auto" Margin="4,3">
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="▪" Foreground="#334455" FontSize="9" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Ad}"
+                                           Foreground="White" FontSize="11" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="140"/>
+                                <TextBlock Text="{Binding Alan, StringFormat='{}{0:F1}m²'}"
+                                           Foreground="#556677" FontSize="10" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Grid Grid.Row="1" ColumnDefinitions="*, Auto" Margin="12,1,0,0">
+                                <Panel Grid.Column="0">
+                                    <TextBlock Text="— malzeme yok —"
+                                               Foreground="#886644" FontSize="10"
+                                               IsVisible="{Binding YapiElemani, Converter={x:Static ObjectConverters.IsNull}}"/>
+                                    <TextBlock Text="{Binding YapiElemani.Ad}"
+                                               Foreground="#66AA88" FontSize="10"
+                                               TextTrimming="CharacterEllipsis"
+                                               IsVisible="{Binding YapiElemani, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                </Panel>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding ApparentRw, StringFormat='Rw {0:F0}'}"
+                                           Foreground="#20C3D8" FontSize="10" FontWeight="Bold"
+                                           IsVisible="{Binding YapiElemani, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                            </Grid>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <!-- Ayraç -->
+        <Border Grid.Column="1" Background="#333333"/>
+
+        <!-- ── Sağ: Seçili duvar düzenleme (açıklık / menfez / junction) ── -->
+        <GridSplitter Grid.Column="3" Width="6" VerticalAlignment="Stretch"
+                      Background="#4A6B86" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                      Cursor="SizeWestEast" ToolTip.Tip="Malzeme kütüphanesi ile düzenleme alanı arası genişliği ayarla">
+            <GridSplitter.Template>
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="3">
+                        <Rectangle Width="3" Height="32" RadiusX="1.5" RadiusY="1.5"
+                                   Fill="#AECbDF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </GridSplitter.Template>
+        </GridSplitter>
+        <ScrollViewer Grid.Column="4" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled" Background="#0A1119">
+            <StackPanel Spacing="0">
+
+            <!-- Seçili duvar başlığı -->
+            <Border Background="#111A22" Padding="10,6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock x:Name="SeciliBolmeLabel"
+                               Foreground="#20C3D8" FontSize="11" FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                    <TextBlock x:Name="MevcutMalzemeLabel"
+                               Foreground="#667788" FontSize="10"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Açıklıklar (kapı / pencere) bölümü -->
+            <Border x:Name="AciklikBolumu" IsVisible="False"
+                    Background="#08141C" BorderBrush="#1A3040" BorderThickness="0,0,0,1"
+                    Padding="8,5,8,6">
+                <StackPanel Spacing="4">
+                    <!-- M50 geometri sahipliği: M08 açıklık eklemez/silmez, yalnız malzeme atar. -->
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBlock Grid.Column="0" Text="AÇIKLIKLAR"
+                                   Foreground="#668899" FontSize="9" FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="Geometri M50'den · burada yalnız malzeme atanır"
+                                   Foreground="#577080" FontSize="9" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Mevcut açıklıklar (code-behind doldurur) -->
+                    <StackPanel x:Name="AciklikStackPanel" Spacing="2"/>
+
+                    <!-- Düzenleme / ekleme formu -->
+                    <Border x:Name="AciklikForm" IsVisible="False"
+                            Background="#0E1A28" CornerRadius="4"
+                            BorderBrush="#1E4060" BorderThickness="1"
+                            Padding="8,6" Margin="0,3,0,0">
+                        <StackPanel Spacing="5">
+                            <TextBlock x:Name="AciklikFormBaslik"
+                                       Foreground="#20C3D8" FontSize="10" FontWeight="Bold"/>
+
+                            <Grid ColumnDefinitions="Auto, *">
+                                <TextBlock Grid.Column="0" Text="Tip:"
+                                           Foreground="#88AABB" FontSize="10"
+                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <ComboBox Grid.Column="1" x:Name="AciklikTipCombo"
+                                          HorizontalAlignment="Stretch"
+                                          Background="#0E2233" Foreground="White"
+                                          BorderBrush="#1E4060" BorderThickness="1" FontSize="10"
+                                          SelectionChanged="AciklikTip_SelectionChanged"/>
+                            </Grid>
+
+                            <!-- Önayar boyut seçici -->
+                            <Grid ColumnDefinitions="Auto, *">
+                                <TextBlock Grid.Column="0" Text="Önayar:"
+                                           Foreground="#88AABB" FontSize="10"
+                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <ComboBox Grid.Column="1" x:Name="AciklikOnayarCombo"
+                                          HorizontalAlignment="Stretch"
+                                          Background="#0E2233" Foreground="White"
+                                          BorderBrush="#1E4060" BorderThickness="1" FontSize="10"
+                                          SelectionChanged="AciklikOnayar_SelectionChanged"/>
+                            </Grid>
+
+                            <!-- Manuel boyut girişi -->
+                            <Grid ColumnDefinitions="Auto, *, 8, Auto, *">
+                                <TextBlock Grid.Column="0" Text="En (cm):"
+                                           Foreground="#88AABB" FontSize="10"
+                                           VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBox Grid.Column="1" x:Name="AciklikGenislikBox"
+                                         FontSize="11" Padding="4,3"/>
+                                <TextBlock Grid.Column="3" Text="Boy (cm):"
+                                           Foreground="#88AABB" FontSize="10"
+                                           VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBox Grid.Column="4" x:Name="AciklikYukseklikBox"
+                                         FontSize="11" Padding="4,3"/>
+                            </Grid>
+
+                            <!-- B4 — Eşik yüksekliği (denizlik / kapı eşik) -->
+                            <Grid ColumnDefinitions="Auto, *">
+                                <TextBlock Grid.Column="0" Text="Eşik (cm):"
+                                           Foreground="#88AABB" FontSize="10"
+                                           VerticalAlignment="Center" Margin="0,0,5,0"
+                                           ToolTip.Tip="Açıklığın alt kenarının döşemeden yüksekliği. Boş bırakılırsa: Kapı=0, Pencere=90 cm."/>
+                                <TextBox Grid.Column="1" x:Name="AciklikEsikBox"
+                                         FontSize="11" Padding="4,3"
+                                         PlaceholderText="Kapı=0 / Pencere=90"/>
+                            </Grid>
+
+                            <!-- Malzeme seçici -->
+                            <TextBlock Text="Malzeme:" Foreground="#88AABB" FontSize="10" Margin="0,2,0,0"/>
+                            <ComboBox x:Name="AciklikMalzemeCombo"
+                                      HorizontalAlignment="Stretch"
+                                      Background="#0E2233" Foreground="White"
+                                      BorderBrush="#1E4060" BorderThickness="1" FontSize="10">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:YapiElemani">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Ad}"
+                                                       Foreground="White" FontSize="10"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding RwEtiketi}"
+                                                       Foreground="#20C3D8" FontSize="10"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <!-- Form butonları -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+                                <Button x:Name="AciklikSilBtn" Content="Sil"
+                                        IsVisible="False"
+                                        Background="#2A0A0A" Foreground="#FF8888"
+                                        FontSize="10" Padding="10,4"
+                                        Click="AciklikSil_Click"/>
+                                <Button x:Name="AciklikIptalBtn" Content="İptal"
+                                        Background="#161E22" Foreground="#778899"
+                                        FontSize="10" Padding="10,4"
+                                        Click="AciklikIptal_Click"/>
+                                <Button x:Name="AciklikKaydetBtn" Content="Kaydet"
+                                        Background="#0B547B" Foreground="White"
+                                        FontSize="10" FontWeight="Bold" Padding="14,4"
+                                        Click="AciklikKaydet_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- A8 — Menfez / havalandırma elemanları (Dn,e) -->
+                    <Border Background="#0A1620" BorderBrush="#1A3040" BorderThickness="0,1,0,0"
+                            Padding="0,6,0,0" Margin="0,4,0,0">
+                        <StackPanel Spacing="3">
+                            <Grid ColumnDefinitions="*, Auto, Auto, Auto">
+                                <TextBlock Grid.Column="0" Text="MENFEZ / HAVALANDIRMA (Dn,e)"
+                                           Foreground="#A89070" FontSize="9" FontWeight="Bold"
+                                           VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" x:Name="MenfezTrickleBtn"
+                                        Content="+ Trickle" Padding="6,2" FontSize="9" Margin="0,0,3,0"
+                                        Background="#1A1F2C" Foreground="#BBAA88"
+                                        Click="MenfezEkle_Click" Tag="Trickle"/>
+                                <Button Grid.Column="2" x:Name="MenfezMekanikBtn"
+                                        Content="+ Mekanik" Padding="6,2" FontSize="9" Margin="0,0,3,0"
+                                        Background="#1F1F2C" Foreground="#BBAA88"
+                                        Click="MenfezEkle_Click" Tag="Mekanik"/>
+                                <Button Grid.Column="3" x:Name="MenfezAkustikBtn"
+                                        Content="+ Akustik" Padding="6,2" FontSize="9"
+                                        Background="#1A2C1F" Foreground="#88BBAA"
+                                        Click="MenfezEkle_Click" Tag="Akustik"/>
+                            </Grid>
+                            <StackPanel x:Name="MenfezStackPanel" Spacing="2"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- Junction / flanking kenar ayarları -->
+            <Border x:Name="JunctionBolumu" IsVisible="False"
+                    Background="#0A1820" BorderBrush="#1A3040" BorderThickness="0,0,0,1"
+                    Padding="8,5,8,6">
+                <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="JUNCTION / YANAL İLETİM"
+                                   Foreground="#668899" FontSize="9" FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="Df · Fd · Ff"
+                                   Foreground="#446677" FontSize="9"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                    <StackPanel x:Name="JunctionStackPanel" Spacing="3"/>
+                    <TextBlock x:Name="JunctionOzetLabel"
+                               Foreground="#7895A8" FontSize="9"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            </StackPanel>
+          </ScrollViewer>
+
+        <!-- ── Orta: Malzeme Kütüphanesi (her zaman görünür) ── -->
+        <Grid Grid.Column="2" RowDefinitions="Auto, *, Auto">
+
+            <!-- Arama kutusu -->
+            <TextBox Grid.Row="0" x:Name="AramaKutusu"
+                     PlaceholderText="Malzeme ara (ad, tip, Rw değeri)…"
+                     Margin="8,6,8,4" Padding="6,4" FontSize="11"
+                     TextChanged="AramaKutusu_TextChanged"/>
+
+            <!-- Malzeme listesi -->
+            <ListBox Grid.Row="1" x:Name="MalzemeListesi"
+                     Background="Transparent" BorderThickness="0"
+                     SelectionChanged="MalzemeListesi_SelectionChanged"
+                     DoubleTapped="MalzemeListesi_DoubleTapped"
+                     PointerPressed="MalzemeListesi_PointerPressed"
+                     PointerMoved="MalzemeListesi_PointerMoved"
+                     PointerReleased="MalzemeListesi_PointerReleased">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:YapiElemani">
+                        <Grid ColumnDefinitions="*, Auto" Margin="6,4">
+                            <StackPanel Grid.Column="0" Spacing="1">
+                                <TextBlock Text="{Binding Ad}"
+                                           Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Ozet}"
+                                           Foreground="#7A9AAF" FontSize="10"/>
+                            </StackPanel>
+                            <Border Grid.Column="1" CornerRadius="3" Padding="8,3" Margin="8,0,0,0"
+                                    Background="#0E2233" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding RwEtiketi}"
+                                           Foreground="#20C3D8" FontSize="11" FontWeight="Bold"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Alt: Ata butonu (sabit) -->
+            <Border Grid.Row="2" Background="#0E1824" Padding="8,6">
+                <Grid ColumnDefinitions="*, Auto">
+                    <TextBlock Grid.Column="0" x:Name="SeciliMalzemeLabel"
+                               Foreground="#88AABB" FontSize="11"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                    <Button Grid.Column="1" x:Name="AtaBtn"
+                            Content="↩ Ata"
+                            Padding="14,5" FontSize="11" FontWeight="Bold"
+                            Background="#0B547B" Foreground="White"
+                            IsEnabled="False"
+                            Click="AtaBtn_OnClick"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

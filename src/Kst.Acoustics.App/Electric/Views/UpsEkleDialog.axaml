@@ -1,0 +1,78 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.Views.UpsEkleDialog"
+        Width="560" Height="620"
+        WindowStartupLocation="CenterOwner"
+        Background="#080F0A"
+        CanResize="False"
+        Title="UPS (KGK) Ekle / Düzenle">
+
+    <Window.Styles>
+        <Style Selector="TextBox, ComboBox">
+            <Setter Property="Background" Value="#0F1A0C"/>
+            <Setter Property="Foreground" Value="#E0F0D0"/>
+            <Setter Property="BorderBrush" Value="#2A4018"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#A0C888"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <TextBlock Grid.Row="0" x:Name="BaslikText" Text="🔋 UPS Ekle"
+                   Foreground="#B8E068" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="10">
+                <TextBlock Classes="label" Text="Besleyen Pano:"/>
+                <TextBlock x:Name="BesleyenPanoText" Foreground="#E0F0D0" FontWeight="SemiBold"/>
+
+                <TextBlock Classes="label" Text="Kritik Pano (UPS çıkışı):" Margin="0,6,0,0"/>
+                <TextBlock x:Name="KritikPanoText" Foreground="#E0F0D0" FontWeight="SemiBold"/>
+
+                <TextBlock Classes="label" Text="Akü Otonomi Süresi:" Margin="0,6,0,0"/>
+                <ComboBox x:Name="OtonomiCombo" HorizontalAlignment="Stretch">
+                    <ComboBoxItem Content="5 dakika"/>
+                    <ComboBoxItem Content="10 dakika"/>
+                    <ComboBoxItem Content="15 dakika"/>
+                    <ComboBoxItem Content="30 dakika"/>
+                </ComboBox>
+
+                <TextBlock Classes="label" Text="Emniyet / Büyüme Faktörü (1.0 - 2.0):" Margin="0,6,0,0"/>
+                <TextBox x:Name="EmniyetFaktoruBox" Text="1.25"/>
+
+                <TextBlock Classes="label" Text="Kritik Yük:" Margin="0,6,0,0"/>
+                <TextBlock x:Name="KritikYukText" Foreground="#E0F0D0" FontWeight="SemiBold"/>
+
+                <TextBlock Classes="label" Text="UPS (boş = otomatik tayin):" Margin="0,6,0,0"/>
+                <ComboBox x:Name="UpsCombo" HorizontalAlignment="Stretch"/>
+                <TextBlock x:Name="OnerilenUpsText" Foreground="#7AA060" FontSize="11"/>
+
+                <TextBlock Classes="label" Text="Akü Tipi (boş = ilk tip):" Margin="0,6,0,0"/>
+                <ComboBox x:Name="AkuCombo" HorizontalAlignment="Stretch"/>
+                <TextBlock x:Name="AkuOzetText" Foreground="#7AA060" FontSize="11"/>
+
+                <Border Background="#0E1A2A" CornerRadius="4" Padding="8" Margin="0,10,0,0">
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="Bilgilendirme" Foreground="#80A0E0" FontWeight="SemiBold" FontSize="11"/>
+                        <TextBlock Foreground="#A0C0E0" FontSize="11" TextWrapping="Wrap"
+                                   Text="• Kritik devreler (acil aydınlatma, sunucu, güvenlik) kritik panoya linye/alt pano olarak eklenir.&#x0a;• Akü grubu IEEE 485 sabit-güç yöntemiyle boyutlandırılır (seri blok = DC bara / blok gerilimi).&#x0a;• UPS boş bırakılırsa kritik yüke göre otomatik seçilir."/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,12,0,0">
+            <Button Grid.Column="0" x:Name="SilButton" Content="🗑 UPS'i Kaldır" Padding="14,6"
+                    Background="#7A2018" Foreground="White"
+                    IsVisible="False"
+                    Click="Sil_OnClick"/>
+            <Button Grid.Column="1" Content="İptal" Padding="14,6" Background="#1A2A1A" Foreground="#E0F0D0"
+                    Margin="0,0,8,0" Click="Iptal_OnClick"/>
+            <Button Grid.Column="2" x:Name="KaydetButton" Content="Ekle" Padding="14,6" Background="#3A7A18" Foreground="White"
+                    Click="Kaydet_OnClick"/>
+        </Grid>
+    </Grid>
+</Window>

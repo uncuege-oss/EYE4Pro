@@ -1,0 +1,581 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:Kst.Acoustics.Core.Electric.Models;assembly=Kst.Acoustics.Core"
+        xmlns:views="clr-namespace:Kst.Acoustics.App.Electric.Views"
+        x:Class="Kst.Acoustics.App.Electric.Views.KutuphaneWindow"
+        Width="980" Height="640"
+        MinWidth="800" MinHeight="500"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#080F0A"
+        Title="Eye4Pro Electric — Kütüphane">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#C8E4B0"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#3A7A18"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="12,5"/>
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#162A10"/>
+            <Setter Property="Foreground" Value="#A0C888"/>
+            <Setter Property="BorderBrush" Value="#2A4A20"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,4"/>
+        </Style>
+        <Style Selector="DataGrid">
+            <Setter Property="Background" Value="#0A140A"/>
+            <Setter Property="GridLinesVisibility" Value="All"/>
+            <Setter Property="BorderBrush" Value="#1A3018"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="#0C1A0C"/>
+            <Setter Property="Foreground" Value="#8CB070"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="Foreground" Value="#D0E8C0"/>
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="Foreground" Value="#7AA060"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Foreground" Value="#C8E4B0"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="#0E1E10" Padding="16,10" BorderBrush="#1A3018" BorderThickness="0,0,0,1">
+            <TextBlock Text="📚 Kütüphane Yönetimi"
+                       Foreground="#E0F0D0" FontSize="16" FontWeight="SemiBold"/>
+        </Border>
+
+        <TabControl Grid.Row="1" Margin="8">
+            <!-- YÜK TİPLERİ -->
+            <TabItem Header="Yük Tipleri">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="YukGrid" AutoGenerateColumns="False"                              x:DataType="models:YukTipiTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Birim Güç (W)" Binding="{Binding BirimGucW}" Width="120"/>
+                            <DataGridTextColumn Header="Sigorta Cinsi" Binding="{Binding SigortaCinsi}" Width="120"/>
+                            <DataGridTextColumn Header="Talep Faktörü" Binding="{Binding TalepFaktoru}" Width="120"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="YukYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="YukSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- KAR -->
+            <TabItem Header="Kaçak Akım Röleleri">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="KarGrid" AutoGenerateColumns="False"                              x:DataType="models:KacakAkimRolesiTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Hassasiyet (mA)" Binding="{Binding SensitiviteMa}" Width="140"/>
+                            <DataGridTextColumn Header="Anma Akımı (A)" Binding="{Binding AnmaAkimA}" Width="140"/>
+                            <DataGridTextColumn Header="Kutup" Binding="{Binding KutupSayisi}" Width="80"/>
+                            <DataGridTextColumn Header="Tip" Binding="{Binding Tip}" Width="80"/>
+                            <DataGridCheckBoxColumn Header="Troid" Binding="{Binding TroidTipiMi}" Width="80"/>
+                            <DataGridTextColumn Header="AT Sek. (A)" Binding="{Binding AkimTrafosuSekonderA}" Width="100"/>
+                            <DataGridTextColumn Header="Min AT Ø (mm)" Binding="{Binding MinAkimTrafosuIcCapMm}" Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="KarYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="KarSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Akım Trafosu -->
+            <TabItem Header="Akım Trafoları">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="AkimTrafosuGrid" AutoGenerateColumns="False"
+                              x:DataType="models:AkimTrafosuTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="200"/>
+                            <DataGridTextColumn Header="Tip" Binding="{Binding Tip}" Width="100"/>
+                            <DataGridTextColumn Header="Primer (A)" Binding="{Binding PrimerA}" Width="110"/>
+                            <DataGridTextColumn Header="Sekonder (A)" Binding="{Binding SekonderA}" Width="120"/>
+                            <DataGridTextColumn Header="İç Çap (mm)" Binding="{Binding IcCapMm}" Width="110"/>
+                            <DataGridTextColumn Header="Sınıf" Binding="{Binding Sinif}" Width="90"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="100"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="AkimTrafosuYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="AkimTrafosuSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Kondansatör -->
+            <TabItem Header="Kondansatörler">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="KondGrid" AutoGenerateColumns="False"                              x:DataType="models:KondansatorTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Güç (kVAr)" Binding="{Binding GucKVar}" Width="120"/>
+                            <DataGridTextColumn Header="Faz Tipi" Binding="{Binding FazTipi}" Width="120"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="KondYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="KondSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Busbar -->
+            <TabItem Header="Busbar Tipleri">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="BusbarGrid" AutoGenerateColumns="False"                              x:DataType="models:BusbarTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="160"/>
+                            <DataGridTextColumn Header="Nominal Akım (A)" Binding="{Binding NominalAkimA}" Width="130"/>
+                            <DataGridTemplateColumn Header="Malzeme" Width="130">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="models:BusbarTanim">
+                                        <TextBlock Text="{Binding Malzeme}" VerticalAlignment="Center" Margin="6,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate x:DataType="models:BusbarTanim">
+                                        <ComboBox SelectedItem="{Binding Malzeme, Mode=TwoWay}"
+                                                  ItemsSource="{x:Static views:KutuphaneWindow.BusbarMalzemeleri}"
+                                                  HorizontalAlignment="Stretch"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Kesit (mm²)" Binding="{Binding KesitMm2}" Width="120"/>
+                            <DataGridTextColumn Header="Direnç (mΩ/m)" Binding="{Binding DirencMOhmPerM}" Width="140"/>
+                            <DataGridTextColumn Header="Reaktans (mΩ/m)" Binding="{Binding ReaktansMOhmPerM}" Width="140"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="BusbarYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="BusbarSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- AZR -->
+            <TabItem Header="Astronomik Zaman Röleleri">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="AzrGrid" AutoGenerateColumns="False"                              x:DataType="models:AstronomikZamanRolesiTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="200"/>
+                            <DataGridTextColumn Header="Anma Akımı (A)" Binding="{Binding AnmaAkimA}" Width="140"/>
+                            <DataGridTextColumn Header="Çıkış Sayısı" Binding="{Binding CikisSayisi}" Width="120"/>
+                            <DataGridTextColumn Header="Kutup" Binding="{Binding KutupSayisi}" Width="80"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding BeslemeGerilimV}" Width="100"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="AzrYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="AzrSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Kontaktör -->
+            <TabItem Header="Kontaktörler">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="KontGrid" AutoGenerateColumns="False"                              x:DataType="models:KontaktorTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Anma Akımı (A)" Binding="{Binding AnmaAkimA}" Width="140"/>
+                            <DataGridTextColumn Header="Kutup" Binding="{Binding KutupSayisi}" Width="100"/>
+                            <DataGridTextColumn Header="Bobin Ger. (V)" Binding="{Binding BobinGerilimV}" Width="120"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="KontYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="KontSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Otomatik Sigorta (MCB) -->
+            <TabItem Header="Sigortalar (MCB)">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="SigortaGrid" AutoGenerateColumns="False"
+                              x:DataType="models:SigortaTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="200"/>
+                            <DataGridTextColumn Header="Anma Akımı (A)" Binding="{Binding AnmaAkimA}" Width="140"/>
+                            <DataGridTextColumn Header="Karakteristik" Binding="{Binding Karakteristik}" Width="120"/>
+                            <DataGridTextColumn Header="Kesme Kap. (kA)" Binding="{Binding KesmeKapasitesiKA}" Width="140"/>
+                            <DataGridTextColumn Header="Kutup" Binding="{Binding KutupSayisi}" Width="80"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="SigortaYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="SigortaSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- TMŞ / Kompakt Şalter (MCCB) -->
+            <TabItem Header="TMŞ (Kompakt Şalter)">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="TmsGrid" AutoGenerateColumns="False"
+                              x:DataType="models:TmsTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="200"/>
+                            <DataGridTextColumn Header="Anma Akımı (A)" Binding="{Binding AnmaAkimA}" Width="140"/>
+                            <DataGridTextColumn Header="Kesme Kap. (kA)" Binding="{Binding KesmeKapasitesiKA}" Width="140"/>
+                            <DataGridTextColumn Header="Kutup" Binding="{Binding KutupSayisi}" Width="80"/>
+                            <DataGridTextColumn Header="Ayar Alt (A)" Binding="{Binding AyarAltA}" Width="110"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="TmsYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="TmsSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Bıçaklı Sigorta -->
+            <TabItem Header="Bıçaklı Sigortalar (NH)">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="BicakGrid" AutoGenerateColumns="False"
+                              x:DataType="models:BicakliSigortaTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="200"/>
+                            <DataGridTextColumn Header="Boy" Binding="{Binding Boy}" Width="80"/>
+                            <DataGridTextColumn Header="Anma Akımı (A)" Binding="{Binding AnmaAkimA}" Width="140"/>
+                            <DataGridTextColumn Header="Karakteristik" Binding="{Binding Karakteristik}" Width="120"/>
+                            <DataGridTextColumn Header="Kesme Kap. (kA)" Binding="{Binding KesmeKapasitesiKA}" Width="140"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="100"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="BicakYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="BicakSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Kompanzasyon Rölesi -->
+            <TabItem Header="Kompanzasyon Röleleri">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="KompRoleGrid" AutoGenerateColumns="False"
+                              x:DataType="models:KompanzasyonRolesiTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Kademe Sayısı" Binding="{Binding KademeSayisi}" Width="130"/>
+                            <DataGridCheckBoxColumn Header="SVC Destekli" Binding="{Binding SvcDestekli}" Width="120"/>
+                            <DataGridTextColumn Header="CT Oranı" Binding="{Binding CtOrani}" Width="100"/>
+                            <DataGridTextColumn Header="İletişim" Binding="{Binding IletisimArayuzu}" Width="120"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="KompRoleYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="KompRoleSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Reaktör -->
+            <TabItem Header="Reaktörler (SVC)">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="ReaktorGrid" AutoGenerateColumns="False"
+                              x:DataType="models:ReaktorTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Güç (kVAr)" Binding="{Binding GucKVar}" Width="120"/>
+                            <DataGridTextColumn Header="Akort Frek. (Hz)" Binding="{Binding AkortFrekansHz}" Width="140"/>
+                            <DataGridTextColumn Header="Akort (%)" Binding="{Binding AkortYuzde}" Width="100"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="100"/>
+                            <DataGridTextColumn Header="Faz Tipi" Binding="{Binding FazTipi}" Width="100"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="ReaktorYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="ReaktorSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Harmonik Filtre -->
+            <TabItem Header="Harmonik Filtreler">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="HarmonikGrid" AutoGenerateColumns="False"
+                              x:DataType="models:HarmonikFiltreTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="240"/>
+                            <DataGridTextColumn Header="Tipi" Binding="{Binding Tipi}" Width="90"/>
+                            <DataGridTextColumn Header="Filtre Frek. (Hz)" Binding="{Binding FiltreFrekansHz}" Width="140"/>
+                            <DataGridTextColumn Header="Güç (kVAr)" Binding="{Binding GucKVar}" Width="110"/>
+                            <DataGridTextColumn Header="Anma Akımı (A)" Binding="{Binding AnmaAkimA}" Width="140"/>
+                            <DataGridTextColumn Header="Hedef THD (%)" Binding="{Binding ThdYuzde}" Width="120"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="100"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="HarmonikYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="HarmonikSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- SVC Sürücü -->
+            <TabItem Header="SVC Yük Sürücüleri">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="SvcGrid" AutoGenerateColumns="False"
+                              x:DataType="models:SvcSurucuTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Kademe Güç (kVAr)" Binding="{Binding KademeGucKVar}" Width="160"/>
+                            <DataGridTextColumn Header="Anma Akımı (A)" Binding="{Binding AnmaAkimA}" Width="140"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="100"/>
+                            <DataGridTextColumn Header="Soğutma" Binding="{Binding SogutmaTipi}" Width="100"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="SvcYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="SvcSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Motor -->
+            <TabItem Header="Jeneratör Motorları">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="MotorGrid" AutoGenerateColumns="False"
+                              x:DataType="models:MotorTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="200"/>
+                            <DataGridTextColumn Header="Marka" Binding="{Binding Marka}" Width="100"/>
+                            <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="160"/>
+                            <DataGridTextColumn Header="Yakıt" Binding="{Binding YakitTipi}" Width="90"/>
+                            <DataGridTextColumn Header="Silindir" Binding="{Binding SilindirSayisi}" Width="70"/>
+                            <DataGridTextColumn Header="Hacim (L)" Binding="{Binding HacimL}" Width="90"/>
+                            <DataGridTextColumn Header="Devir (rpm)" Binding="{Binding DevirRpm}" Width="100"/>
+                            <DataGridTextColumn Header="Güç (kW)" Binding="{Binding GucKW}" Width="90"/>
+                            <DataGridTextColumn Header="Soğutma" Binding="{Binding Sogutma}" Width="90"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="MotorYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="MotorSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Alternatör -->
+            <TabItem Header="Alternatörler">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="AlternatorGrid" AutoGenerateColumns="False"
+                              x:DataType="models:AlternatorTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="200"/>
+                            <DataGridTextColumn Header="Marka" Binding="{Binding Marka}" Width="120"/>
+                            <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="140"/>
+                            <DataGridTextColumn Header="Güç (kVA)" Binding="{Binding AnmaGucKVA}" Width="100"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="100"/>
+                            <DataGridTextColumn Header="Faz" Binding="{Binding FazTipi}" Width="80"/>
+                            <DataGridTextColumn Header="cosφ" Binding="{Binding CosF}" Width="70"/>
+                            <DataGridTextColumn Header="Frek (Hz)" Binding="{Binding FrekansHz}" Width="80"/>
+                            <DataGridTextColumn Header="Verim (%)" Binding="{Binding VerimYuzde}" Width="90"/>
+                            <DataGridTextColumn Header="Kutuplanma" Binding="{Binding KutuplanmaTipi}" Width="110"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="AlternatorYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="AlternatorSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Jeneratör -->
+            <TabItem Header="Jeneratörler">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="JeneratorGrid" AutoGenerateColumns="False"
+                              x:DataType="models:JeneratorTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="120"/>
+                            <DataGridTextColumn Header="Marka" Binding="{Binding Marka}" Width="120"/>
+                            <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="160"/>
+                            <DataGridTextColumn Header="PRP kVA" Binding="{Binding PrimeGucKVA}" Width="90"/>
+                            <DataGridTextColumn Header="PRP kW" Binding="{Binding PrimeGucKW}" Width="80"/>
+                            <DataGridTextColumn Header="ESP kVA" Binding="{Binding StandbyGucKVA}" Width="90"/>
+                            <DataGridTextColumn Header="ESP kW" Binding="{Binding StandbyGucKW}" Width="80"/>
+                            <DataGridTextColumn Header="Motor" Binding="{Binding MotorAd}" Width="180"/>
+                            <DataGridTextColumn Header="Alternatör" Binding="{Binding AlternatorAd}" Width="180"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="90"/>
+                            <DataGridTextColumn Header="Kabin" Binding="{Binding Kabin}" Width="100"/>
+                            <DataGridTextColumn Header="dB(A) @7m" Binding="{Binding SesSeviyeDb}" Width="100"/>
+                            <DataGridTextColumn Header="Yakıt L/h" Binding="{Binding YakitTuketimLh100}" Width="100"/>
+                            <DataGridTextColumn Header="Depo (L)" Binding="{Binding YakitDeposuL}" Width="90"/>
+                            <DataGridTextColumn Header="Ağırlık (kg)" Binding="{Binding AgirlikKg}" Width="100"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="JeneratorYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="JeneratorSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Transfer Şalteri -->
+            <TabItem Header="Transfer Şalterleri (ATS/MTS)">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="TransferSalterGrid" AutoGenerateColumns="False"
+                              x:DataType="models:TransferSalterTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="160"/>
+                            <DataGridTextColumn Header="Marka" Binding="{Binding Marka}" Width="120"/>
+                            <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="160"/>
+                            <DataGridTextColumn Header="Anma (A)" Binding="{Binding AnmaAkimA}" Width="100"/>
+                            <DataGridTextColumn Header="Kutup" Binding="{Binding KutupSayisi}" Width="70"/>
+                            <DataGridTextColumn Header="Gerilim (V)" Binding="{Binding GerilimV}" Width="100"/>
+                            <DataGridTextColumn Header="Tipi" Binding="{Binding Tipi}" Width="80"/>
+                            <DataGridTextColumn Header="Geçiş (ms)" Binding="{Binding TransferSuresiMs}" Width="100"/>
+                            <DataGridTextColumn Header="Kontrol" Binding="{Binding KontrolTipi}" Width="130"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="TransferSalterYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="TransferSalterSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Trafo -->
+            <TabItem Header="Trafolar">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="TrafoGrid" AutoGenerateColumns="False"
+                              x:DataType="models:TrafoTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="150"/>
+                            <DataGridTextColumn Header="Marka" Binding="{Binding Marka}" Width="100"/>
+                            <DataGridTemplateColumn Header="Tip" Width="120">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="models:TrafoTanim">
+                                        <TextBlock Text="{Binding Tip}" VerticalAlignment="Center" Margin="6,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate x:DataType="models:TrafoTanim">
+                                        <ComboBox SelectedItem="{Binding Tip, Mode=TwoWay}"
+                                                  ItemsSource="{x:Static views:KutuphaneWindow.TrafoTipDegerleri}"
+                                                  HorizontalAlignment="Stretch"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Güç (kVA)" Binding="{Binding GucKVA}" Width="100"/>
+                            <DataGridTextColumn Header="Primer (kV)" Binding="{Binding PrimerGerilimKV}" Width="100"/>
+                            <DataGridTextColumn Header="Sekonder (V)" Binding="{Binding SekonderGerilimV}" Width="110"/>
+                            <DataGridTextColumn Header="uk (%)" Binding="{Binding UkYuzde}" Width="80"/>
+                            <DataGridTextColumn Header="Vektör" Binding="{Binding VektorGrubu}" Width="90"/>
+                            <DataGridTextColumn Header="Boşta (W)" Binding="{Binding BostaKayipW}" Width="100"/>
+                            <DataGridTextColumn Header="Yük (W)" Binding="{Binding YukKaybiW}" Width="100"/>
+                            <DataGridTextColumn Header="Gen (mm)" Binding="{Binding GenislikMm}" Width="90"/>
+                            <DataGridTextColumn Header="Der (mm)" Binding="{Binding DerinlikMm}" Width="90"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="TrafoYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="TrafoSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- OG Hücre -->
+            <TabItem Header="OG Hücreleri">
+                <Grid RowDefinitions="*,Auto">
+                    <DataGrid Grid.Row="0" x:Name="OgHucreGrid" AutoGenerateColumns="False"
+                              x:DataType="models:OgHucreTanim">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="180"/>
+                            <DataGridTemplateColumn Header="Hücre Tipi" Width="130">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="models:OgHucreTanim">
+                                        <TextBlock Text="{Binding HucreTipi}" VerticalAlignment="Center" Margin="6,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate x:DataType="models:OgHucreTanim">
+                                        <ComboBox SelectedItem="{Binding HucreTipi, Mode=TwoWay}"
+                                                  ItemsSource="{x:Static views:KutuphaneWindow.OgHucreTipDegerleri}"
+                                                  HorizontalAlignment="Stretch"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Koruma Tipi" Width="160">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="models:OgHucreTanim">
+                                        <TextBlock Text="{Binding KorumaTipi}" VerticalAlignment="Center" Margin="6,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate x:DataType="models:OgHucreTanim">
+                                        <ComboBox SelectedItem="{Binding KorumaTipi, Mode=TwoWay}"
+                                                  ItemsSource="{x:Static views:KutuphaneWindow.OgKorumaTipDegerleri}"
+                                                  HorizontalAlignment="Stretch"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Gerilim (kV)" Binding="{Binding AnmaGerilimKV}" Width="110"/>
+                            <DataGridTextColumn Header="Anma (A)" Binding="{Binding AnmaAkimA}" Width="100"/>
+                            <DataGridTextColumn Header="Ik (kA/1s)" Binding="{Binding KisaSureDayanimKA}" Width="100"/>
+                            <DataGridTextColumn Header="Yalıtım" Binding="{Binding YalitimTipi}" Width="90"/>
+                            <DataGridTextColumn Header="Gen (mm)" Binding="{Binding GenislikMm}" Width="90"/>
+                            <DataGridTextColumn Header="Der (mm)" Binding="{Binding DerinlikMm}" Width="90"/>
+                            <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="primary" Content="+ Yeni" Click="OgHucreYeni_OnClick"/>
+                        <Button Classes="secondary" Content="− Sil" Click="OgHucreSil_OnClick"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <Border Grid.Row="2" Background="#0E1E10" Padding="16,10" BorderBrush="#1A3018" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="StatusText" Text="Değişiklikler 'Kaydet' tıklanınca disk'e yazılır."
+                           Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button Classes="secondary" Content="Kapat" Click="Kapat_OnClick"/>
+                    <Button Classes="primary" Content="💾 Kaydet" Click="KutuphaneyiKaydet_OnClick"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,178 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Kst.Acoustics.App.BuildingAcoustics.ViewModels"
+             xmlns:models="using:Kst.Acoustics.Core.BuildingAcoustics.Models"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="260"
+             x:Class="Kst.Acoustics.App.BuildingAcoustics.Views.SiniflandirmaPanel"
+             x:DataType="vm:BinaProjesiViewModel">
+
+    <Grid RowDefinitions="Auto, Auto, *">
+
+        <!-- Bina işlevi + otomatik tahmin -->
+        <Border Grid.Row="0" Background="#182530" Padding="10,7">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="Bina İşlevi:" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                <ComboBox ItemsSource="{Binding BinaIslevleri}"
+                          SelectedItem="{Binding SeciliBinaIslevi}"
+                          Width="240" Background="#0E1E2E" Foreground="White"
+                          BorderBrush="#20C3D8" BorderThickness="1">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:BinaIsleviInfo">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{Binding Ad}" Foreground="#20C3D8"
+                                           FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Aciklama}" Foreground="#AAAAAA"
+                                           FontSize="11" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Command="{Binding OtomatikTahminCommand}"
+                        Background="#1A3A2A" Foreground="#88DDAA" Padding="10,5"
+                        ToolTip.Tip="Bina işlevine göre tüm odalara EK-2 varsayılan sınıf atar">
+                    ✦ Otomatik Tahmin
+                </Button>
+                <TextBlock Text="{Binding TumMekanSiniflari.Count, StringFormat='({0} oda)'}"
+                           Foreground="#556677" FontSize="11" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Açıklama / legend -->
+        <Border Grid.Row="1" Background="#111A22" Padding="10,4">
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <TextBlock Foreground="#666666" FontSize="10" VerticalAlignment="Center">KAYNAK:</TextBlock>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border CornerRadius="3" Padding="5,1" Background="#27AE60">
+                        <TextBlock Text="DG" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                    </Border>
+                    <TextBlock Text="Düşük Gürültü" Foreground="#888888" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border CornerRadius="3" Padding="5,1" Background="#E67E22">
+                        <TextBlock Text="OG" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                    </Border>
+                    <TextBlock Text="Orta Gürültü" Foreground="#888888" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border CornerRadius="3" Padding="5,1" Background="#C0392B">
+                        <TextBlock Text="YG" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                    </Border>
+                    <TextBlock Text="Yüksek Gürültü" Foreground="#888888" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Separator Width="1" Height="14" Background="#333333"/>
+
+                <TextBlock Foreground="#666666" FontSize="10" VerticalAlignment="Center">ALICI:</TextBlock>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border CornerRadius="3" Padding="5,1" Background="#2980B9">
+                        <TextBlock Text="I" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                    </Border>
+                    <TextBlock Text="Çok Hassas" Foreground="#888888" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border CornerRadius="3" Padding="5,1" Background="#5B8DB8">
+                        <TextBlock Text="II" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                    </Border>
+                    <TextBlock Text="Hassas" Foreground="#888888" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border CornerRadius="3" Padding="5,1" Background="#7F8C8D">
+                        <TextBlock Text="III" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                    </Border>
+                    <TextBlock Text="Az Hassas" Foreground="#888888" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Tablo -->
+        <Grid Grid.Row="2" RowDefinitions="Auto, *">
+
+            <!-- Sütun başlıkları -->
+            <Grid Grid.Row="0"
+                  ColumnDefinitions="90, 160, 130, 130, 110, *"
+                  Background="#1E2A36" Margin="0,0,0,1">
+                <TextBlock Grid.Column="0" Text="Kat"           Foreground="#888888" FontSize="10" FontWeight="Bold" Padding="6,5"/>
+                <TextBlock Grid.Column="1" Text="Mekan Adı"     Foreground="#888888" FontSize="10" FontWeight="Bold" Padding="4,5"/>
+                <TextBlock Grid.Column="2" Text="Kullanım"      Foreground="#888888" FontSize="10" FontWeight="Bold" Padding="4,5"/>
+                <TextBlock Grid.Column="3" Text="Kaynak Derecesi" Foreground="#888888" FontSize="10" FontWeight="Bold" Padding="4,5"/>
+                <TextBlock Grid.Column="4" Text="Alıcı Sınıfı"  Foreground="#888888" FontSize="10" FontWeight="Bold" Padding="4,5"/>
+            </Grid>
+
+            <!-- Satır listesi -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding TumMekanSiniflari}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MekanSinifSatiri">
+                            <Grid ColumnDefinitions="40, 160, 130, 130, 110, *"
+                                  Background="Transparent" Margin="0,1">
+
+                                <!-- Kat adı -->
+                                <Border Grid.Column="0" Padding="6,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding KatAdi}"
+                                               Foreground="#668899" FontSize="11"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Border>
+
+                                <!-- Mekan Adı — tıklanınca 2D'de odayı seçer -->
+                                <Button Grid.Column="1" Padding="4,0" VerticalAlignment="Stretch"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                        ToolTip.Tip="Tıkla: bu odayı 2D görünümde seç"
+                                        Command="{Binding $parent[ItemsControl].DataContext.MekanSinifSatiriSecCommand}"
+                                        CommandParameter="{Binding}">
+                                    <TextBlock Text="{Binding Ad}"
+                                               Foreground="#7FD4FF" FontSize="12"
+                                               TextDecorations="Underline"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Button>
+
+                                <!-- Kullanım Tipi -->
+                                <Border Grid.Column="2" Padding="4,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding KullanimTipi}"
+                                               Foreground="#AAAAAA" FontSize="11"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Border>
+
+                                <!-- Kaynak Derecesi ComboBox + badge -->
+                                <Grid Grid.Column="3" ColumnDefinitions="Auto, *" Margin="2,2">
+                                    <Border Grid.Column="0" CornerRadius="3" Padding="5,1" Margin="0,0,4,0"
+                                            Background="{Binding KaynakRenk}"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding KaynakDerecesi}"
+                                                   Foreground="White" FontSize="9" FontWeight="Bold"/>
+                                    </Border>
+                                    <ComboBox Grid.Column="1"
+                                              SelectedItem="{Binding KaynakDerecesi, Mode=TwoWay}"
+                                              ItemsSource="{Binding KaynakSecenekleri}"
+                                              HorizontalAlignment="Stretch"
+                                              Background="#0E1E2E" Foreground="White"
+                                              FontSize="11" Padding="4,2"/>
+                                </Grid>
+
+                                <!-- Alıcı Sınıfı ComboBox + badge -->
+                                <Grid Grid.Column="4" ColumnDefinitions="Auto, *" Margin="2,2">
+                                    <Border Grid.Column="0" CornerRadius="3" Padding="5,1" Margin="0,0,4,0"
+                                            Background="{Binding AliciRenk}"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding AliciSinifi}"
+                                                   Foreground="White" FontSize="9" FontWeight="Bold"/>
+                                    </Border>
+                                    <ComboBox Grid.Column="1"
+                                              SelectedItem="{Binding AliciSinifi, Mode=TwoWay}"
+                                              ItemsSource="{Binding AliciSecenekleri}"
+                                              HorizontalAlignment="Stretch"
+                                              Background="#0E1E2E" Foreground="White"
+                                              FontSize="11" Padding="4,2"/>
+                                </Grid>
+
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+        </Grid>
+    </Grid>
+</UserControl>

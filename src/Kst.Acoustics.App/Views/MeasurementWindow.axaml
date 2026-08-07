@@ -1,0 +1,653 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.ViewModels"
+        xmlns:ctrl="using:Kst.Acoustics.App.Controls"
+        xmlns:conv="using:Kst.Acoustics.App.Converters"
+        x:Class="Kst.Acoustics.App.Views.MeasurementWindow"
+        x:DataType="vm:MeasurementViewModel"
+        Title="{Binding PencereBasligi}"
+        Width="1100" Height="750"
+        Background="#0B1118"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <conv:RtaColorConverter x:Key="RtaColorConverter"/>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TabItem">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#7E94A7"/>
+            <Setter Property="Padding" Value="15,10"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style Selector="TabItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="#DCE7F0"/>
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Foreground" Value="#4EA8DE"/>
+        </Style>
+        <Style Selector="TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="#4EA8DE"/>
+        </Style>
+
+        <Style Selector="DataGrid">
+            <Setter Property="Foreground" Value="#DCE7F0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#223040"/>
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="#131C26"/>
+            <Setter Property="Foreground" Value="#7E94A7"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="SeparatorBrush" Value="#223040"/>
+        </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="Padding" Value="10,5"/>
+        </Style>
+        <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+            <Setter Property="Fill" Value="#1A2533"/>
+        </Style>
+
+        <Style Selector="TextBox">
+            <Setter Property="Foreground" Value="#DCE7F0"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Foreground" Value="#DCE7F0"/>
+        </Style>
+        <Style Selector="NumericUpDown">
+            <Setter Property="Foreground" Value="#DCE7F0"/>
+        </Style>
+    </Window.Styles>
+
+    <Design.DataContext>
+        <vm:MeasurementViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="#131C26" BorderBrush="#223040" BorderThickness="0,0,0,1" Padding="15,10">
+            <StackPanel Orientation="Horizontal" Spacing="20">
+                <Button Command="{Binding CloseCommand}" 
+                        Background="Transparent" BorderBrush="#2A3B4D" BorderThickness="1" Padding="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" 
+                              Fill="#EF4444" Stretch="Uniform" Width="16" Height="16"/>
+                        <TextBlock Text="Geri" Foreground="#EF4444" VerticalAlignment="Center" FontWeight="Bold"/>
+                    </StackPanel>
+                </Button>
+
+                <Separator Width="1" Height="30" Background="#223040" Margin="5,0"/>
+
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Giriş Cihazı" Foreground="#7E94A7" FontSize="11" FontWeight="SemiBold"/>
+                    <ComboBox ItemsSource="{Binding InputDevices}" 
+                              SelectedItem="{Binding SelectedInputDevice}"
+                              Width="200" Background="#1A2533" BorderBrush="#2A3B4D">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Spacing="5">
+                    <TextBlock Text="Çıkış Cihazı" Foreground="#7E94A7" FontSize="11" FontWeight="SemiBold"/>
+                    <ComboBox ItemsSource="{Binding OutputDevices}" 
+                              SelectedItem="{Binding SelectedOutputDevice}"
+                              Width="200" Background="#1A2533" BorderBrush="#2A3B4D">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <Button Command="{Binding RefreshDevicesCommand}" VerticalAlignment="Bottom"
+                        Background="Transparent" BorderBrush="#2A3B4D" BorderThickness="1" Padding="10,5">
+                    <Path Data="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" 
+                          Fill="#4EA8DE" Stretch="Uniform" Width="16" Height="16"/>
+                </Button>
+
+                <Separator Width="1" Height="30" Background="#223040" Margin="10,0"/>
+
+                <Button Command="{Binding MeasureLatencyCommand}" 
+                        Content="Gecikme Ölç" 
+                        Background="#1F5F94" Foreground="White" 
+                        FontWeight="SemiBold" VerticalAlignment="Bottom" Padding="15,8"/>
+
+                <Separator Width="1" Height="30" Background="#223040" Margin="10,0"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Bottom">
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Ref. SPL" Foreground="#7E94A7" FontSize="11" FontWeight="SemiBold"/>
+                        <NumericUpDown Value="{Binding ReferenceSpl}" Width="100" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                    </StackPanel>
+                    <Button Command="{Binding CalibrateSplCommand}" 
+                            Content="Kalibre Et" 
+                            Background="#EAB308" Foreground="Black" 
+                            FontWeight="SemiBold" VerticalAlignment="Bottom" Padding="12,8"/>
+                </StackPanel>
+
+                <Separator Width="1" Height="30" Background="#223040" Margin="10,0"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Bottom">
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Mikrofon (.cal)" Foreground="#7E94A7" FontSize="11" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding CalibrationFilePath}" Width="150" IsReadOnly="True" PlaceholderText="Dosya Seç..."
+                                 Background="#1A2533" BorderBrush="#2A3B4D"/>
+                    </StackPanel>
+                    <Button Command="{Binding LoadMicCalibrationCommand}" 
+                            Content="..." 
+                            Background="#2A3B4D" Foreground="White" 
+                            VerticalAlignment="Bottom" Padding="10,8"/>
+                </StackPanel>
+
+                <Separator Width="1" Height="30" Background="#223040" Margin="10,0"/>
+
+                <ToggleButton IsChecked="{Binding IsRtaActive, Mode=OneWay}"
+                              Command="{Binding ToggleRtaCommand}"
+                              Content="Canlı RTA"
+                              Background="{Binding IsRtaActive, Converter={StaticResource RtaColorConverter}}"
+                              Foreground="White"
+                              FontWeight="SemiBold" VerticalAlignment="Bottom" Padding="15,8"/>
+
+                <Separator Width="1" Height="30" Background="#223040" Margin="10,0"/>
+
+                <Button Command="{Binding SaveSessionCommand}" 
+                        Background="Transparent" BorderBrush="#2A3B4D" BorderThickness="1" VerticalAlignment="Bottom" Padding="10,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Data="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z" 
+                              Fill="#4EA8DE" Stretch="Uniform" Width="14" Height="14"/>
+                        <TextBlock Text="Oturumu Kaydet" Foreground="#DCE7F0" FontSize="11"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding LoadSessionCommand}" 
+                        Background="Transparent" BorderBrush="#2A3B4D" BorderThickness="1" VerticalAlignment="Bottom" Padding="10,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Data="M19,20H5A2,2 0 0,1 3,18V6A2,2 0 0,1 5,4H11L13,6H19A2,2 0 0,1 21,8V18A2,2 0 0,1 19,20M19,8H5V18H19V8Z" 
+                              Fill="#4EA8DE" Stretch="Uniform" Width="14" Height="14"/>
+                        <TextBlock Text="Oturum Aç" Foreground="#DCE7F0" FontSize="11"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding ExportSelectedCommand}"
+                        Background="Transparent" BorderBrush="#2A3B4D" BorderThickness="1" VerticalAlignment="Bottom" Padding="10,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Data="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
+                              Fill="#22C55E" Stretch="Uniform" Width="14" Height="14"/>
+                        <TextBlock Text="CSV Dışa Aktar" Foreground="#DCE7F0" FontSize="11"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding ExportReportPdfCommand}"
+                        Background="Transparent" BorderBrush="#2A3B4D" BorderThickness="1" VerticalAlignment="Bottom" Padding="10,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Data="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
+                              Fill="#EF4444" Stretch="Uniform" Width="14" Height="14"/>
+                        <TextBlock Text="PDF Rapor" Foreground="#DCE7F0" FontSize="11"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- New Logo at the end -->
+                <Border Margin="20,0,0,0" Width="180" Height="48" CornerRadius="8" Background="#F5F8FB" BorderBrush="#DCE7EF" BorderThickness="1" Padding="10,5" VerticalAlignment="Bottom">
+                    <Grid ColumnDefinitions="45,*" ColumnSpacing="10">
+                        <Grid Width="45" Height="36">
+                            <Ellipse Width="38" Height="24" Stroke="#0B547B" StrokeThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="22" Height="22" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M11,18 L16,18 M20,13 L20,23 M25,10 L25,26 M30,14 L30,22 M34,18 L39,18"
+                                  Stroke="#0A4C72"
+                                  StrokeThickness="1.5"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="14" FontWeight="Bold"/>
+                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="9" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="280,*">
+            <!-- Left Panel: Measurements List -->
+            <Border Grid.Column="0" Background="#0E161F" BorderBrush="#223040" BorderThickness="0,0,1,0" Padding="0">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <Border Grid.Row="0" Padding="15">
+                    <StackPanel Spacing="15">
+                        <TextBlock Text="ÖLÇÜMLER" Foreground="#E6EEF6" FontWeight="Bold" FontSize="13"/>
+                        
+                        <Button Command="{Binding StartSweepCommand}" 
+                                IsEnabled="{Binding !IsRecording}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Background="#22C55E" Foreground="White" CornerRadius="6" Padding="0,12">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Ellipse Width="10" Height="10" Fill="White" IsVisible="{Binding IsRecording}">
+                                    <Ellipse.Styles>
+                                        <Style Selector="Ellipse">
+                                            <Style.Animations>
+                                                <Animation Duration="0:0:1" IterationCount="Infinite">
+                                                    <KeyFrame KeyTime="0:0:0">
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                    </KeyFrame>
+                                                    <KeyFrame KeyTime="0:0:0.5">
+                                                        <Setter Property="Opacity" Value="0.3"/>
+                                                    </KeyFrame>
+                                                    <KeyFrame KeyTime="0:0:1">
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                    </KeyFrame>
+                                                </Animation>
+                                            </Style.Animations>
+                                        </Style>
+                                    </Ellipse.Styles>
+                                </Ellipse>
+                                <TextBlock Text="Yeni Ölçüm (Sweep)"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    </Border>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Measurements}" 
+                             SelectedItem="{Binding SelectedMeasurement}"
+                             Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="5">
+                                    <CheckBox IsChecked="{Binding IsVisible}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="#DCE7F0" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="2" Width="12" Height="12" CornerRadius="6" 
+                                            Background="{Binding Color}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Border Grid.Row="2" Padding="15" BorderBrush="#223040" BorderThickness="0,1,0,0">
+                        <TextBlock Text="{Binding Measurements.Count, StringFormat='Toplam {0} kayıt'}" 
+                                   Foreground="#7E94A7" FontSize="11"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Right Panel: Visualization -->
+            <Border Grid.Column="1" Padding="20">
+                <Grid RowDefinitions="*,Auto">
+                    <TabControl>
+                        <TabItem Header="Frekans Yanıtı (FR)">
+                            <Border Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                <ctrl:FrequencyResponsePlot Measurements="{Binding Measurements}"/>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="İmpuls Yanıtı (IR)">
+                            <Border Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                <ctrl:ImpulseResponsePlot SelectedMeasurement="{Binding SelectedMeasurement}"/>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="Parametreler">
+                            <Border Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1">
+                                <DataGrid ItemsSource="{Binding ParameterRows}" 
+                                          IsReadOnly="True" 
+                                          CanUserResizeColumns="True"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          GridLinesVisibility="All"
+                                          HeadersVisibility="All"
+                                          VerticalAlignment="Stretch">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Parametre" Binding="{Binding ParameterName}" Width="120" Foreground="#4EA8DE" FontWeight="Bold"/>
+                                        <DataGridTextColumn Header="63 Hz" Binding="{Binding B63}" Width="*" Foreground="#DCE7F0"/>
+                                        <DataGridTextColumn Header="125 Hz" Binding="{Binding B125}" Width="*" Foreground="#DCE7F0"/>
+                                        <DataGridTextColumn Header="250 Hz" Binding="{Binding B250}" Width="*" Foreground="#DCE7F0"/>
+                                        <DataGridTextColumn Header="500 Hz" Binding="{Binding B500}" Width="*" Foreground="#DCE7F0"/>
+                                        <DataGridTextColumn Header="1 kHz" Binding="{Binding B1k}" Width="*" Foreground="#DCE7F0"/>
+                                        <DataGridTextColumn Header="2 kHz" Binding="{Binding B2k}" Width="*" Foreground="#DCE7F0"/>
+                                        <DataGridTextColumn Header="4 kHz" Binding="{Binding B4k}" Width="*" Foreground="#DCE7F0"/>
+                                        <DataGridTextColumn Header="8 kHz" Binding="{Binding B8k}" Width="*" Foreground="#DCE7F0"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="Waterfall (CSD)">
+                            <Border Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                <ctrl:WaterfallPlot SelectedMeasurement="{Binding SelectedMeasurement}"/>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="Spektrogram">
+                            <Border Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                <ctrl:SpectrogramControl SelectedMeasurement="{Binding SelectedMeasurement}"/>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="Adım Yanıtı">
+                            <Border Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                <ctrl:StepResponsePlot SelectedMeasurement="{Binding SelectedMeasurement}"/>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="Canlı RTA">
+                            <Border Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                <ctrl:RtaBarControl Levels="{Binding RealTimeLevels}"/>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="Bozulma (THD/IMD)">
+                            <Grid RowDefinitions="*,Auto,Auto" RowSpacing="10">
+                                <Border Grid.Row="0" Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                    <ctrl:DistortionPlot SelectedMeasurement="{Binding SelectedMeasurement}"/>
+                                </Border>
+                                <Border Grid.Row="1" Background="#131C26" CornerRadius="8" Padding="14">
+                                    <StackPanel Orientation="Horizontal" Spacing="18">
+                                        <TextBlock Text="THD TESTİ" Foreground="#7E94A7" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="Ton (Hz)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding ThdToneHz}" Minimum="20" Maximum="20000" Increment="10" FormatString="0"
+                                                           Width="100" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="Süre (s)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding ThdTestDurationSec}" Minimum="0.5" Maximum="10" Increment="0.5" FormatString="0.0"
+                                                           Width="80" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                        <Button Command="{Binding StartThdTestCommand}"
+                                                IsEnabled="{Binding !IsRecording}"
+                                                Content="THD Testi Başlat"
+                                                Background="#F59E0B" Foreground="White" FontWeight="SemiBold" Padding="14,8"
+                                                VerticalAlignment="Bottom"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Row="2" Background="#131C26" CornerRadius="8" Padding="14">
+                                    <StackPanel Orientation="Horizontal" Spacing="18">
+                                        <TextBlock Text="IMD TESTİ" Foreground="#7E94A7" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="Ton 1 (Hz)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding ImdTone1Hz}" Minimum="20" Maximum="20000" Increment="10" FormatString="0"
+                                                           Width="100" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="Ton 2 (Hz)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding ImdTone2Hz}" Minimum="20" Maximum="20000" Increment="10" FormatString="0"
+                                                           Width="100" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="Süre (s)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding ImdTestDurationSec}" Minimum="0.5" Maximum="10" Increment="0.5" FormatString="0.0"
+                                                           Width="80" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                        <Button Command="{Binding StartImdTestCommand}"
+                                                IsEnabled="{Binding !IsRecording}"
+                                                Content="IMD Testi Başlat"
+                                                Background="#A855F7" Foreground="White" FontWeight="SemiBold" Padding="14,8"
+                                                VerticalAlignment="Bottom"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="3B Oda">
+                            <Grid ColumnDefinitions="320,*" ColumnSpacing="12">
+                                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel Spacing="14" Margin="0,0,8,0">
+
+                                        <TextBlock Text="ODA BOYUTLARI" Foreground="#7E94A7" FontSize="11" FontWeight="Bold"/>
+                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                                            <StackPanel Grid.Column="0" Spacing="3">
+                                                <TextBlock Text="L (m)" Foreground="#7E94A7" FontSize="10"/>
+                                                <NumericUpDown Value="{Binding RoomLength}" Minimum="0.5" Maximum="200" Increment="0.1" FormatString="0.00"
+                                                               Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Spacing="3">
+                                                <TextBlock Text="W (m)" Foreground="#7E94A7" FontSize="10"/>
+                                                <NumericUpDown Value="{Binding RoomWidth}" Minimum="0.5" Maximum="200" Increment="0.1" FormatString="0.00"
+                                                               Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Spacing="3">
+                                                <TextBlock Text="H (m)" Foreground="#7E94A7" FontSize="10"/>
+                                                <NumericUpDown Value="{Binding RoomHeight}" Minimum="0.5" Maximum="50" Increment="0.1" FormatString="0.00"
+                                                               Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Button Command="{Binding BuildBoxRoomCommand}"
+                                                Content="Kutu Oda Üret"
+                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                Background="#1F5F94" Foreground="White" Padding="0,8"/>
+                                        <Button Command="{Binding LoadDxfRoomCommand}"
+                                                Content="DXF Yükle..."
+                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                Background="#2A3B4D" Foreground="#DCE7F0" Padding="0,8"/>
+                                        <TextBlock Text="{Binding DxfRoomPath}" Foreground="#536879" FontSize="10" TextWrapping="Wrap"/>
+
+                                        <Border Height="1" Background="#223040" Margin="0,6"/>
+
+                                        <TextBlock Text="KURULUM NOKTALARI" Foreground="#7E94A7" FontSize="11" FontWeight="Bold"/>
+                                        <ListBox ItemsSource="{Binding SetupPoints}"
+                                                 SelectedItem="{Binding SelectedSetupPoint}"
+                                                 Background="#0E161F" BorderBrush="#223040" BorderThickness="1"
+                                                 MinHeight="80" MaxHeight="150">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="2">
+                                                        <Border Grid.Column="0" Width="10" Height="10" CornerRadius="5"
+                                                                Background="#4EA8DE" VerticalAlignment="Center"
+                                                                IsVisible="{Binding Type, Converter={x:Static conv:PointTypeMicrophoneConverter.Instance}}"/>
+                                                        <Path Grid.Column="0" Data="M5,1 L9,9 L1,9 Z"
+                                                              Fill="#FB923C" Stretch="Uniform" Width="10" Height="10"
+                                                              IsVisible="{Binding Type, Converter={x:Static conv:PointTypeLoudspeakerConverter.Instance}}"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="#DCE7F0" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding X, StringFormat='\{0:F2\}, '}"
+                                                                   Foreground="#536879" FontSize="10" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                            <Button Grid.Column="0" Command="{Binding RemoveSelectedPointCommand}"
+                                                    Content="Seçileni Sil"
+                                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                    Background="#7F1D1D" Foreground="White" Padding="0,6" FontSize="11"/>
+                                            <ToggleButton Grid.Column="1" IsChecked="{Binding PlacementActive}"
+                                                          Command="{Binding TogglePlacementCommand}"
+                                                          Content="3B'de İşaretle"
+                                                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                          Background="#A855F7" Foreground="White" Padding="0,6" FontSize="11"/>
+                                        </Grid>
+
+                                        <Border Height="1" Background="#223040" Margin="0,6"/>
+
+                                        <TextBlock Text="YENİ NOKTA / DÜZENLE" Foreground="#7E94A7" FontSize="11" FontWeight="Bold"/>
+                                        <StackPanel Spacing="6">
+                                            <Grid ColumnDefinitions="80,*" ColumnSpacing="6">
+                                                <TextBlock Text="Etiket" Foreground="#7E94A7" FontSize="11" VerticalAlignment="Center"/>
+                                                <TextBox Grid.Column="1" Text="{Binding NewPointLabel}" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="80,*" ColumnSpacing="6">
+                                                <TextBlock Text="Tür" Foreground="#7E94A7" FontSize="11" VerticalAlignment="Center"/>
+                                                <ComboBox Grid.Column="1" SelectedIndex="{Binding NewPointTypeIndex}" Background="#1A2533" BorderBrush="#2A3B4D">
+                                                    <ComboBoxItem Content="Mikrofon"/>
+                                                    <ComboBoxItem Content="Hoparlör"/>
+                                                </ComboBox>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                                                <StackPanel Grid.Column="0" Spacing="3">
+                                                    <TextBlock Text="X" Foreground="#7E94A7" FontSize="10"/>
+                                                    <NumericUpDown Value="{Binding NewPointX}" Increment="0.1" FormatString="0.00"
+                                                                   Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Spacing="3">
+                                                    <TextBlock Text="Y" Foreground="#7E94A7" FontSize="10"/>
+                                                    <NumericUpDown Value="{Binding NewPointY}" Increment="0.1" FormatString="0.00"
+                                                                   Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" Spacing="3">
+                                                    <TextBlock Text="Z" Foreground="#7E94A7" FontSize="10"/>
+                                                    <NumericUpDown Value="{Binding NewPointZ}" Increment="0.1" FormatString="0.00"
+                                                                   Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <Button Command="{Binding AddSetupPointCommand}"
+                                                    Content="Ekle / Güncelle"
+                                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                    Background="#22C55E" Foreground="White" Padding="0,8" FontWeight="SemiBold"/>
+                                        </StackPanel>
+
+                                        <Border Height="1" Background="#223040" Margin="0,6"/>
+
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <StackPanel Grid.Column="0" Spacing="2">
+                                                <TextBlock Text="Kaynak ↔ Mikrofon" Foreground="#7E94A7" FontSize="11"/>
+                                                <TextBlock Text="{Binding SourceMicDistanceMeters, StringFormat='{}{0:F2} m'}"
+                                                           Foreground="#4EA8DE" FontSize="16" FontWeight="Bold"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Command="{Binding ResetRoomViewCommand}"
+                                                    Content="Görünümü Sıfırla"
+                                                    Background="Transparent" BorderBrush="#2A3B4D" BorderThickness="1"
+                                                    Foreground="#DCE7F0" Padding="10,6" FontSize="11" VerticalAlignment="Bottom"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </ScrollViewer>
+
+                                <Border Grid.Column="1" Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                    <ctrl:MeasurementRoomViewport x:Name="RoomViewport"
+                                                                  Geometry="{Binding RoomGeometry}"
+                                                                  Points="{Binding SetupPoints}"
+                                                                  SelectedPointLabel="{Binding SelectedPointLabel}"
+                                                                  PlacementActive="{Binding PlacementActive}"/>
+                                </Border>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="Oda Düzeltme (EQ)">
+                            <Grid RowDefinitions="*,Auto">
+                                <Border Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" ClipToBounds="True">
+                                    <ctrl:FrequencyResponsePlot Measurements="{Binding Measurements}"
+                                                                PredictedResponse="{Binding PredictedResponse}"/>
+                                </Border>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="20" Margin="0,15,0,0">
+                                    <Button Command="{Binding GenerateEqCommand}" 
+                                            Content="Otomatik EQ Üret (Auto-EQ)" 
+                                            Background="#A855F7" Foreground="White" 
+                                            FontWeight="SemiBold" Padding="20,10"/>
+                                    <TextBlock Text="{Binding ActiveFilters.Count, StringFormat='\{0\} Aktif Filtre'}" 
+                                               Foreground="#7E94A7" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="Karşılaştırma (M01)">
+                            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                                <Border Grid.Row="0" Background="#131C26" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1" Padding="14">
+                                    <StackPanel Orientation="Horizontal" Spacing="18">
+                                        <Button Command="{Binding LoadSimulationCommand}"
+                                                Content="Simülasyon Yükle (.e4p01)"
+                                                Background="#A855F7" Foreground="White" FontWeight="SemiBold" Padding="14,8"/>
+                                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="Proje" Foreground="#7E94A7" FontSize="11"/>
+                                            <TextBlock Text="{Binding SimulationLabel, FallbackValue='Yüklenmedi'}"
+                                                       Foreground="#DCE7F0" FontSize="13" FontWeight="Bold"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="Hacim" Foreground="#7E94A7" FontSize="11"/>
+                                            <TextBlock Text="{Binding SimulationRoomVolume, StringFormat='{}{0:F1} m³'}"
+                                                       Foreground="#4EA8DE" FontSize="13" FontWeight="Bold"/>
+                                        </StackPanel>
+                                        <Button Command="{Binding RunComparisonCommand}"
+                                                Content="Karşılaştır"
+                                                Background="#22C55E" Foreground="White" FontWeight="SemiBold" Padding="14,8"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Row="1" Background="#0E161F" CornerRadius="6" BorderBrush="#1D2B38" BorderThickness="1" Padding="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="20">
+                                        <TextBlock Text="Tolerans:" Foreground="#7E94A7" FontSize="11" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="RT/EDT OK (s)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding RtToleranceOk}" Increment="0.05" Minimum="0.01" Maximum="2" FormatString="0.00"
+                                                           Width="100" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="RT/EDT Uyarı (s)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding RtToleranceWarn}" Increment="0.05" Minimum="0.02" Maximum="3" FormatString="0.00"
+                                                           Width="100" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="C OK (dB)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding CToleranceOk}" Increment="0.5" Minimum="0.1" Maximum="10" FormatString="0.0"
+                                                           Width="100" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="C Uyarı (dB)" Foreground="#7E94A7" FontSize="10"/>
+                                            <NumericUpDown Value="{Binding CToleranceWarn}" Increment="0.5" Minimum="0.5" Maximum="15" FormatString="0.0"
+                                                           Width="100" Background="#1A2533" BorderBrush="#2A3B4D"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Row="2" Background="#090F15" CornerRadius="8" BorderBrush="#1D2B38" BorderThickness="1">
+                                    <DataGrid ItemsSource="{Binding ComparisonRows}"
+                                              IsReadOnly="True"
+                                              CanUserResizeColumns="True"
+                                              Background="Transparent"
+                                              BorderThickness="0"
+                                              GridLinesVisibility="Horizontal"
+                                              HeadersVisibility="All">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Parametre" Binding="{Binding Parameter}" Width="100" Foreground="#4EA8DE" FontWeight="Bold"/>
+                                            <DataGridTextColumn Header="Bant" Binding="{Binding FrequencyLabel}" Width="90" Foreground="#7E94A7"/>
+                                            <DataGridTextColumn Header="Ölçüm" Binding="{Binding Measured}" Width="*" Foreground="#DCE7F0"/>
+                                            <DataGridTextColumn Header="Simülasyon" Binding="{Binding Simulated}" Width="*" Foreground="#DCE7F0"/>
+                                            <DataGridTextColumn Header="Δ (Fark)" Binding="{Binding Delta}" Width="*" Foreground="#EAB308"/>
+                                            <DataGridTemplateColumn Header="Durum" Width="80">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="{Binding StatusColor}" CornerRadius="4" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding StatusLabel}" Foreground="White" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Border>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
+
+                    <!-- Waveform / Level Meter Placeholder -->
+                    <Border Grid.Row="1" Height="100" Margin="0,20,0,0" Background="#131C26" CornerRadius="8" Padding="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Anlık Seviye" Foreground="#7E94A7" FontSize="11"/>
+                                <ProgressBar Value="{Binding LevelMeterValue}" Minimum="{Binding LevelMeterMinimum}" Maximum="{Binding LevelMeterMaximum}" Height="10" 
+                                             Background="#0B1118" Foreground="#22C55E"/>
+                                <TextBlock Text="{Binding LevelDisplayText}" Foreground="#7E94A7" FontSize="10" HorizontalAlignment="Right"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="1" Margin="20,0,0,0" Spacing="2">
+                                <TextBlock Text="Gecikme" Foreground="#7E94A7" FontSize="11"/>
+                                <TextBlock Text="{Binding LatencyMs, StringFormat='\{0:F2\} ms'}" 
+                                           Foreground="#4EA8DE" FontSize="18" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#090F15" BorderBrush="#1D2B38" BorderThickness="0,1,0,0" Padding="15,5">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusColor}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" FontSize="11" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="15">
+                    <TextBlock Text="Fs: 48000 Hz" Foreground="#536879" FontSize="11"/>
+                    <TextBlock Text="24-bit" Foreground="#536879" FontSize="11"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+
+    <Window.Resources>
+        <!-- Simple StringFormatConverter placeholder or usage -->
+    </Window.Resources>
+</Window>

@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Kst.Acoustics.Metraj.App"
+        xmlns:rules="clr-namespace:Kst.Acoustics.Metraj.Rules;assembly=Kst.Acoustics.Metraj"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Kst.Acoustics.Metraj.App.RuleEditor"
+        x:DataType="local:RuleEditorViewModel"
+        Title="Metraj Kuralları Düzenleyici"
+        Width="800" Height="500" WindowStartupLocation="CenterOwner"
+        Background="#F5F7FA">
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="20">
+        <TextBlock Grid.Row="0" Text="Kural Tanımları" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Rules}" AutoGenerateColumns="False" 
+                  CanUserResizeColumns="True" GridLinesVisibility="All"
+                  BorderThickness="1" BorderBrush="#E1E5E9" Background="White">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Kural Adı" Binding="{Binding Name}" Width="*"/>
+                <DataGridTextColumn Header="Layer (Regex)" Binding="{Binding LayerPattern}" Width="*"/>
+                <DataGridTextColumn Header="Renk (ACI)" Binding="{Binding ColorAci}" Width="80"/>
+                <DataGridTextColumn Header="Text Pattern" Binding="{Binding TextPattern}" Width="*"/>
+                <DataGridTemplateColumn Header="Kombinatör" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding $parent[Window].((local:RuleEditorViewModel)DataContext).Combinators}"
+                                      SelectedItem="{Binding Combinator}" HorizontalAlignment="Stretch"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="X" Command="{Binding $parent[Window].((local:RuleEditorViewModel)DataContext).RemoveRuleCommand}" 
+                                    CommandParameter="{Binding}" Foreground="Red" Background="Transparent"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+            <Button Content="Yeni Kural Ekle" Command="{Binding AddRuleCommand}" Padding="15,8" Background="#E1E5E9"/>
+            <Button Content="Kaydet ve Kapat" Command="{Binding SaveCommand}" Click="OnSaveClick"
+                    Padding="20,8" Background="#0B547B" Foreground="White" FontWeight="SemiBold"/>
+        </StackPanel>
+    </Grid>
+</Window>

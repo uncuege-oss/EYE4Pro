@@ -1,0 +1,1232 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:Kst.Acoustics.App.BuildingAcoustics.ViewModels"
+        xmlns:Views="using:Kst.Acoustics.App.BuildingAcoustics.Views"
+        xmlns:ctrl="using:Kst.Acoustics.App.Controls"
+        mc:Ignorable="d" d:DesignWidth="1300" d:DesignHeight="800"
+        x:Class="Kst.Acoustics.App.BuildingAcoustics.Views.BinaProjesiWindow"
+        x:DataType="vm:BinaProjesiViewModel"
+        
+        Title="{Binding PencereBasligi}"
+        Background="#1E1E1E"
+        Foreground="White"
+        TransparencyLevelHint="AcrylicBlur"
+        ExtendClientAreaToDecorationsHint="True">
+
+    <Design.DataContext>
+        <vm:BinaProjesiViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="30, Auto, *">
+
+        <!-- ── Üst Ribbon (AutoCAD Classic tarzı) ── -->
+        <Border Grid.Row="1" Background="#1A1A1A" BorderBrush="#333" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*, Auto" Margin="8,4">
+                <!-- Sol grup: kategori toggle'ları + kütüphane -->
+                <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled" Margin="0,0,8,0">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <ToggleButton Command="{Binding KategoriSecCommand}" CommandParameter="Proje"
+                                  IsChecked="{Binding KategoriProjeAcik, Mode=OneWay}"
+                                  Height="36" Padding="10,4" Background="#252525"
+                                  BorderBrush="#333" BorderThickness="1"
+                                  ToolTip.Tip="Proje işlemleri ve proje özellikleri (aynı butona 2. tıklama paneli kapatır)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="📁" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="Proje" FontSize="12" FontWeight="SemiBold" Foreground="#E0E0E0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Command="{Binding KategoriSecCommand}" CommandParameter="Katlar"
+                                  IsChecked="{Binding KategoriKatlarAcik, Mode=OneWay}"
+                                  Height="36" Padding="10,4" Background="#252525"
+                                  BorderBrush="#333" BorderThickness="1"
+                                  ToolTip.Tip="Kat ekle, benzer kat, kat listesi, konum ofseti">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🏢" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="Katlar" FontSize="12" FontWeight="SemiBold" Foreground="#E0E0E0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Command="{Binding KategoriSecCommand}" CommandParameter="Mekanlar"
+                                  IsChecked="{Binding KategoriMekanlarAcik, Mode=OneWay}"
+                                  Height="36" Padding="10,4" Background="#252525"
+                                  BorderBrush="#333" BorderThickness="1"
+                                  ToolTip.Tip="Bağımsız bölüm, mekan listesi ve mekan detayı">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="⊞" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="Mekanlar" FontSize="12" FontWeight="SemiBold" Foreground="#E0E0E0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ToggleButton>
+                    <Border Width="1" Background="#333" Margin="6,4"/>
+                    <Button Command="{Binding KutuphanesiAcCommand}"
+                            Height="36" Padding="10,4" Background="#252525"
+                            BorderBrush="#333" BorderThickness="1"
+                            ToolTip.Tip="Yapı Elemanı Kütüphanesi (yeni pencerede açılır)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="📚" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="Yapı Elemanı Kütüphanesi" FontSize="12" FontWeight="SemiBold" Foreground="#E0E0E0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                </ScrollViewer>
+                <!-- Sağ grup: Yönetmelik + HESAPLA -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                    <!-- Yönetmelik butonu: açılır menüyle PDF ve EK -->
+                    <Button x:Name="YonetmelikBtn"
+                            Height="36" Padding="12,4" Background="#2A1F3A"
+                            BorderBrush="#7A50CC" BorderThickness="1"
+                            Click="YonetmelikBtn_OnClick"
+                            ToolTip.Tip="Yönetmelik belgelerine eriş">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="📋" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="YÖNETMELİK" FontSize="11" FontWeight="SemiBold" Foreground="#C8A8FF" VerticalAlignment="Center"/>
+                            <TextBlock Text="▾" FontSize="10" Foreground="#C8A8FF" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="📄  Yönetmelik (PDF)" Click="YonetmelikPdf_OnClick"/>
+                                <MenuItem Header="📎  Yönetmelik Eki (DOCX)" Click="YonetmelikEk_OnClick"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Button Command="{Binding HesaplaCommand}"
+                            Height="36" Padding="14,4" Background="#0B547B"
+                            ToolTip.Tip="Hesaplamayı çalıştır (kategori farketmeksizin her zaman erişilebilir)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🔢" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="HESAPLA" FontSize="12" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ── Ana içerik: Sol panel + Splitter + Viewport ── -->
+        <Grid Grid.Row="2" x:Name="AnaGrid" ColumnDefinitions="320, 6, *">
+
+        <!-- ── Sol Kenar Çubuğu ── -->
+        <Border Grid.Column="0" x:Name="SolMenuBorder"
+                Background="#252525" BorderBrush="#333333" BorderThickness="0,0,1,0"
+                IsVisible="{Binding KategoriPaneliAcik}">
+            <DockPanel Margin="12,8,12,12">
+
+                <!-- UX — Proje doğrulama paneli (HESAPLA artık ribbon'da) -->
+                <Border DockPanel.Dock="Bottom" Background="#1C1610" BorderBrush="#5A3500" BorderThickness="1"
+                        CornerRadius="5" Padding="8,6" Margin="0,0,0,6"
+                        IsVisible="{Binding DogrulamaSatirlariVarMi}">
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="⚠ HESAP ÖNCESİ KONTROL" Foreground="#FFB060" FontSize="10" FontWeight="Bold"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding OnKontrolOzeti}" Foreground="#FFD29A" FontSize="10"
+                                   TextWrapping="Wrap"/>
+                        <ItemsControl ItemsSource="{Binding DogrulamaSatirlari}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="Auto, *, Auto" Margin="0,1">
+                                        <TextBlock Grid.Column="0" Text="{Binding Ikon}" FontSize="11"
+                                                   VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Aciklama}"
+                                                   Foreground="#D6E8F5" FontSize="10"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <Border Grid.Column="2" CornerRadius="3" Padding="5,1"
+                                                Background="{Binding Renk}"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Etiket}"
+                                                       Foreground="White" FontSize="10" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                <!-- Kaydırılabilir içerik -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="0">
+
+                        <!-- Geri butonu -->
+                        <Button Command="{Binding GeriCommand}"
+                                HorizontalAlignment="Left" Padding="6,4" Margin="0,0,0,10"
+                                Background="Transparent" Foreground="#888888">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <TextBlock Text="←" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBlock Text="Ana Menü" FontSize="11" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Proje kategorisi (ribbon'dan açılır) -->
+                        <StackPanel Spacing="5" Margin="0,0,0,10"
+                                    IsVisible="{Binding KategoriProjeAcik}">
+                            <Button Command="{Binding YeniProjeCommand}"
+                                    CommandParameter="{Binding $parent[Window]}"
+                                    HorizontalAlignment="Stretch" Padding="8,6" Background="#123A2A">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="+" Foreground="#80FFD0" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Yeni Proje" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ProjeAcCommand}"
+                                    CommandParameter="{Binding $parent[Window]}"
+                                    HorizontalAlignment="Stretch" Padding="8,6" Background="#16304A">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="..." Foreground="#88CCFF" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Proje Aç" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding BinaGeometrisiYukleCommand}"
+                                    CommandParameter="{Binding $parent[Window]}"
+                                    HorizontalAlignment="Stretch" Padding="8,6" Background="#16424E"
+                                    ToolTip.Tip="M50'de hazırlanan .e4bina bina geometrisini yükle — mekanlar/bölmeler güncellenir, malzeme atamaları korunur">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="⬡" Foreground="#7ADCF0" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Bina Geometrisi Yükle" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Click="M50DeDuzenle_OnClick"
+                                    IsEnabled="{Binding DuzenlemeEtkin}"
+                                    HorizontalAlignment="Stretch" Padding="8,6" Background="#3A2D58"
+                                    ToolTip.Tip="Bağlı .e4bina geometrisini M50 Bina Geometrisi modülünde aç">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="✎" Foreground="#D7B7FF" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock Text="M50'de Düzenle" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <Button Command="{Binding KaydetCommand}"
+                                        CommandParameter="{Binding $parent[Window]}"
+                                        HorizontalAlignment="Stretch" Width="133" Padding="6,6" Background="#1A3A2A">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="💾" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Kaydet" Foreground="#88DDAA" FontSize="12" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{Binding FarkliKaydetCommand}"
+                                        CommandParameter="{Binding $parent[Window]}"
+                                        HorizontalAlignment="Stretch" Width="133" Padding="6,6" Background="#1A2A3A">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="📋" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Farklı Kaydet" Foreground="#88AADD" FontSize="12" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <!-- UX — Otomatik kaydetme durum çubuğu -->
+                            <Border Background="#0E1A26" CornerRadius="3" Padding="6,3" Margin="0,4,0,0"
+                                    IsVisible="{Binding OtoKayitMesaji, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding OtoKayitMesaji}"
+                                               Foreground="#80FFD0" FontSize="10" TextTrimming="CharacterEllipsis"/>
+                                    <CheckBox Grid.Column="1" IsChecked="{Binding OtoKayitAcik, Mode=TwoWay}"
+                                              Content="Açık" Foreground="#88AABB" FontSize="10"
+                                              ToolTip.Tip="5 dakikada bir otomatik anlık görüntü; son 5 görüntü tutulur"/>
+                                </Grid>
+                            </Border>
+
+                            <Button Command="{Binding ProjeKilitDegistirCommand}"
+                                    HorizontalAlignment="Stretch" Padding="8,6" Margin="0,4,0,0"
+                                    Background="#2A1A0A" BorderBrush="#806040" BorderThickness="1"
+                                    ToolTip.Tip="Oda/mekan yapısını kazara bozmamak için kilitle / çöz">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding ProjeKilitButonYazisi}"
+                                               Foreground="#DDAA66" FontSize="12" FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ProjeKilitDurumu}"
+                                               Foreground="#FF8040" FontSize="10" FontWeight="Bold"
+                                               VerticalAlignment="Center"
+                                               IsVisible="{Binding ProjeKilitli}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Katlar kategorisi -->
+                        <StackPanel IsVisible="{Binding KategoriKatlarAcik}">
+                        <!-- 4.4: kat ekleme/çoğaltma M50'ye taşındı — geometri .e4bina'dan gelir -->
+                        <Button Command="{Binding BinaGeometrisiYukleCommand}"
+                                CommandParameter="{Binding $parent[Window]}"
+                                HorizontalAlignment="Stretch" Padding="8,6" Background="#16424E" Margin="0,0,0,4"
+                                ToolTip.Tip="M50'de hazırlanan .e4bina bina geometrisini yükle (kat/oda/açıklık düzenleme M50'de yapılır)">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="⬡" Foreground="#7ADCF0" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="Bina Geometrisi Yükle" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Click="M50DeDuzenle_OnClick"
+                                IsEnabled="{Binding DuzenlemeEtkin}"
+                                HorizontalAlignment="Stretch" Padding="8,6" Background="#3A2D58" Margin="0,0,0,4"
+                                ToolTip.Tip="Bağlı geometriyi M50'de aç; kaydettikten sonra Bina Geometrisi Yükle ile M08'e aktar">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="✎" Foreground="#D7B7FF" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="M50'de Düzenle" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Text="Kat ekleme, DXF yükleme ve geometri düzenleme M50 Bina Geometrisi modülüne taşındı."
+                                   Foreground="#6A8898" FontSize="10" TextWrapping="Wrap" Margin="2,0,2,6"/>
+
+                        <!-- Kat listesi -->
+                        <Border Background="#1A2233" CornerRadius="4" Margin="0,0,0,4">
+                        <StackPanel>
+                            <Grid ColumnDefinitions="*, Auto, Auto, Auto, Auto">
+                                <Button Grid.Column="0"
+                                        Command="{Binding ToggleKatlarCommand}"
+                                        Background="Transparent" Padding="8,6"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="KATLAR"
+                                                   Foreground="#888888" FontSize="10" FontWeight="Bold"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="▼" IsVisible="{Binding KatlarAcik}"
+                                                   Foreground="#888888" FontSize="9" VerticalAlignment="Center"/>
+                                        <TextBlock Text="▶" IsVisible="{Binding !KatlarAcik}"
+                                                   Foreground="#888888" FontSize="9" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <!-- 4.4: kat sıra/hizala/sil M50'ye taşındı -->
+                            </Grid>
+                            <ListBox ItemsSource="{Binding KatlarTersSira}"
+                                     SelectedItem="{Binding SeciliKat}"
+                                     Background="Transparent" BorderThickness="0"
+                                     MaxHeight="700"
+                                     IsVisible="{Binding KatlarAcik}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Spacing="2" Margin="2,2,2,0">
+                                            <Grid ColumnDefinitions="Auto,*">
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding KatNo, StringFormat='K{0}:'}"
+                                                           Foreground="#888888" FontSize="10"
+                                                           VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Ad}"
+                                                           Foreground="White" FontSize="11"
+                                                           VerticalAlignment="Center" Padding="2,2"
+                                                           ToolTip.Tip="Kat adı ve geometrisi M50 Bina Geometrisi modülünde düzenlenir."/>
+                                            </Grid>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <CheckBox IsChecked="{Binding DxfGoster, Mode=TwoWay}"
+                                                          Content="DXF" Foreground="#888888" FontSize="10"
+                                                          Command="{Binding $parent[Window].DataContext.KatGorunumDegistiCommand}"
+                                                          />
+                                                <CheckBox IsChecked="{Binding BloklariGoster, Mode=TwoWay}"
+                                                          Content="Bloklar" Foreground="#888888" FontSize="10"
+                                                          Command="{Binding $parent[Window].DataContext.KatGorunumDegistiCommand}"
+                                                          />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                        </Border>
+
+                        <!-- Kat Yüksekliği -->
+                        <Border Background="#1A2233" CornerRadius="4" Margin="0,0,0,4">
+                            <StackPanel>
+                                <Button Background="Transparent" Padding="8,6"
+                                        Command="{Binding ToggleKatYuksekligiCommand}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0" Text="KAT YÜKSEKLİĞİ (m)"
+                                                   Foreground="#888888" FontSize="10" FontWeight="Bold"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="▼"
+                                                   IsVisible="{Binding KatYuksekligiAcik}"
+                                                   Foreground="#888888" FontSize="9" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="▶"
+                                                   IsVisible="{Binding !KatYuksekligiAcik}"
+                                                   Foreground="#888888" FontSize="9" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Button>
+                                <!-- 4.4: kat yüksekliği salt-okunur — düzenleme M50'de -->
+                                <TextBlock IsVisible="{Binding KatYuksekligiAcik}"
+                                           Text="{Binding SeciliKatYuksekligi, StringFormat='{}{0:F2} m'}"
+                                           Foreground="White" FontSize="12"
+                                           Margin="8,0,8,8"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 4.4: konum ofseti / hizalama M50'ye taşındı -->
+                        </StackPanel>
+                        <!-- /Katlar kategorisi -->
+
+                        <!-- Mekanlar kategorisi -->
+                        <StackPanel IsVisible="{Binding KategoriMekanlarAcik}">
+                        <!-- Bağımsız bölüm oluştur (en üstte) -->
+                        <Button Command="{Binding BagimsizBolumEkleCommand}"
+                                HorizontalAlignment="Stretch" Padding="8,6" Background="#1A2A3A" Margin="0,0,0,6"
+                                ToolTip.Tip="Yeni bağımsız bölüm (örn. daire, ofis ünitesi) oluşturur">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="+" Foreground="#88CCFF" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="Bağımsız Bölüm Oluştur" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Mekan listesi -->
+                        <Border Background="#1A2233" CornerRadius="4" Margin="0,0,0,4">
+                        <StackPanel>
+                            <Button Command="{Binding ToggleMekanlarCommand}"
+                                    Background="Transparent" Padding="8,6"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="MEKANLAR" Foreground="#888888" FontSize="10" FontWeight="Bold"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="▼" IsVisible="{Binding MekanlarAcik}"
+                                               Foreground="#888888" FontSize="9" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="▶" IsVisible="{Binding !MekanlarAcik}"
+                                               Foreground="#888888" FontSize="9" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+                            <ListBox ItemsSource="{Binding GoruntulenenMekanlar}"
+                                     IsVisible="{Binding MekanlarAcik}"
+                                     SelectedItem="{Binding SeciliMekan}"
+                                     Background="Transparent" BorderThickness="0"
+                                     MaxHeight="600">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="2,2">
+                                            <TextBlock Grid.Column="0" Text="🏠" FontSize="10" VerticalAlignment="Center"
+                                                       Foreground="{Binding AtamaIsaretRenk}"
+                                                       ToolTip.Tip="Yeşil: duvar + döşeme + tavan ataması tamam"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Ad}"
+                                                       Foreground="{Binding AtamaRenk}" FontSize="11" VerticalAlignment="Center" Margin="5,0,3,0"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding AlanHacimEtiketi}"
+                                                       Foreground="#7894A8" FontSize="9" VerticalAlignment="Center" Margin="0,0,4,0"
+                                                       ToolTip.Tip="{Binding HacimTooltip}"/>
+                                            <Border Grid.Column="3" CornerRadius="2" Padding="3,1" Margin="0,0,2,0"
+                                                    Background="{Binding KaynakRenkSidebar}"
+                                                    IsVisible="{Binding KaynakDerecesi, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                <TextBlock Text="{Binding KaynakDerecesi}"
+                                                           Foreground="White" FontSize="8" FontWeight="Bold"/>
+                                            </Border>
+                                            <Border Grid.Column="4" CornerRadius="2" Padding="3,1"
+                                                    Background="{Binding AliciRenkSidebar}"
+                                                    IsVisible="{Binding AliciSinifi, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                <TextBlock Text="{Binding AliciSinifi}"
+                                                           Foreground="White" FontSize="8" FontWeight="Bold"/>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <!-- Issue 3 — Düşey birleşim açıklamaları (odalar altında) -->
+                            <Border IsVisible="{Binding BirlesimAciklamasiVarMi}"
+                                    Background="#10202C" BorderBrush="#244055" BorderThickness="1"
+                                    CornerRadius="4" Margin="6,2,6,4" Padding="7,5">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="DÜŞEY BİRLEŞİMLER" Foreground="#66D9EF"
+                                               FontSize="9" FontWeight="Bold"/>
+                                    <ItemsControl ItemsSource="{Binding SeciliKatBirlesimAciklamalari}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" Foreground="#AFE6F5"
+                                                           FontSize="10" TextWrapping="Wrap" Margin="0,1"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                            <!-- 4.4: mekan tarama, açıklık tespiti ve manuel açıklık M50'ye taşındı -->
+                            <TextBlock IsVisible="{Binding MekanlarAcik}"
+                                       Text="Mekan tarama ve açıklık düzenleme M50 Bina Geometrisi modülünde yapılır; 'Bina Geometrisi Yükle' ile aktarın."
+                                       Foreground="#6A8898" FontSize="10" TextWrapping="Wrap"
+                                       Margin="6,4,6,6"/>
+                        </StackPanel>
+                        </Border>
+
+                        <!-- Mekan Detayı (açılır/kapanır) -->
+                        <Border Background="#1C1C2A" CornerRadius="4" Margin="0,4,0,4">
+                            <StackPanel>
+                                <Button Command="{Binding ToggleMekanDetayCommand}"
+                                        Background="Transparent" Padding="4,6"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <TextBlock Grid.Column="0" Text="MEKAN"
+                                                   Foreground="#20C3D8" FontSize="11" FontWeight="Bold"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding SeciliMekan.AlanHacimEtiketi}"
+                                                   Foreground="#7894A8" FontSize="10" VerticalAlignment="Center"
+                                                   Margin="8,0,0,0" TextTrimming="CharacterEllipsis"
+                                                   IsVisible="{Binding SeciliMekan, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                        <TextBlock Grid.Column="2" Text="▼"
+                                                   IsVisible="{Binding MekanDetayAcik}"
+                                                   Foreground="#888888" FontSize="9" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="▶"
+                                                   IsVisible="{Binding !MekanDetayAcik}"
+                                                   Foreground="#888888" FontSize="9" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Button>
+                                <StackPanel IsVisible="{Binding MekanDetayAcik}"
+                                            IsEnabled="{Binding DuzenlemeEtkin}" Margin="0,0,0,6">
+                                    <Views:MekanDuzenlemePanel DataContext="{Binding SeciliMekan}"/>
+                                    <Border Background="#13222B" CornerRadius="5" Padding="8" Margin="6,6,6,0">
+                                        <StackPanel Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Text="BAĞIMSIZ BÖLÜM"
+                                                           Foreground="#20C3D8" FontSize="10" FontWeight="Bold"
+                                                           VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1"
+                                                        Content="+"
+                                                        Command="{Binding BagimsizBolumEkleCommand}"
+                                                        Width="26" Height="22" Padding="0"
+                                                        Background="#154A35" Foreground="#D8FFE8"
+                                                        ToolTip.Tip="Yeni bağımsız bölüm oluştur ve seçili mekana ata"/>
+                                            </Grid>
+                                            <ComboBox ItemsSource="{Binding BagimsizBolumler}"
+                                                      SelectedItem="{Binding SeciliMekanBagimsizBolum, Mode=TwoWay}"
+                                                      HorizontalAlignment="Stretch"
+                                                      IsEnabled="{Binding SeciliMekan, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                      Background="#0E2233" Foreground="White"
+                                                      BorderBrush="#20C3D8" BorderThickness="1">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                                                            <Border Grid.Column="0" Width="10" Height="10" CornerRadius="5"
+                                                                    Background="{Binding Renk}"
+                                                                    VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding Ad}"
+                                                                       Foreground="#D8F6FF" FontSize="11"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding SeciliMekanBagimsizBolum, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <TextBox Grid.Column="0"
+                                                         Text="{Binding SeciliMekanBagimsizBolum.Ad, Mode=TwoWay}"
+                                                         Background="#0E1A2A" Foreground="White"
+                                                         BorderBrush="#334455" BorderThickness="1"
+                                                         FontSize="11" Padding="6,4"/>
+                                                <Button Grid.Column="1"
+                                                        Content="Temizle"
+                                                        Command="{Binding BagimsizBolumAtamasiniTemizleCommand}"
+                                                        Margin="6,0,0,0" Padding="8,4"
+                                                        Background="#3A2020" Foreground="#FFD8D8"
+                                                        FontSize="11"/>
+                                            </Grid>
+                                            <ComboBox ItemsSource="{Binding BagimsizBolumTipleri}"
+                                                      SelectedItem="{Binding SeciliMekanBagimsizBolum.Tip, Mode=TwoWay}"
+                                                      IsVisible="{Binding SeciliMekanBagimsizBolum, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                      Background="#0E1A2A" Foreground="White"
+                                                      BorderBrush="#334455" BorderThickness="1"
+                                                      FontSize="11"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="#13222B" CornerRadius="5" Padding="8" Margin="6,6,6,0">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="DÜŞEY BİRLEŞİM" Foreground="#20C3D8" FontSize="10" FontWeight="Bold"/>
+                                            <TextBlock Text="Küçük hacmi seçip üst/alt katın kapsayan büyük odasına bağla."
+                                                       Foreground="#7894A8" FontSize="9" TextWrapping="Wrap"/>
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                                <Button Grid.Column="0"
+                                                        Content="⬆ Tavan Patlat"
+                                                        Command="{Binding TavanPatlatCommand}"
+                                                        CommandParameter="{Binding $parent[Window]}"
+                                                        Background="#154A35" Foreground="#D8FFE8"
+                                                        Padding="6,5" FontSize="11"
+                                                        ToolTip.Tip="Seçili odanın tavanını üst kattaki kapsayan odaya bağla"
+                                                        HorizontalAlignment="Stretch"/>
+                                                <Button Grid.Column="1"
+                                                        Content="⬇ Döşeme Patlat"
+                                                        Command="{Binding DosemePatlatCommand}"
+                                                        CommandParameter="{Binding $parent[Window]}"
+                                                        Background="#1A3A4A" Foreground="#D6E8F5"
+                                                        Padding="6,5" FontSize="11"
+                                                        ToolTip.Tip="Seçili odanın döşemesini alt kattaki kapsayan odaya bağla"
+                                                        HorizontalAlignment="Stretch"/>
+                                            </Grid>
+                                            <Button Content="Patlatmayı Geri Al"
+                                                    Command="{Binding DuseyBirlesimiKaldirCommand}"
+                                                    Background="#3A2020" Foreground="#FFD8D8"
+                                                    Padding="8,5" FontSize="11"/>
+                                            <TextBlock Text="{Binding DuseyBirlesimMesaji}"
+                                                       Foreground="#D6B15E" FontSize="10" TextWrapping="Wrap"
+                                                       IsVisible="{Binding DuseyBirlesimMesaji, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        </StackPanel>
+                        <!-- /Mekanlar kategorisi -->
+
+                        <!-- Proje kategorisi devamı — Proje Özellikleri (Bina İşlevi/Akustik/Dış Gürültü) ve Proje Ölçeği -->
+                        <StackPanel IsVisible="{Binding KategoriProjeAcik}"
+                                    IsEnabled="{Binding DuzenlemeEtkin}">
+
+                        <!-- Rapor kimlik bilgileri (Yönetmelik EK-10 10.2 kapak gereksinimleri) -->
+                        <Border Background="#112233" CornerRadius="4" Padding="8,6" Margin="0,0,0,4">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="RAPOR KİMLİK BİLGİLERİ (EK-10)" Foreground="#888888" FontSize="10" FontWeight="Bold"/>
+                                <TextBox Text="{Binding ProjeAdiMetni, Mode=TwoWay}"
+                                         PlaceholderText="Proje adı"
+                                         Background="#0E2233" Foreground="White"
+                                         BorderBrush="#203B50" BorderThickness="1"/>
+                                <TextBox Text="{Binding ProjeAdresMetni, Mode=TwoWay}"
+                                         PlaceholderText="Proje adresi"
+                                         Background="#0E2233" Foreground="White"
+                                         BorderBrush="#203B50" BorderThickness="1"/>
+                                <TextBox Text="{Binding MusteriAdiMetni, Mode=TwoWay}"
+                                         PlaceholderText="Müşteri / yapı sahibi"
+                                         Background="#0E2233" Foreground="White"
+                                         BorderBrush="#203B50" BorderThickness="1"/>
+                                <TextBox Text="{Binding SorumluKisiKurulusMetni, Mode=TwoWay}"
+                                         PlaceholderText="Sorumlu kişi ve kuruluş"
+                                         Background="#0E2233" Foreground="White"
+                                         BorderBrush="#203B50" BorderThickness="1"/>
+                                <TextBlock Text="Mimari Akustik Raporu kapağında gösterilir (Madde 5/5, EK-10 10.2)"
+                                           Foreground="#556677" FontSize="9" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Bina İşlevi -->
+                        <Border Background="#112233" CornerRadius="4" Padding="8,6" Margin="0,0,0,4">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="BİNA İŞLEVİ (EK-2)" Foreground="#888888" FontSize="10" FontWeight="Bold"/>
+                                <ComboBox ItemsSource="{Binding BinaIslevleri}"
+                                          SelectedItem="{Binding SeciliBinaIslevi}"
+                                          HorizontalAlignment="Stretch"
+                                          Background="#0E2233" Foreground="White"
+                                          BorderBrush="#20C3D8" BorderThickness="1">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Ad}" Foreground="#20C3D8" FontSize="11"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#112233" CornerRadius="4" Padding="8,6" Margin="0,0,0,4">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="YÖNETMELİK BİNA SINIFI (S1–S5)" Foreground="#888888" FontSize="10" FontWeight="Bold"/>
+                                <ComboBox ItemsSource="{Binding BinaSiniflari}"
+                                          SelectedItem="{Binding SeciliBinaSinifi, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch"
+                                          Background="#0E2233" Foreground="White"
+                                          BorderBrush="#20C3D8" BorderThickness="1">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBlock Text="{Binding KodGosterim}" Foreground="#20C3D8" FontSize="11" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding Aciklama}" Foreground="#9AB7CC" FontSize="10" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="Bina işlevine göre önerilir; özel durumlarda kullanıcı değiştirebilir."
+                                           Foreground="#60798A" FontSize="9" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#112233" CornerRadius="4" Padding="8,6" Margin="0,0,0,4">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="AKUSTİK PERFORMANS (TABLO 3.2)" Foreground="#888888" FontSize="10" FontWeight="Bold"/>
+                                <ComboBox ItemsSource="{Binding AkustikPerformansSiniflari}"
+                                          SelectedItem="{Binding SeciliAkustikPerformansSinifi}"
+                                          HorizontalAlignment="Stretch"
+                                          Background="#0E2233" Foreground="White"
+                                          BorderBrush="#20C3D8" BorderThickness="1">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Kod}" Foreground="#20C3D8" FontSize="12" FontWeight="Bold"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#112233" CornerRadius="4" Padding="8,6" Margin="0,0,0,4">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="DIŞ GÜRÜLTÜ Lgag (dB)" Foreground="#888888" FontSize="10" FontWeight="Bold"/>
+                                <NumericUpDown Value="{Binding DisGurultuDb, Mode=TwoWay}"
+                                               Minimum="35" Maximum="100" Increment="1"
+                                               FormatString="F0"
+                                               Background="#0E2233" Foreground="White"
+                                               BorderBrush="#20C3D8" BorderThickness="1"/>
+                                <CheckBox IsChecked="{Binding DisGurultuDogrulandi, Mode=TwoWay}"
+                                          Content="Bu değer ölçüm/hesap ile doğrulandı"
+                                          Foreground="#FFD080" FontSize="10"
+                                          ToolTip.Tip="İşaretlenmezse dış cephe uygunluk hesabı ön kontrolde engellenir."/>
+                                <ComboBox ItemsSource="{Binding CepheMaruziyetleri}"
+                                          SelectedItem="{Binding DisGurultuCepheMaruziyeti, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch"
+                                          Background="#0E2233" Foreground="White"
+                                          BorderBrush="#20C3D8" BorderThickness="1"/>
+                                <TextBox Text="{Binding DisGurultuSpektrumMetni, Mode=TwoWay}"
+                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                         MinHeight="44"
+                                         PlaceholderText="50–3150 Hz 1/3 oktav spektrum; boşsa trafik spektrumu"
+                                         Background="#0E2233" Foreground="White"
+                                         BorderBrush="#203B50" BorderThickness="1"/>
+                                <ComboBox ItemsSource="{Binding DisGurultuSpektrumKaynaklari}"
+                                          SelectedItem="{Binding SeciliDisGurultuSpektrumKaynagi, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch"
+                                          Background="#0E2233" Foreground="White"
+                                          BorderBrush="#203B50" BorderThickness="1"
+                                          ToolTip.Tip="Girilen dış gürültü spektrumunun izlenebilir kökeni">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Etiket}" Foreground="#D8F6FF" FontSize="11"/>
+                                                <TextBlock Text="{Binding Aciklama}" Foreground="#7894A8" FontSize="9"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#10212A" BorderBrush="#285066" BorderThickness="1"
+                                CornerRadius="5" Padding="8,6" Margin="0,8,0,4">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="🔒 GEOMETRİ SALT-OKUNUR" Foreground="#7ADCF0"
+                                           FontSize="10" FontWeight="Bold"/>
+                                <TextBlock Text="Ölçek, kat/oda adları ve açıklık geometrisi M50 Bina Geometrisi modülünde düzenlenir. M08 yalnız akustik sınıf ve malzeme atamalarını saklar."
+                                           Foreground="#8AAFC0" FontSize="9" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        </StackPanel>
+                        <!-- /Proje kategorisi devamı -->
+
+                    </StackPanel>
+                </ScrollViewer>
+
+            </DockPanel>
+        </Border>
+
+        <!-- Sol menü ile orta arası GridSplitter (yatay sürükleme) -->
+        <GridSplitter Grid.Column="1" x:Name="SolMenuSplitter"
+                      Width="6"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Background="#1A2530"
+                      ResizeDirection="Columns"
+                      ResizeBehavior="PreviousAndNext"/>
+
+        <!-- ── Orta: Viewport + Alt Sekmeler ── -->
+        <Grid Grid.Column="2" x:Name="OrtaGrid" RowDefinitions="Auto, *, 8, 360">
+
+            <!-- DXF Uyarı Bandı -->
+            <Border Grid.Row="0" Background="#7A4E00"
+                    IsVisible="{Binding DxfUyariMesaji, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                    Padding="10,6">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0" Text="⚠" Foreground="#FFD080" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{Binding DxfUyariMesaji}" Foreground="#FFD080" FontSize="11" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <Button Grid.Column="2" Click="DxfUyariKapat_OnClick"
+                            Content="✕" Background="Transparent" Foreground="#FFD080"
+                            BorderThickness="0" Padding="8,4" FontSize="14" FontWeight="Bold"
+                            ToolTip.Tip="Bildirimi kapat"/>
+                </Grid>
+            </Border>
+
+            <!-- Viewport -->
+            <Border Grid.Row="1" x:Name="ViewportBorder"
+                    Margin="8,8,8,4" CornerRadius="6" Background="#0C1624" ClipToBounds="True"
+                    PointerReleased="Viewport_PointerReleased">
+                <Panel>
+                    <!-- 4.4: ManuelAciklik*/EditablePolygon bağları kaldırıldı —
+                         geometri düzenleme M50'de; köşe tutamaçları M08'de görünmez. -->
+                    <ctrl:GeometryPreviewControl Name="GeometryPreview"
+                                                 Surfaces="{Binding RenderSurfaces}"
+                                                 BackgroundSegments="{Binding RenderBackgroundSegments}"
+                                                 Acikliklar="{Binding RenderAcikliklar}"
+                                                 NeighborSegments="{Binding NeighborSegments}"
+                                                 FlankingYolSegmentleri="{Binding FlankingYolSegmentleri}"
+                                                 Projection="{Binding Projection}"/>
+
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6"
+                                IsVisible="{Binding RenderSurfaces, Converter={x:Static ObjectConverters.IsNull}}">
+                        <TextBlock Text="Görüntülenecek geometri yok" Foreground="#446688" FontSize="13"/>
+                        <TextBlock Text="Sol panelden 'Bina Geometrisi Yükle' ile .e4bina aktarın" Foreground="#334455" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Duvar kontrolü sonuç mesajı (sol üst) -->
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10"
+                            Background="#0A3A2A" CornerRadius="4" Padding="10,5"
+                            IsVisible="{Binding DuvarKontrolMesaji, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding DuvarKontrolMesaji}"
+                                   Foreground="#80FFD0" FontSize="12" FontWeight="SemiBold"/>
+                    </Border>
+
+                    <!-- UX — Hover tooltip (sağ alt) — bölme üzerinde Rw/limit/marj göster -->
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,12,12"
+                            Background="#0B1620" BorderBrush="#2A4053" BorderThickness="1"
+                            CornerRadius="6" Padding="12,8" MaxWidth="420"
+                            IsVisible="{Binding HoverGorunur}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding HoverBolgeBaslik}"
+                                       Foreground="#20C3D8" FontSize="12" FontWeight="Bold"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding HoverBolgeMetni}"
+                                       Foreground="{Binding HoverBolgeRenk}"
+                                       FontSize="11" FontWeight="SemiBold"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Spacing="5">
+
+                        <!-- 5.1: oda ekle/sil ve çizim modu M50'ye taşındı -->
+
+                        <Button Command="{Binding DuvarKontrolCommand}"
+                                Width="110" Height="26" Background="#1A2A4A" Foreground="#88CCFF"
+                                FontSize="11" FontWeight="Bold" Content="⬡ Duvar Kontrolü"/>
+                        <!-- UX — Geri Al / Yinele -->
+                        <Button Command="{Binding GeriAlCommand}"
+                                IsEnabled="{Binding GeriAlVarMi}"
+                                Content="↶" Width="34" Height="26" Background="#2A2A3A" Foreground="#B8C8D8"
+                                FontSize="13" FontWeight="Bold"
+                                ToolTip.Tip="Geri Al (Cmd/Ctrl+Z) — son 20 adım"/>
+                        <Button Command="{Binding YineleCommand}"
+                                IsEnabled="{Binding YineleVarMi}"
+                                Content="↷" Width="34" Height="26" Background="#2A2A3A" Foreground="#B8C8D8"
+                                FontSize="13" FontWeight="Bold"
+                                ToolTip.Tip="Yinele (Cmd/Ctrl+Shift+Z)"/>
+                        <Button Command="{Binding Goster3DCommand}"
+                                Content="3D" Width="34" Height="26" Background="#333333" Foreground="White" FontSize="11"/>
+                        <Button Command="{Binding Goster2DCommand}"
+                                Content="2D" Width="34" Height="26" Background="#333333" Foreground="White" FontSize="11"/>
+                        <!-- UX — Isı haritası overlay toggle -->
+                        <ToggleButton IsChecked="{Binding IsiHaritasiAcik, Mode=TwoWay}"
+                                      Content="🔥" Width="34" Height="26"
+                                      Background="#333333" Foreground="#FF8040" FontSize="13"
+                                      ToolTip.Tip="Isı haritası katmanı: oda yüzeyi en kötü bölmenin marjına göre yarı saydam renkle dolar"/>
+                        <!-- UX — Flanking yolu görselleştirme toggle -->
+                        <ToggleButton IsChecked="{Binding FlankingYolGoster, Mode=TwoWay}"
+                                      Content="🎯" Width="34" Height="26"
+                                      Background="#333333" Foreground="#80FFD0" FontSize="13"
+                                      ToolTip.Tip="Flanking yolu: seçili sonuç satırı için en kötü 3 yolu kaynaktan alıcıya renkli okla göster"/>
+                        <!-- Alt menü toggle (sol menü artık ribbon'la kontrol ediliyor) -->
+                        <Button x:Name="AltMenuToggleBtn" Click="AltMenuToggle_Click"
+                                Content="⮟" Width="34" Height="26" Background="#1A2A3A" Foreground="#B8E4FF"
+                                FontSize="13" ToolTip.Tip="Alt menüyü kapat/aç"/>
+                    </StackPanel>
+                </Panel>
+            </Border>
+
+            <GridSplitter Grid.Row="2"
+                          Height="8"
+                          Margin="8,0"
+                          HorizontalAlignment="Stretch"
+                          Background="#4A6B86"
+                          ResizeDirection="Rows"
+                          ResizeBehavior="PreviousAndNext"
+                          Cursor="SizeNorthSouth"
+                          ToolTip.Tip="Alt paneli büyütmek/küçültmek için yukarı-aşağı sürükleyin">
+                <GridSplitter.Template>
+                    <ControlTemplate>
+                        <Border Background="{TemplateBinding Background}" CornerRadius="3">
+                            <Rectangle Width="46" Height="3" RadiusX="1.5" RadiusY="1.5"
+                                       Fill="#AECbDF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </GridSplitter.Template>
+            </GridSplitter>
+
+            <!-- Alt Sekmeler -->
+            <TabControl Grid.Row="3" Margin="8,0,8,8"
+                        Background="#101820"
+                        BorderBrush="#223344"
+                        BorderThickness="1"
+                        Padding="0">
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Yapı Elemanları" FontSize="13" Foreground="#D6E8F5" FontWeight="SemiBold"/>
+                    </TabItem.Header>
+                    <Border IsEnabled="{Binding DuzenlemeEtkin}">
+                        <Views:BolmeMalzemePanel x:Name="BolmeMalzemePaneli" DataContext="{Binding SeciliMekan}"/>
+                    </Border>
+                </TabItem>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Komşu Duvarlar" FontSize="13" Foreground="#D6E8F5" FontWeight="SemiBold"/>
+                    </TabItem.Header>
+                    <Grid RowDefinitions="Auto,*">
+                        <TextBlock Grid.Row="0" Margin="6,4"
+                                   Text="{Binding KomsuDuvarlar.Count, StringFormat='Toplam {0} komşu duvar'}"
+                                   Foreground="#88AABB" FontSize="11"/>
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding KomsuDuvarlar}"
+                                 SelectedItem="{Binding SeciliKomsuDuvar}"
+                                 Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto" Margin="4,3">
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Baslik}"
+                                                       Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Ozet}"
+                                                       Foreground="#88AABB" FontSize="11"/>
+                                            <TextBlock Text="{Binding BagimsizBolum}"
+                                                       Foreground="#66D9EF" FontSize="10"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Uzunluk, StringFormat='{}{0:0.00} m'}"
+                                                   Foreground="#FFB300" FontSize="12" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </TabItem>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Filtre ile Duvar Ata" FontSize="13" Foreground="#D6E8F5" FontWeight="SemiBold"/>
+                    </TabItem.Header>
+                    <Grid ColumnDefinitions="240, 6, *, 6, 220" RowDefinitions="Auto,*">
+                        <!-- Sol Panel: Filtreler -->
+                        <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
+                                Background="#1A2530" BorderBrush="#2A3A4A" BorderThickness="0,0,1,0"
+                                Padding="10,8">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="FİLTRELER" Foreground="#20C3D8" FontSize="11" FontWeight="Bold"/>
+
+                                    <!-- Komşuluk Tipi -->
+                                    <TextBlock Text="Komşuluk Tipi" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <StackPanel Spacing="5">
+                                        <CheckBox Content="Dış cephe"
+                                                  IsChecked="{Binding FilterDisCephe, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="Aynı bağ. bölüm içi"
+                                                  IsChecked="{Binding FilterAyniIciDuvar, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="Komşu bağ. bölüm arası"
+                                                  IsChecked="{Binding FilterKomsuBagimsizBolum, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="Sadece komşu duvarlar"
+                                                  IsChecked="{Binding FilterSadeceKomsu, Mode=TwoWay}"
+                                                  Foreground="#66D9EF" FontSize="11"/>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Kaynak Derece -->
+                                    <TextBlock Text="Kaynak Derece" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <StackPanel Spacing="4">
+                                        <CheckBox Content="DG — Düşük Gürültü"
+                                                  IsChecked="{Binding FilterDG, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="OG — Orta Gürültü"
+                                                  IsChecked="{Binding FilterOG, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="YG — Yüksek Gürültü"
+                                                  IsChecked="{Binding FilterYG, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Alıcı Sınıfı -->
+                                    <TextBlock Text="Alıcı Sınıfı" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <StackPanel Spacing="4">
+                                        <CheckBox Content="Sınıf I — Çok Hassas"
+                                                  IsChecked="{Binding FilterAliciI, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="Sınıf II — Hassas"
+                                                  IsChecked="{Binding FilterAliciII, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="Sınıf III — Az Hassas"
+                                                  IsChecked="{Binding FilterAliciIII, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Atama Durumu -->
+                                    <TextBlock Text="Atama Durumu" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <StackPanel Spacing="4">
+                                        <CheckBox Content="Atanmamış"
+                                                  IsChecked="{Binding FilterAtanmamis, Mode=TwoWay}"
+                                                  Foreground="#FFB0B0" FontSize="11"/>
+                                        <CheckBox Content="Atanmış"
+                                                  IsChecked="{Binding FilterAtanmis, Mode=TwoWay}"
+                                                  Foreground="#A8FFD0" FontSize="11"/>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Açıklık Varlığı -->
+                                    <TextBlock Text="Açıklık" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <StackPanel Spacing="4">
+                                        <CheckBox Content="Pencere/Kapı var"
+                                                  IsChecked="{Binding FilterAciklikVar, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="Açıklık yok"
+                                                  IsChecked="{Binding FilterAciklikYok, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Kat -->
+                                    <TextBlock Text="Kat" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <CheckBox Content="{Binding SeciliKat.Ad, StringFormat='Sadece: {0}'}"
+                                              IsChecked="{Binding FilterSadeceSeciliKat, Mode=TwoWay}"
+                                              Foreground="#FFD080" FontSize="11"/>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Mekan Adı Arama -->
+                                    <TextBlock Text="Mekan Adı" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <TextBox Text="{Binding FilterMekanAdi, Mode=TwoWay}"
+                                             PlaceholderText="Mekan adı ara…"
+                                             Background="#0E2233" Foreground="White"
+                                             BorderBrush="#1E4060" BorderThickness="1"
+                                             FontSize="10" Padding="6,3"/>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Uzunluk Aralığı -->
+                                    <TextBlock Text="Uzunluk (m)" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <Grid ColumnDefinitions="*,Auto,*" Margin="0,2">
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding FilterUzunlukMin, Mode=TwoWay}"
+                                                 PlaceholderText="min"
+                                                 Background="#0E2233" Foreground="White"
+                                                 BorderBrush="#1E4060" BorderThickness="1"
+                                                 FontSize="10" Padding="4,2"/>
+                                        <TextBlock Grid.Column="1" Text="–" Foreground="#556677"
+                                                   FontSize="11" Margin="4,0"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="2"
+                                                 Text="{Binding FilterUzunlukMax, Mode=TwoWay}"
+                                                 PlaceholderText="max"
+                                                 Background="#0E2233" Foreground="White"
+                                                 BorderBrush="#1E4060" BorderThickness="1"
+                                                 FontSize="10" Padding="4,2"/>
+                                    </Grid>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Alan Aralığı -->
+                                    <TextBlock Text="Alan (m²)" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <Grid ColumnDefinitions="*,Auto,*" Margin="0,2">
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding FilterAlanMin, Mode=TwoWay}"
+                                                 PlaceholderText="min"
+                                                 Background="#0E2233" Foreground="White"
+                                                 BorderBrush="#1E4060" BorderThickness="1"
+                                                 FontSize="10" Padding="4,2"/>
+                                        <TextBlock Grid.Column="1" Text="–" Foreground="#556677"
+                                                   FontSize="11" Margin="4,0"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="2"
+                                                 Text="{Binding FilterAlanMax, Mode=TwoWay}"
+                                                 PlaceholderText="max"
+                                                 Background="#0E2233" Foreground="White"
+                                                 BorderBrush="#1E4060" BorderThickness="1"
+                                                 FontSize="10" Padding="4,2"/>
+                                    </Grid>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Bağımsız Bölüm -->
+                                    <TextBlock Text="Bağımsız Bölüm" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <ComboBox ItemsSource="{Binding BagimsizBolumler}"
+                                              SelectedItem="{Binding FilterBagimsizBolum, Mode=TwoWay}"
+                                              HorizontalAlignment="Stretch"
+                                              Background="#0E2233" Foreground="White"
+                                              BorderBrush="#1E4060" BorderThickness="1"
+                                              FontSize="10">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                                                    <Border Grid.Column="0" Width="8" Height="8" CornerRadius="4"
+                                                            Background="{Binding Renk}"
+                                                            VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding Ad}"
+                                                               Foreground="#D8F6FF" FontSize="10"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Menfez -->
+                                    <TextBlock Text="Menfez" Foreground="#7894A8" FontSize="10" FontWeight="Bold"/>
+                                    <StackPanel Spacing="4">
+                                        <CheckBox Content="Menfez var"
+                                                  IsChecked="{Binding FilterMenfezVar, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                        <CheckBox Content="Menfez yok"
+                                                  IsChecked="{Binding FilterMenfezYok, Mode=TwoWay}"
+                                                  Foreground="#AAAAAA" FontSize="11"/>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#2A3A4A" Margin="0,2"/>
+
+                                    <!-- Seçim Kontrolleri -->
+                                    <TextBlock Text="{Binding SeciliKomsuDuvarlarAtamaya.Count, StringFormat='Seçili: {0} duvar'}"
+                                               Foreground="#20C3D8" FontSize="11" FontWeight="Bold"/>
+                                    <Button Content="Tümünü Seç"
+                                            Command="{Binding AlamaTumDuvarlarSecCommand}"
+                                            Padding="8,4" FontSize="10"
+                                            Background="#1A3040" Foreground="#88BBDD" HorizontalAlignment="Stretch"/>
+                                    <Button Content="Tümünü Kaldır"
+                                            Command="{Binding AlamaTumDuvarlarKaldırCommand}"
+                                            Padding="8,4" FontSize="10"
+                                            Background="#2A1A1A" Foreground="#FFB0B0" HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+
+                        <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                                      Width="6" VerticalAlignment="Stretch"
+                                      Background="#4A6B86" ResizeDirection="Columns"
+                                      Cursor="SizeWestEast"/>
+
+                        <!-- Orta Panel: Filtrelenmiş Duvarlar -->
+                        <Grid Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" RowDefinitions="Auto,*">
+                            <Border Grid.Row="0" Background="#1A2530" BorderBrush="#333" BorderThickness="0,0,0,1"
+                                    Padding="8,6">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <TextBlock Text="{Binding FiltreLiKomsuDuvarlar.Count, StringFormat='Filtrelenmiş: {0}'}"
+                                               Foreground="#20C3D8" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding AtamaBolmeleri.Count, StringFormat='/ Toplam: {0} bölme'}"
+                                               Foreground="#7894A8" FontSize="11"/>
+                                </StackPanel>
+                            </Border>
+
+                            <ListBox Grid.Row="1"
+                                     ItemsSource="{Binding FiltreLiKomsuDuvarlar}"
+                                     Background="Transparent" BorderThickness="0"
+                                     SelectionMode="Multiple">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:KomsuDuvarSatiri">
+                                        <Border Padding="4,3" BorderBrush="#333" BorderThickness="0,0,0,1">
+                                            <Grid ColumnDefinitions="24,*,Auto">
+                                                <!-- Checkbox toggle button -->
+                                                <Button Grid.Column="0"
+                                                        Content="☐"
+                                                        Command="{Binding $parent[Window].DataContext.AlamaDuvarToggleCommand}"
+                                                        CommandParameter="{Binding .}"
+                                                        Background="Transparent" Foreground="#20C3D8"
+                                                        Padding="2,0" FontSize="14"
+                                                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                        ToolTip.Tip="Atamaya ekle/kaldır"/>
+
+                                                <!-- Bilgi -->
+                                                <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Baslik}"
+                                                               Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding KomsulukTipi}"
+                                                               Foreground="#88AABB" FontSize="9"/>
+                                                </StackPanel>
+
+                                                <!-- Uzunluk -->
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding Uzunluk, StringFormat='{}{0:0.00} m'}"
+                                                           Foreground="#FFB300" FontSize="11" FontWeight="Bold"
+                                                           VerticalAlignment="Center" Margin="8,0"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+
+                        <GridSplitter Grid.Column="3" Grid.Row="0" Grid.RowSpan="2"
+                                      Width="6" VerticalAlignment="Stretch"
+                                      Background="#4A6B86" ResizeDirection="Columns"
+                                      Cursor="SizeWestEast"/>
+
+                        <!-- Sağ Panel: Yapı Elemanları Kütüphanesi -->
+                        <Grid Grid.Column="4" Grid.Row="0" Grid.RowSpan="2" RowDefinitions="Auto,*,Auto">
+                            <Border Grid.Row="0" Background="#1A2530" BorderBrush="#333" BorderThickness="0,0,0,1"
+                                    Padding="8,6">
+                                <TextBlock Text="Malzeme" Foreground="#7894A8" FontSize="11" FontWeight="Bold"/>
+                            </Border>
+
+                            <ListBox Grid.Row="1"
+                                     ItemsSource="{Binding DuvarKutuphaneElemanlari}"
+                                     SelectedItem="{Binding SeciliAlamaMalzemesi}"
+                                     Background="Transparent" BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="4,3" BorderBrush="#333" BorderThickness="0,0,0,1">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Ad}"
+                                                           Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding Tip}"
+                                                           Foreground="#88AABB" FontSize="9"/>
+                                                <TextBlock Text="{Binding Rw, StringFormat='Rw={0:F0} dB'}"
+                                                           Foreground="#FFB300" FontSize="10"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- Atama Butonu -->
+                            <Button Grid.Row="2"
+                                    Content="✓ ATAMA YAP"
+                                    Command="{Binding AlamaYapCommand}"
+                                    Padding="8,6" FontSize="11" FontWeight="Bold"
+                                    Background="#0B547B" Foreground="White"
+                                    HorizontalAlignment="Stretch" Margin="0,6,0,0"
+                                    ToolTip.Tip="Sağdaki malzemeyi soldaki seçili duvarlara ata"/>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Atama Bekleyenler" FontSize="13" Foreground="#FFC04A" FontWeight="SemiBold"/>
+                    </TabItem.Header>
+                    <Grid RowDefinitions="Auto,*">
+                        <TextBlock Grid.Row="0" Margin="6,4"
+                                   Text="{Binding AtamaBekleyenler.Count, StringFormat='Atama bekleyen {0} kalem — satıra tıklayın, ilgili odaya gider'}"
+                                   Foreground="#FFC04A" FontSize="11"/>
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding AtamaBekleyenler}"
+                                 SelectedItem="{Binding SeciliAtamaBekleyen}"
+                                 Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="4,3">
+                                        <TextBlock Grid.Column="0" Text="{Binding Ikon}" FontSize="12"
+                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Baslik}"
+                                                       Foreground="White" FontSize="12" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Ozet}"
+                                                       Foreground="#88AABB" FontSize="10"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="2" CornerRadius="3" Padding="6,2"
+                                                Background="{Binding Renk}" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Tur}" Foreground="White"
+                                                       FontSize="10" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </TabItem>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Sınıflandırma" FontSize="13" Foreground="#D6E8F5" FontWeight="SemiBold"/>
+                    </TabItem.Header>
+                    <Views:SiniflandirmaPanel DataContext="{Binding}" IsEnabled="{Binding DuzenlemeEtkin}"/>
+                </TabItem>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Sonuçlar" FontSize="13" Foreground="#D6E8F5" FontWeight="SemiBold"/>
+                    </TabItem.Header>
+                    <Views:SonuclarPanel DataContext="{Binding}"/>
+                </TabItem>
+            </TabControl>
+        </Grid>
+
+
+        </Grid>
+    </Grid>
+</Window>

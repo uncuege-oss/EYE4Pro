@@ -1,0 +1,227 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.ViewModels"
+        xmlns:local="using:Kst.Acoustics.App.Views"
+        xmlns:controls="using:Kst.Acoustics.App.Controls"
+        x:Class="Kst.Acoustics.App.Views.PanelDesignWindow"
+        x:DataType="vm:PanelDesignViewModel"
+        Width="1200" Height="800"
+        MinWidth="1000" MinHeight="700"
+        Background="#08111B"
+        Title="Delikli Panel Tasarımı">
+
+    <Window.Resources>
+        <local:LayerColorConverter x:Key="LayerColorConverter"/>
+    </Window.Resources>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#0C1D2E" BorderBrush="#1B406A" BorderThickness="0,0,0,1">
+            <DockPanel Margin="20">
+                <StackPanel Orientation="Horizontal" Spacing="15">
+                    <Button Click="BackToLauncher_OnClick" Background="Transparent" Padding="5">
+                        <PathIcon Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" Width="20" Foreground="#D8EEFF"/>
+                    </Button>
+                    <Border Width="170" Height="56"
+                            Margin="0,0,8,0"
+                            CornerRadius="7"
+                            Background="#F3F7FA"
+                            BorderBrush="#C9D7E4"
+                            BorderThickness="1"
+                            ClipToBounds="True"
+                            VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="45,*" ColumnSpacing="10" Margin="10,4">
+                        <Grid Width="45" Height="36">
+                            <Ellipse Width="38" Height="24" Stroke="#0B547B" StrokeThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="22" Height="22" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Data="M11,18 L16,18 M20,13 L20,23 M25,10 L25,26 M30,14 L30,22 M34,18 L39,18"
+                                  Stroke="#0A4C72"
+                                  StrokeThickness="1.5"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="14" FontWeight="Bold"/>
+                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="9" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Delikli Panel Tasarımı" FontSize="20" FontWeight="Bold" Foreground="#D8EEFF"/>
+                        <TextBlock Text="Çok Katmanlı Akustik Emilim Hesaplayıcı (TMM)" FontSize="11" Foreground="#3A5C78"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Content="Raporu Dışa Aktar" 
+                            Command="{Binding ExportReportCommand}"
+                            Background="#162E48" Foreground="#D8EEFF" Padding="16,8" CornerRadius="6"/>
+                    <Button Content="Kütüphaneye Kaydet" 
+                            Command="{Binding SaveToLibraryCommand}"
+                            Background="#1A5898" Foreground="White" Padding="16,8" CornerRadius="6"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="400,*" Margin="20">
+            <!-- Left Panel: Layer Management -->
+            <Border Grid.Column="0" Background="#0B1D32" CornerRadius="12" Padding="16" BorderBrush="#1B406A" BorderThickness="1">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="KATMAN YÖNETİMİ" FontSize="12" FontWeight="Bold" Foreground="#3E6880" Margin="0,0,0,15"/>
+                    
+	                    <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,15,0,0">
+	                        <Button Command="{Binding AddPerforatedLayerCommand}" Content="+ Delikli Panel Ekle" HorizontalAlignment="Stretch" Background="#1B406A" Height="40" VerticalContentAlignment="Center"/>
+	                        <Button Command="{Binding AddFabricLayerCommand}" Content="+ SoundTex Kumaş Ekle" HorizontalAlignment="Stretch" Background="#1B406A" Height="40" VerticalContentAlignment="Center"/>
+	                        <Button Command="{Binding AddPorousLayerCommand}" Content="+ Gözenekli Katman Ekle" HorizontalAlignment="Stretch" Background="#1B406A" Height="40" VerticalContentAlignment="Center"/>
+	                        <Button Command="{Binding AddAirLayerCommand}" Content="+ Hava Boşluğu Ekle" HorizontalAlignment="Stretch" Background="#1B406A" Height="40" VerticalContentAlignment="Center"/>
+	                    </StackPanel>
+
+                    <ScrollViewer Margin="0,0,0,10">
+                        <ItemsControl ItemsSource="{Binding Layers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#0E2840" CornerRadius="8" Margin="0,0,5,10" Padding="15" BorderBrush="#1B5898" BorderThickness="1">
+                                        <StackPanel Spacing="12">
+	                                            <Grid ColumnDefinitions="*,Auto">
+	                                                <TextBox Text="{Binding Name}" FontWeight="Bold" Background="Transparent" BorderThickness="0" Padding="0" Foreground="#D8EEFF" FontSize="14"/>
+	                                                <Button Grid.Column="1" Command="{Binding $parent[Window].((vm:PanelDesignViewModel)DataContext).RemoveLayerCommand}" 
+	                                                        CommandParameter="{Binding}"
+	                                                        Background="Transparent" Padding="2" Margin="5,0,0,0">
+	                                                    <PathIcon Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19V4M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" Width="16" Foreground="#FF6B6B"/>
+	                                                </Button>
+	                                            </Grid>
+	                                            <CheckBox IsChecked="{Binding IsIncludedInCalculation}" Content="Hesaba kat" FontSize="11" Foreground="#8FB7D3"/>
+
+	                                            <StackPanel Spacing="10">
+                                                <!-- Thickness -->
+                                                <Grid ColumnDefinitions="140,*">
+                                                    <TextBlock Grid.Column="0" Text="Kalınlık (mm):" VerticalAlignment="Center" FontSize="11" Foreground="#3E6880"/>
+                                                    <NumericUpDown Grid.Column="1" Value="{Binding Thickness}" Minimum="1" Maximum="500" Increment="1" Height="32" Padding="8,0"/>
+                                                </Grid>
+                                                
+                                                <!-- Porous Specific -->
+	                                                <StackPanel IsVisible="{Binding IsPorous}" Spacing="10">
+	                                                    <Grid ColumnDefinitions="140,*">
+	                                                        <TextBlock Grid.Column="0" Text="Akış Direnci (Rayl/m):" VerticalAlignment="Center" FontSize="11" Foreground="#3E6880"/>
+	                                                        <NumericUpDown Grid.Column="1" Value="{Binding FlowResistivity}" Minimum="100" Maximum="100000" Increment="500" Height="32" Padding="8,0"/>
+	                                                    </Grid>
+	                                                </StackPanel>
+
+	                                                <!-- Fabric Specific -->
+	                                                <StackPanel IsVisible="{Binding IsFabric}" Spacing="10">
+	                                                    <Grid ColumnDefinitions="140,*">
+	                                                        <TextBlock Grid.Column="0" Text="Yüzey Direnci (Rayl):" VerticalAlignment="Center" FontSize="11" Foreground="#3E6880"/>
+	                                                        <NumericUpDown Grid.Column="1" Value="{Binding SpecificFlowResistance}" Minimum="0" Maximum="100000" Increment="50" Height="32" Padding="8,0"/>
+	                                                    </Grid>
+	                                                    <Grid ColumnDefinitions="140,*">
+	                                                        <TextBlock Grid.Column="0" Text="Yüzey Kütlesi (kg/m²):" VerticalAlignment="Center" FontSize="11" Foreground="#3E6880"/>
+	                                                        <NumericUpDown Grid.Column="1" Value="{Binding SurfaceDensity}" Minimum="0" Maximum="5" Increment="0.01" FormatString="0.00" Height="32" Padding="8,0"/>
+	                                                    </Grid>
+	                                                </StackPanel>
+
+	                                                <!-- Perforated Specific -->
+                                                <StackPanel IsVisible="{Binding IsPerforated}" Spacing="10">
+                                                    <Grid ColumnDefinitions="140,*">
+                                                        <TextBlock Grid.Column="0" Text="Delik Düzeni:" VerticalAlignment="Center" FontSize="11" Foreground="#3E6880"/>
+                                                        <ComboBox Grid.Column="1" ItemsSource="{Binding HolePatternOptions}" SelectedItem="{Binding HolePatternName}" Height="32" Padding="8,0"/>
+                                                    </Grid>
+                                                    <Grid ColumnDefinitions="140,*">
+                                                        <TextBlock Grid.Column="0" Text="Delik Çapı (mm):" VerticalAlignment="Center" FontSize="11" Foreground="#3E6880"/>
+                                                        <NumericUpDown Grid.Column="1" Value="{Binding HoleDiameter}" Minimum="0.1" Maximum="100" Increment="0.5" FormatString="0.0" Height="32" Padding="8,0"/>
+                                                    </Grid>
+                                                    <Grid ColumnDefinitions="140,*">
+                                                        <TextBlock Grid.Column="0" Text="Aks Aralığı (mm):" VerticalAlignment="Center" FontSize="11" Foreground="#3E6880"/>
+                                                        <NumericUpDown Grid.Column="1" Value="{Binding HoleSpacing}" Minimum="0.1" Maximum="1000" Increment="1" FormatString="0.0" Height="32" Padding="8,0"/>
+                                                    </Grid>
+                                                    <Grid ColumnDefinitions="140,*">
+                                                        <TextBlock Grid.Column="0" Text="Boşluk Oranı (%):" VerticalAlignment="Center" FontSize="11" Foreground="#3E6880"/>
+                                                        <NumericUpDown Grid.Column="1" Value="{Binding OpenAreaRatio}" Minimum="0.1" Maximum="70" Increment="1" FormatString="0.0" Height="32" Padding="8,0"/>
+                                                    </Grid>
+                                                    
+                                                    <Grid ColumnDefinitions="*,*" Margin="0,5,0,0">
+                                                        <Button Grid.Column="0" Command="{Binding $parent[Window].((vm:PanelDesignViewModel)DataContext).ImportDxfCommand}" 
+                                                                Content="DXF İçe Aktar" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                                FontSize="11" Background="#1B406A" Height="38" Margin="0,0,5,0"/>
+                                                        <Button Grid.Column="1" Command="{Binding $parent[Window].((vm:PanelDesignViewModel)DataContext).DownloadTemplateCommand}" 
+                                                                Content="DXF Şablonu İndir" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                                FontSize="11" Background="#2A3A4A" Height="38" Margin="5,0,0,0"/>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- Right Panel: Visualization -->
+            <Grid Grid.Column="1" RowDefinitions="*,Auto" Margin="25,0,0,0">
+                <!-- Visualization Area (Plot and 3D) -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,*">
+                    <!-- Plot Area -->
+                    <Border Grid.Column="0" Background="#0B1D32" CornerRadius="12" Padding="15" BorderBrush="#1B406A" BorderThickness="1.5" Margin="0,0,10,0">
+	                        <DockPanel>
+	                            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+	                                <TextBlock Text="{Binding PlotModeLabel}" FontSize="11" FontWeight="Bold" Foreground="#3E6880"/>
+	                                <CheckBox Grid.Column="1"
+	                                          IsChecked="{Binding ShowRandomIncidence}"
+	                                          Content="Rastgele geliş"
+	                                          FontSize="11"
+	                                          Foreground="#8FB7D3"/>
+	                            </Grid>
+	                            <local:AbsorptionPlotControl Points="{Binding DisplayedPlotPoints}"/>
+	                        </DockPanel>
+                    </Border>
+
+                    <!-- 3D Preview Area -->
+                    <Border Grid.Column="1" Background="#0B1D32" CornerRadius="12" Padding="15" BorderBrush="#1B406A" BorderThickness="1.5" Margin="10,0,0,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="3B YAPI GÖRÜNÜMÜ" FontSize="11" FontWeight="Bold" Foreground="#3E6880" Margin="0,0,0,10"/>
+                            <controls:PanelPreviewControl Layers="{Binding Layers}"/>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+                
+                <!-- Summary Badges -->
+                <Border Grid.Row="1" Background="#0B1D32" CornerRadius="12" Margin="0,20,0,0" Padding="16" BorderBrush="#1B406A" BorderThickness="1.5">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="24" HorizontalAlignment="Center">
+                            <!-- NRC Badge -->
+                            <Border Background="#0E2840" CornerRadius="10" Padding="24,12" BorderBrush="#1B5898" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="NRC" FontSize="12" FontWeight="SemiBold" Foreground="#3E6880" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Nrc, StringFormat=\{0:0.00\}}" FontSize="36" FontWeight="Bold" Foreground="#70C8A8" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <!-- AlphaW Badge -->
+                            <Border Background="#0E2840" CornerRadius="10" Padding="24,12" BorderBrush="#1B5898" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="αw" FontSize="12" FontWeight="SemiBold" Foreground="#3E6880" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding AlphaWLabel}" FontSize="36" FontWeight="Bold" Foreground="#70C8A8" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Sınıf Badge -->
+                            <Border Background="#0E2840" CornerRadius="10" Padding="24,12" BorderBrush="#1B5898" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="Sınıf" FontSize="12" FontWeight="SemiBold" Foreground="#3E6880" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding AbsorptionClass}" FontSize="36" FontWeight="Bold" Foreground="#D0B880" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <Border Background="#081827" CornerRadius="8" Padding="12" BorderBrush="#183650" BorderThickness="1">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding DxfQualitySummary}" FontSize="11" Foreground="#9FC4DB" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding DxfQualityDetails}" IsVisible="{Binding HasDxfQualityDetails}" FontSize="11" Foreground="#BFD6E8" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding CalculationAssumptionSummary}" FontSize="11" Foreground="#6F9AB4" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding WarningMessage}" FontSize="11" Foreground="#D0B880" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

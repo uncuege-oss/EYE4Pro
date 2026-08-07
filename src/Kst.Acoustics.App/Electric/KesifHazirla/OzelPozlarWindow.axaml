@@ -1,0 +1,141 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Electric.KesifHazirla"
+        x:Class="Kst.Acoustics.App.Electric.KesifHazirla.OzelPozlarWindow"
+        x:DataType="vm:KesifHazirlaViewModel"
+        x:CompileBindings="False"
+        Title="Özel Pozlar Yönetimi"
+        Width="1000" Height="650"
+        MinWidth="800" MinHeight="500"
+        CanResize="True"
+        Background="#071108"
+        WindowStartupLocation="CenterOwner">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.sectionTitle">
+      <Setter Property="Foreground" Value="#DFF1D9"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.subtle">
+      <Setter Property="Foreground" Value="#7FA06F"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#0E3A1A"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#168A38"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="12,8"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="#15572A"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#2AD864"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="#071108"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#1E6A32"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="8,5"/>
+    </Style>
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="#071108"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+      <Setter Property="BorderBrush" Value="#17351D"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*" ColumnDefinitions="*" Margin="16" RowSpacing="12">
+    <!-- Header -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="sectionTitle" Text="Özel Pozlar (Kullanıcı Pozları)"/>
+        <TextBlock Classes="subtle" Text="Yeni özel poz ekleyebilir, mevcutları silebilir veya düzenleyebilirsiniz."/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="Kapat" Click="Kapat_OnClick"/>
+    </Grid>
+
+    <!-- Main split layout -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,8,350" Background="#081209">
+      
+      <!-- Left side: Custom positions list -->
+      <Border Grid.Column="0" BorderBrush="#17351D" BorderThickness="1" CornerRadius="6" Padding="8" Background="#0B170D">
+        <Grid RowDefinitions="*,Auto" RowSpacing="8">
+          <DataGrid ItemsSource="{Binding OzelPozlar}"
+                    SelectedItem="{Binding SeciliOzelPoz}"
+                    AutoGenerateColumns="False"
+                    CanUserSortColumns="True"
+                    CanUserResizeColumns="True"
+                    IsReadOnly="False"
+                    CellEditEnded="OzelGrid_CellEditEnded">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="↕ Poz No" Binding="{Binding PozNo}" SortMemberPath="PozNo" Width="100"/>
+              <DataGridTextColumn Header="↕ Birim Adı" Binding="{Binding BirimAdi}" SortMemberPath="BirimAdi" Width="*"/>
+              <DataGridTextColumn Header="↕ Birim" Binding="{Binding Birim}" SortMemberPath="Birim" Width="70"/>
+              <DataGridTextColumn Header="↕ Birim Fiyat" Binding="{Binding BirimFiyat}" SortMemberPath="BirimFiyat" Width="100"/>
+              <DataGridTextColumn Header="↕ Son Güncelleme" Binding="{Binding SonGuncellemeTarihi, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" SortMemberPath="SonGuncellemeTarihi" Width="140" IsReadOnly="True"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Poz Ekle" Command="{Binding OzelPozEkleCommand}"/>
+            <Button Content="Poz Sil" Command="{Binding OzelPozSilCommand}"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Splitter spacer -->
+      <Rectangle Grid.Column="1" Fill="#15331C" Width="2" HorizontalAlignment="Center"/>
+
+      <!-- Right side: Detail pane / Editor -->
+      <Border Grid.Column="2" BorderBrush="#17351D" BorderThickness="1" CornerRadius="6" Padding="12" Background="#0B170D">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+          <TextBlock Text="Poz Detayları / Düzenleme" Foreground="#DFF1D9" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
+          
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="10" Margin="0,0,5,0">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Poz No:" Foreground="#7FA06F" FontSize="11"/>
+                <TextBox Text="{Binding SeciliOzelPoz.PozNo, Mode=TwoWay}" PlaceholderText="Örn: ÖZEL-001"/>
+              </StackPanel>
+              
+              <StackPanel Spacing="3">
+                <TextBlock Text="Birim Adı / İmalat Tanımı:" Foreground="#7FA06F" FontSize="11"/>
+                <TextBox Text="{Binding SeciliOzelPoz.BirimAdi, Mode=TwoWay}" PlaceholderText="Açıklayıcı tanım girin" Height="60" TextWrapping="Wrap"/>
+              </StackPanel>
+              
+              <StackPanel Spacing="3">
+                <TextBlock Text="Birim:" Foreground="#7FA06F" FontSize="11"/>
+                <TextBox Text="{Binding SeciliOzelPoz.Birim, Mode=TwoWay}" PlaceholderText="Örn: adet, m, m2"/>
+              </StackPanel>
+              
+              <StackPanel Spacing="3">
+                <TextBlock Text="Birim Fiyat (TL):" Foreground="#7FA06F" FontSize="11"/>
+                <TextBox Text="{Binding SeciliOzelPoz.BirimFiyat, Mode=TwoWay}" PlaceholderText="0.00"/>
+              </StackPanel>
+
+              <StackPanel Spacing="3">
+                <TextBlock Text="Açıklama:" Foreground="#7FA06F" FontSize="11"/>
+                <TextBox Text="{Binding SeciliOzelPoz.Aciklama, Mode=TwoWay}" PlaceholderText="Detaylı notlar veya açıklamalar" Height="80" TextWrapping="Wrap"/>
+              </StackPanel>
+
+              <StackPanel Spacing="3">
+                <TextBlock Text="Son Güncelleme:" Foreground="#7FA06F" FontSize="11"/>
+                <TextBlock Text="{Binding SeciliOzelPoz.SonGuncellemeTarihi, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" Foreground="#E8F4E8" FontSize="12" Margin="5,0"/>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+
+          <StackPanel Grid.Row="2" Spacing="8">
+            <Button Content="Değişiklikleri Kaydet (Poz Düzenle)" Command="{Binding OzelPozGuncelleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

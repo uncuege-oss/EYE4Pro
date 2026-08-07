@@ -1,0 +1,519 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.ViewModels"
+        xmlns:controls="using:Kst.Acoustics.App.Controls"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="850"
+        x:Class="Kst.Acoustics.App.Views.ImpactSurfaceWindow"
+        x:DataType="vm:ImpactSurfaceViewModel"
+        Title="Darbe Emici Yüzey Tasarımı | Eye4Pro"
+        Background="#0B1118"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <vm:LayersToModelConverter x:Key="LayersToModelConverter"/>
+        <vm:PassFailColorConverter x:Key="PassFailColorConverter"/>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#A7CBE3"/>
+            <Setter Property="Margin" Value="0,0,0,3"/>
+        </Style>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#8FC1DF"/>
+        </Style>
+        <Style Selector="TextBlock.resultValue">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#00FFFF"/>
+        </Style>
+        <Style Selector="TextBlock.resultLabel">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#8FB7D3"/>
+        </Style>
+        <Style Selector="Button.actionBtn">
+            <Setter Property="Background" Value="#1A3050"/>
+            <Setter Property="Foreground" Value="#90C0E8"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="Foreground" Value="#A7CBE3"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Foreground" Value="#E6F4FF"/>
+        </Style>
+        <Style Selector="DataGrid TextBlock">
+            <Setter Property="Foreground" Value="#D8EEFF"/>
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Foreground" Value="#23394D"/>
+        </Style>
+        <Style Selector="DataGridColumnHeader TextBlock">
+            <Setter Property="Foreground" Value="#23394D"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#0C1D2E" Padding="20,12" BorderBrush="#1B406A" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <StackPanel Orientation="Horizontal" Spacing="15">
+                    <Button Click="BackToLauncher_OnClick" Background="Transparent" Padding="5">
+                        <PathIcon Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" Width="20" Foreground="#D8EEFF"/>
+                    </Button>
+                    <Border Width="160" Height="48" CornerRadius="7" Background="#F3F7FA" BorderBrush="#C9D7E4" BorderThickness="1" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="40,*" ColumnSpacing="10" Margin="8,4">
+                            <Grid Width="40" Height="32">
+                                <Ellipse Width="34" Height="22" Stroke="#0B547B" StrokeThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="20" Height="20" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Path Data="M10,16 L14,16 M18,11 L18,21 M22,8 L22,24 M26,12 L26,20 M30,16 L34,16"
+                                      Stroke="#0A4C72"
+                                      StrokeThickness="1.5"/>
+                            </Grid>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                                <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="13" FontWeight="Bold"/>
+                                <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="8" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <TextBlock Text="🛡️ Darbe Emici Yüzey Tasarımı" FontSize="20" FontWeight="Bold" Foreground="#D8EEFF" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                    <Button Content="📂 Aç" Command="{Binding LoadCommand}" CommandParameter="{Binding $parent[Window]}" Classes="actionBtn"/>
+                    <Button Content="💾 Kaydet" Command="{Binding SaveCommand}" CommandParameter="{Binding $parent[Window]}" Classes="actionBtn" Background="#1A4A2A" Foreground="#80EFA0"/>
+                    <Button Content="📄 Rapor Al" Command="{Binding ExportReportCommand}" CommandParameter="{Binding $parent[Window]}" Classes="actionBtn"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <TabControl Grid.Row="1" Margin="15">
+            <TabItem Header="Darbe Emici Yüzey">
+        <Grid ColumnDefinitions="400, *, 320" ColumnSpacing="15">
+            
+            <!-- Left: Layer List -->
+            <Border Grid.Column="0" Background="#0B1D32" CornerRadius="12" Padding="15" BorderBrush="#1B406A" BorderThickness="1">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,15">
+                        <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                            <TextBlock Text="KATMAN YIĞINI" Classes="sectionTitle"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                                <Button Command="{Binding AddLayerCommand}" ToolTip.Tip="Katman Ekle" Padding="8,4" Background="#1A5898">
+                                    <PathIcon Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Width="14" Height="14" Foreground="White"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                        <Separator Background="#1B406A" Height="1"/>
+                    </StackPanel>
+
+                    <Border DockPanel.Dock="Bottom" Margin="0,15,0,0" Padding="12" Background="#142840" CornerRadius="8">
+                        <StackPanel Spacing="9">
+                            <TextBlock Text="SİMÜLASYON AYARLARI" Classes="sectionTitle"/>
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                                <StackPanel>
+                                    <TextBlock Text="Düşüş Yüksekliği (m)" Classes="fieldLabel"/>
+                                    <NumericUpDown Value="{Binding DropHeight}" Minimum="0.1" Maximum="10" Increment="0.1" FormatString="F1"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Kafa Kütlesi (kg)" Classes="fieldLabel"/>
+                                    <NumericUpDown Value="{Binding HeadMass}" Minimum="0.5" Maximum="20" Increment="0.5" FormatString="F1"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1">
+                                    <TextBlock Text="Temas Alanı (m²)" Classes="fieldLabel"/>
+                                    <NumericUpDown Value="{Binding ContactArea}" Minimum="0.001" Maximum="0.5" Increment="0.001" FormatString="F3"/>
+                                </StackPanel>
+                                <Button Grid.Row="1" Grid.Column="1" Content="Yeniden Hesapla" Command="{Binding CalculateCommand}"
+                                        Classes="actionBtn" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <DataGrid ItemsSource="{Binding Layers}" 
+                              SelectedItem="{Binding SelectedLayer}"
+                              Background="Transparent"
+                              CanUserSortColumns="False"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#1B406A"
+                              RowBackground="#0E2840"
+                              BorderThickness="0">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="#" Width="40">
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Index}" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#536879"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            
+                            <DataGridTemplateColumn Header="Malzeme" Width="*">
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding AvailableMaterials}" 
+                                              SelectedItem="{Binding Material}"
+                                              HorizontalAlignment="Stretch"
+                                              Background="Transparent" BorderThickness="0">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="mm" Width="70">
+                                <DataTemplate>
+                                    <NumericUpDown Value="{Binding ThicknessMm}" 
+                                                   ShowButtonSpinner="False"
+                                                   Background="Transparent" BorderThickness="0"
+                                                   Padding="5,0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="İşlem" Width="80">
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <Button Command="{Binding $parent[Window].((vm:ImpactSurfaceViewModel)DataContext).MoveUpCommand}" 
+                                                CommandParameter="{Binding}" Padding="4" Background="Transparent">
+                                            <PathIcon Data="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" Width="14" Foreground="#90C0E8"/>
+                                        </Button>
+                                        <Button Command="{Binding $parent[Window].((vm:ImpactSurfaceViewModel)DataContext).MoveDownCommand}" 
+                                                CommandParameter="{Binding}" Padding="4" Background="Transparent">
+                                            <PathIcon Data="M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z" Width="14" Foreground="#90C0E8"/>
+                                        </Button>
+                                        <Button Command="{Binding $parent[Window].((vm:ImpactSurfaceViewModel)DataContext).RemoveLayerCommand}" 
+                                                CommandParameter="{Binding}" Padding="4" Background="Transparent">
+                                            <PathIcon Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19V4Z M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" Width="14" Foreground="#EF8080"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+
+            <!-- Center: 3D Preview -->
+            <Border Grid.Column="1" Background="#050C14" CornerRadius="12" BorderBrush="#1B406A" BorderThickness="1" ClipToBounds="True">
+                <Grid>
+                    <controls:ImpactLayerCanvas Layers="{Binding Layers, Converter={StaticResource LayersToModelConverter}}"
+                                                SelectedLayer="{Binding SelectedLayer, Converter={StaticResource LayersToModelConverter}}"
+                                                AccelSeries="{Binding Results.AccelSeries}"
+                                                ViewRotation="{Binding ViewRotation}"
+                                                ViewZoom="{Binding ViewZoom}"/>
+                    
+                    <!-- Viewport Controls -->
+                    <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="15" Spacing="5">
+                        <Slider Value="{Binding ViewRotation}" Minimum="-1" Maximum="1" Width="100" ToolTip.Tip="Döndürme"/>
+                        <Slider Value="{Binding ViewZoom}" Minimum="0.5" Maximum="3" Width="100" ToolTip.Tip="Yakınlaştırma"/>
+                    </StackPanel>
+                    
+                    <!-- Color Legend -->
+                    <Border VerticalAlignment="Top" HorizontalAlignment="Right" Margin="15" Padding="10" Background="#CC0C1D2E" CornerRadius="8">
+                        <StackPanel Spacing="5">
+                            <Grid ColumnDefinitions="12, *" ColumnSpacing="8">
+                                <Rectangle Fill="#8B7355" Width="10" Height="10" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Yüzey" FontSize="10" Foreground="#D8EEFF"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="12, *" ColumnSpacing="8">
+                                <Rectangle Fill="#4A90D9" Width="10" Height="10" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Akustik" FontSize="10" Foreground="#D8EEFF"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="12, *" ColumnSpacing="8">
+                                <Rectangle Fill="#E8A020" Width="10" Height="10" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Darbe" FontSize="10" Foreground="#D8EEFF"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="12, *" ColumnSpacing="8">
+                                <Rectangle Fill="#6DBF6D" Width="10" Height="10" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Drenaj" FontSize="10" Foreground="#D8EEFF"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="12, *" ColumnSpacing="8">
+                                <Rectangle Fill="#808080" Width="10" Height="10" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Yapısal" FontSize="10" Foreground="#D8EEFF"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Right: Results & Templates -->
+            <Border Grid.Column="2" Background="#0B1D32" CornerRadius="12" Padding="15" BorderBrush="#1B406A" BorderThickness="1">
+                <ScrollViewer>
+                    <StackPanel Spacing="20">
+                        <TextBlock Text="ŞABLONLAR" Classes="sectionTitle"/>
+                        <ComboBox ItemsSource="{Binding Templates}" 
+                                  SelectedItem="{Binding SelectedTemplate}" 
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="Bir şablon seçin...">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <Separator Background="#1B406A" Height="1"/>
+
+                        <TextBlock Text="HESAP SONUÇLARI" Classes="sectionTitle"/>
+                        
+                        <Border Background="#0E2840" CornerRadius="10" Padding="15">
+                            <StackPanel Spacing="15">
+                                <StackPanel>
+                                    <TextBlock Text="Gmax (Tahmini Tepe İvme)" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding Results.Gmax, StringFormat=\{0:F1\} g}" Classes="resultValue"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="HIC (Tahmini Kafa Yaralanma Krit.)" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding Results.HIC, StringFormat=\{0:F0\}}" Classes="resultValue" Foreground="#FFAC8B"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Tahmini Kritik Düşüş Yüksekliği" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding Results.CriticalFallHeight, StringFormat=\{0:F2\} m}" Classes="resultValue" Foreground="#80EFA0"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Toplam Kalınlık" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding Results.TotalThickness, StringFormat=\{0:F0\} mm}" FontSize="18" Foreground="#D8EEFF"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Akustik Soğurma (αw)" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding Results.TotalAlphaW, StringFormat=\{0:F2\}}" FontSize="18" Foreground="#4A90D9"/>
+                                </StackPanel>
+                                <Border Background="{Binding Results.IsPassed, Converter={StaticResource PassFailColorConverter}}" 
+                                        CornerRadius="6" Padding="10" Margin="0,5,0,0">
+                                    <TextBlock Text="{Binding Results.StatusMessage}" 
+                                               FontSize="12" FontWeight="Bold" Foreground="White" 
+                                               TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#1A2B3C" CornerRadius="8" Padding="10">
+                            <TextBlock Text="Standart Uyumluluğu:&#x0a;EN 1177, ASTM F1292" 
+                                       FontSize="10" Foreground="#A7CBE3" TextAlignment="Center"/>
+                        </Border>
+
+                        <Separator Background="#1B406A" Height="1"/>
+
+                        <TextBlock Text="MALZEME EDİTÖRÜ" Classes="sectionTitle"/>
+                        <Border Background="#142840" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="8">
+                                <StackPanel>
+                                    <TextBlock Text="Malzeme Adı" Classes="fieldLabel"/>
+                                    <TextBox Text="{Binding NewMatName}" PlaceholderText="Ad..."/>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,* " RowDefinitions="Auto,Auto" ColumnSpacing="5" RowSpacing="8">
+                                    <StackPanel>
+                                        <TextBlock Text="E-Modül (MPa)" Classes="fieldLabel"/>
+                                        <NumericUpDown Value="{Binding NewMatE}" Minimum="0.01" Maximum="1000" Increment="0.1" ShowButtonSpinner="False"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Yoğunluk (kg/m³)" Classes="fieldLabel"/>
+                                        <NumericUpDown Value="{Binding NewMatDensity}" Minimum="1" Maximum="9000" Increment="10" ShowButtonSpinner="False"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1">
+                                        <TextBlock Text="Darbe Abs. (%)" Classes="fieldLabel"/>
+                                        <NumericUpDown Value="{Binding NewMatAbs}" Minimum="0" Maximum="100" Increment="1" ShowButtonSpinner="False"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="1">
+                                        <TextBlock Text="Akustik αw" Classes="fieldLabel"/>
+                                        <NumericUpDown Value="{Binding NewMatAlphaW}" Minimum="0" Maximum="1" Increment="0.01" ShowButtonSpinner="False"/>
+                                    </StackPanel>
+                                </Grid>
+                                <Button Content="➕ Yeni Malzeme Ekle" Command="{Binding AddCustomMaterialCommand}" 
+                                        Classes="actionBtn" HorizontalAlignment="Stretch" Background="#2A4060"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+            </TabItem>
+
+            <TabItem Header="Ses Emici İnşaat Yüzeyi">
+                <Grid ColumnDefinitions="430, *, 330" ColumnSpacing="15">
+                    <Border Grid.Column="0" Background="#0B1D32" CornerRadius="12" Padding="15" BorderBrush="#1B406A" BorderThickness="1">
+                        <DockPanel LastChildFill="True">
+                            <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,15">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                    <TextBlock Text="SES EMİCİ KATMANLAR" Classes="sectionTitle"/>
+                                    <Button Grid.Column="1" Content="+ Katman" Command="{Binding AddAbsorptiveLayerCommand}" Classes="actionBtn" Padding="8,4"/>
+                                    <Button Grid.Column="2" Content="+ Hava" Command="{Binding AddAbsorptiveAirGapCommand}" Classes="actionBtn" Padding="8,4"/>
+                                </Grid>
+                                <TextBox Text="{Binding AbsorptiveSurfaceName}" PlaceholderText="Yüzey adı"/>
+                                <Separator Background="#1B406A" Height="1"/>
+                            </StackPanel>
+
+                            <DataGrid ItemsSource="{Binding AbsorptiveLayers}"
+                                      SelectedItem="{Binding SelectedAbsorptiveLayer}"
+                                      AutoGenerateColumns="False"
+                                      CanUserSortColumns="False"
+                                      GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="#1B406A"
+                                      RowBackground="#0E2840"
+                                      Background="Transparent"
+                                      BorderThickness="0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="#" Binding="{Binding Index}" Width="36"/>
+                                    <DataGridTemplateColumn Header="Aktif" Width="48">
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsEnabled}" HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="Malzeme" Width="*">
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding AvailableMaterials}"
+                                                      SelectedItem="{Binding Material}"
+                                                      HorizontalAlignment="Stretch">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Name}"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="Tip" Width="120">
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding LayerTypes}" SelectedItem="{Binding LayerType}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="mm" Width="70">
+                                        <DataTemplate>
+                                            <NumericUpDown Value="{Binding ThicknessMm}" Minimum="0" Maximum="500" ShowButtonSpinner="False"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="%" Width="58">
+                                        <DataTemplate>
+                                            <NumericUpDown Value="{Binding OpenAreaPercent}" Minimum="0" Maximum="80" ShowButtonSpinner="False"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="İşlem" Width="92">
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="3">
+                                                <Button Command="{Binding $parent[Window].((vm:ImpactSurfaceViewModel)DataContext).MoveAbsorptiveUpCommand}"
+                                                        CommandParameter="{Binding}" Padding="4" Background="Transparent">
+                                                    <PathIcon Data="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" Width="13" Foreground="#90C0E8"/>
+                                                </Button>
+                                                <Button Command="{Binding $parent[Window].((vm:ImpactSurfaceViewModel)DataContext).MoveAbsorptiveDownCommand}"
+                                                        CommandParameter="{Binding}" Padding="4" Background="Transparent">
+                                                    <PathIcon Data="M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z" Width="13" Foreground="#90C0E8"/>
+                                                </Button>
+                                                <Button Command="{Binding $parent[Window].((vm:ImpactSurfaceViewModel)DataContext).RemoveAbsorptiveLayerCommand}"
+                                                        CommandParameter="{Binding}" Padding="4" Background="Transparent">
+                                                    <PathIcon Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19V4Z M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" Width="13" Foreground="#EF8080"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Background="#050C14" CornerRadius="12" BorderBrush="#1B406A" BorderThickness="1" Padding="18">
+                        <Grid RowDefinitions="Auto,*,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                <StackPanel>
+                                    <TextBlock Text="αw" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding AbsorptiveResults.AlphaW, StringFormat=\{0:F2\}}" Classes="resultValue"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="NRC" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding AbsorptiveResults.Nrc, StringFormat=\{0:F2\}}" Classes="resultValue" Foreground="#80EFA0"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="SAA" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding AbsorptiveResults.Saa, StringFormat=\{0:F2\}}" Classes="resultValue" Foreground="#FFAC8B"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Toplam Kalınlık" Classes="resultLabel"/>
+                                    <TextBlock Text="{Binding AbsorptiveResults.TotalThicknessMm, StringFormat=\{0:F0\} mm}" FontSize="18" Foreground="#D8EEFF"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <DataGrid Grid.Row="1"
+                                      ItemsSource="{Binding AbsorptiveResults.BandRows}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      Margin="0,18,0,12"
+                                      GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="#1B406A"
+                                      Background="#071421"
+                                      RowBackground="#0E2840">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Frekans" Binding="{Binding FrequencyHz, StringFormat='{}{0:F0} Hz'}" Width="120"/>
+                                    <DataGridTextColumn Header="α" Binding="{Binding Absorption, StringFormat='{}{0:F2}'}" Width="90"/>
+                                    <DataGridTemplateColumn Header="Gösterge" Width="*">
+                                        <DataTemplate>
+                                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding Absorption}" Height="10"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <Border Grid.Row="2" Background="#0E2840" CornerRadius="8" Padding="12">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="{Binding AbsorptiveResults.PerformanceSummary}" FontSize="15" FontWeight="Bold" Foreground="#D8EEFF"/>
+                                    <TextBlock Text="{Binding AbsorptiveResults.RecommendedUse}" FontSize="12" Foreground="#8FB7D3" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" Background="#0B1D32" CornerRadius="12" Padding="15" BorderBrush="#1B406A" BorderThickness="1">
+                        <ScrollViewer>
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="İNŞAAT AKUSTİK NOTLARI" Classes="sectionTitle"/>
+                                <ItemsControl ItemsSource="{Binding AbsorptiveResults.Warnings}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" FontSize="11" Foreground="#F5A623" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Separator Background="#1B406A"/>
+                                <TextBlock Text="SES EMİCİ MALZEME EKLE" Classes="sectionTitle"/>
+                                <Border Background="#142840" CornerRadius="8" Padding="12">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Malzeme Adı" Classes="fieldLabel"/>
+                                        <TextBox Text="{Binding NewMatName}" PlaceholderText="Örn. Kumaş Kaplı Panel"/>
+                                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                                            <StackPanel>
+                                                <TextBlock Text="Yoğunluk" Classes="fieldLabel"/>
+                                                <NumericUpDown Value="{Binding NewMatDensity}" Minimum="1" Maximum="5000" ShowButtonSpinner="False"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="Akış Direnci Yakl." Classes="fieldLabel"/>
+                                                <NumericUpDown Value="{Binding NewMatE}" Minimum="0.1" Maximum="100" ShowButtonSpinner="False"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+                                                <TextBlock Text="Ortalama α" Classes="fieldLabel"/>
+                                                <NumericUpDown Value="{Binding NewMatAlphaW}" Minimum="0" Maximum="1" Increment="0.01" ShowButtonSpinner="False"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Button Content="+ Ses Emici Malzeme Ekle" Command="{Binding AddCustomAbsorptiveMaterialCommand}" Classes="actionBtn" HorizontalAlignment="Stretch"/>
+                                    </StackPanel>
+                                </Border>
+                                <Button Content="Yeniden Hesapla" Command="{Binding CalculateAbsorptiveSurfaceCommand}" Classes="actionBtn" HorizontalAlignment="Stretch"/>
+                                <Button Content="📄 Ses Emici Rapor Al" Command="{Binding ExportAbsorptiveReportCommand}" CommandParameter="{Binding $parent[Window]}" Classes="actionBtn" HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        
+        <!-- Status Bar -->
+        <Border Grid.Row="1" VerticalAlignment="Bottom" Background="#1A3050" Padding="10,4">
+            <TextBlock Text="{Binding StatusMessage}" FontSize="10" Foreground="#90C0E8" HorizontalAlignment="Right"/>
+        </Border>
+    </Grid>
+</Window>

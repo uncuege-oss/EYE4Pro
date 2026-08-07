@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.Views.PanoBusbarBaglaDialog"
+        Width="520" Height="450"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#080F0A"
+        Title="Panoyu Busbara Bağla">
+    <Window.Styles>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="Foreground" Value="#7AA060"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="TextBox, ComboBox">
+            <Setter Property="Background" Value="#101C10"/>
+            <Setter Property="Foreground" Value="#D0E8C0"/>
+            <Setter Property="BorderBrush" Value="#2A4A20"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <TextBlock Grid.Row="0" x:Name="BaslikText" Text="Panoyu Busbara Bağla"
+                   Foreground="#C8E4B0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+        <StackPanel Grid.Row="1" Spacing="10">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Busbar Hattı"/>
+                <ComboBox x:Name="BusbarCombo" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Mesafe Tipi"/>
+                <ComboBox x:Name="MesafeTipiCombo" HorizontalAlignment="Stretch"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="PozisyonLabel" Classes="lbl" Text="Çıkış Kutusu Pozisyonu (m, üst panodan)"/>
+                <TextBox x:Name="PozisyonBox" Text="5"/>
+                <TextBlock x:Name="PozisyonYardimText" Text=""
+                           Foreground="#8AA868" FontSize="11" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Çıkış Kutusu Sigortası (A)"/>
+                <ComboBox x:Name="SigortaCombo"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Classes="lbl" Text="Çıkış Kutusu → Pano Kablo Mesafesi (m)"/>
+                <TextBox x:Name="KabloMesafeBox" Text="2"/>
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+            <Button Content="İptal" Click="Iptal_OnClick"
+                    Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
+            <Button Content="Bağla" Click="Bagla_OnClick"
+                    Background="#3A7A18" Foreground="White" FontWeight="SemiBold"/>
+        </StackPanel>
+    </Grid>
+</Window>

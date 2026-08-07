@@ -1,0 +1,118 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.Architecture.Reports.ViewModels"
+        x:Class="Kst.Acoustics.App.Architecture.Reports.Views.MimariCiktiWindow"
+        x:DataType="vm:MimariCiktiViewModel"
+        Width="900" Height="640"
+        MinWidth="760" MinHeight="520"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="#0A1015"
+        Title="Eye4Pro Architecture - Mimari Rapor ve İhracat">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#7E93A4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="Foreground" Value="#ECF3F7"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="#101821"/>
+            <Setter Property="BorderBrush" Value="#243646"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#256D7B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,9"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#111D26"/>
+            <Setter Property="Foreground" Value="#B9CAD6"/>
+            <Setter Property="BorderBrush" Value="#2A3E50"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Border Grid.Row="0" BorderBrush="#243646" BorderThickness="0,0,0,1" Background="#0D151D">
+            <Grid ColumnDefinitions="*,Auto" Margin="24,16">
+                <StackPanel Spacing="3">
+                    <TextBlock Text="M37/M39 Mimari Rapor ve İhracat" Foreground="#ECF3F7" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="Mahal/alan/finisaj çizelgeleri, ön kontrol raporu ve OBJ / .e4bina çıktıları"
+                               Foreground="#7890A2" FontSize="12"/>
+                </StackPanel>
+                <Button Grid.Column="1" Classes="secondary" Content="Modül Merkezi" Click="BackToLauncher_OnClick" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Background="#0B121A" BorderBrush="#1B2A36" BorderThickness="0,0,0,1" Padding="24,12">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Text="Proje" Classes="label" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ProjeAdi}" Foreground="#E7EFF4" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding DosyaYoluText}" Foreground="#7890A2" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                    <Button Classes="secondary" Content="Örnek Proje" Click="OrnekProje_OnClick"/>
+                    <Button Classes="secondary" Content="Proje Aç" Click="ProjeAc_OnClick"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="24,18" Spacing="16">
+                <Border Classes="panel">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="sectionTitle" Text="Özet"/>
+                        <TextBlock Text="{Binding OzetText}" Foreground="#D7E6ED" FontSize="14"/>
+                        <TextBlock Text="{Binding OnKontrolText}" Foreground="#9BB6C2" FontSize="12"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="sectionTitle" Text="Rapor ve Çizelgeler"/>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto" >
+                            <Button Grid.Column="0" Classes="primary" Content="HTML Rapor Kaydet" Click="HtmlKaydet_OnClick"/>
+                            <Button Grid.Column="1" Classes="primary" Content="XLSX Rapor Kaydet" Click="XlsxKaydet_OnClick"/>
+                        </Grid>
+                        <TextBlock Text="HTML: tüm tablolar tek belgede · XLSX: her tablo ayrı sayfa (mahal listesi, alan, kapı-pencere, finisaj, ön kontrol)."
+                                   Foreground="#7890A2" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="sectionTitle" Text="3D / Geometri İhracatı"/>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <Button Grid.Column="0" Classes="primary" Content="OBJ Dışa Aktar" Click="ObjKaydet_OnClick"/>
+                            <Button Grid.Column="1" Classes="primary" Content=".e4bina Üret (M50)" Click="BinaUret_OnClick"/>
+                        </Grid>
+                        <TextBlock Text="OBJ: mahal + duvar kutu mesh (3D görüntüleyiciler için). .e4bina: M50 ortak bina geometrisi — elektrik/akustik modülleri okur."
+                                   Foreground="#7890A2" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="3" BorderBrush="#1B2A36" BorderThickness="0,1,0,0" Background="#070C11" Padding="24,10">
+            <TextBlock Text="{Binding DurumMesaji}" Foreground="#9BAEBB" FontSize="12"/>
+        </Border>
+    </Grid>
+</Window>

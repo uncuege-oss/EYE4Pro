@@ -1,0 +1,331 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Kst.Acoustics.App.ViewModels"
+        xmlns:ctrl="using:Kst.Acoustics.App.Controls"
+        x:Class="Kst.Acoustics.App.Views.RoomModesWindow"
+        x:DataType="vm:RoomModesViewModel"
+        Title="Oda Modları Hesabı"
+        Width="1100" Height="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F172A"
+        RequestedThemeVariant="Dark">
+
+    <Grid ColumnDefinitions="260, *">
+        <!-- SOL PANEL: GİRİŞ -->
+        <Border Grid.Column="0" Background="#1E293B" BorderBrush="#334155" BorderThickness="0,0,1,0">
+            <ScrollViewer>
+                <StackPanel Spacing="15" Margin="20">
+                    <Button Command="{Binding CloseCommand}" 
+                            Background="Transparent" BorderBrush="#334155" BorderThickness="1" 
+                            Padding="8" Margin="0,0,0,10" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Path Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" 
+                                  Fill="#EF4444" Stretch="Uniform" Width="14" Height="14"/>
+                            <TextBlock Text="Geri" Foreground="#EF4444" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <TextBlock Text="ODA PARAMETRELERİ" FontWeight="Bold" Foreground="#C49BE4" FontSize="14"/>
+                    
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Uzunluk (Lx) [m]" Foreground="#94A3B8" FontSize="12"/>
+                        <NumericUpDown Value="{Binding LengthX}" Minimum="0.1" Maximum="100" Increment="0.1" FormatString="0.00"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Genişlik (Ly) [m]" Foreground="#94A3B8" FontSize="12"/>
+                        <NumericUpDown Value="{Binding LengthY}" Minimum="0.1" Maximum="100" Increment="0.1" FormatString="0.00"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Yükseklik (Lz) [m]" Foreground="#94A3B8" FontSize="12"/>
+                        <NumericUpDown Value="{Binding LengthZ}" Minimum="0.1" Maximum="100" Increment="0.1" FormatString="0.00"/>
+                    </StackPanel>
+
+                    <Separator Background="#334155"/>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Sıcaklık [°C]" Foreground="#94A3B8" FontSize="12"/>
+                        <NumericUpDown Value="{Binding Temperature}" Minimum="-50" Maximum="100" Increment="0.5" FormatString="0.0"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Maks. Frekans [Hz]" Foreground="#94A3B8" FontSize="12"/>
+                        <NumericUpDown Value="{Binding MaxFrequency}" Minimum="50" Maximum="2000" Increment="10" FormatString="0"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="RT60 (opsiyonel) [s]" Foreground="#94A3B8" FontSize="12"/>
+                        <NumericUpDown Value="{Binding Rt60}" Minimum="0" Maximum="10" Increment="0.1" FormatString="0.00"/>
+                    </StackPanel>
+
+                    <Button Content="HESAPLA" 
+                            Command="{Binding CalculateCommand}"
+                            HorizontalAlignment="Stretch" 
+                            HorizontalContentAlignment="Center"
+                            Background="#C49BE4" 
+                            Foreground="Black" 
+                            FontWeight="Bold" 
+                            Padding="12"
+                            Margin="0,10,0,0"/>
+
+	                    <Border CornerRadius="8" Padding="15" Background="#0F172A" Margin="0,20,0,0">
+	                        <StackPanel Spacing="8">
+	                            <TextBlock Text="ODA ORAN ANALİZİ" FontWeight="Bold" Foreground="#C49BE4" FontSize="12"/>
+                            <TextBlock Text="{Binding Result.RatioAnalysis}" 
+                                       Foreground="#E2E8F0" 
+                                       FontSize="11" 
+                                       TextWrapping="Wrap"/>
+	                        </StackPanel>
+	                    </Border>
+
+	                    <Border CornerRadius="8" Padding="12" Background="#172033">
+	                        <TextBlock Text="{Binding StatusMessage}"
+	                                   Foreground="#F5A623"
+	                                   FontSize="11"
+	                                   TextWrapping="Wrap"/>
+	                    </Border>
+
+                    <!-- New Logo at the bottom -->
+                    <Border Margin="0,30,0,0" Width="160" Height="44" CornerRadius="6" Background="#F5F8FB" BorderBrush="#DCE7EF" BorderThickness="1" Padding="8,4" HorizontalAlignment="Center">
+                        <Grid ColumnDefinitions="40,*" ColumnSpacing="8">
+                            <Grid Width="40" Height="32">
+                                <Ellipse Width="34" Height="22" Stroke="#0B547B" StrokeThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="20" Height="20" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Path Data="M10,16 L14,16 M18,11 L18,21 M22,8 L22,24 M26,12 L26,20 M30,16 L34,16"
+                                      Stroke="#0A4C72"
+                                      StrokeThickness="1.5"/>
+                            </Grid>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                                <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="12" FontWeight="Bold"/>
+                                <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="8" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <TabControl Grid.Column="1" Margin="14">
+            <TabItem Header="Oda Modları">
+                <Grid ColumnDefinitions="*,350">
+                    <!-- ORTA PANEL: TABLO VE SPEKTRUM -->
+                    <Grid Grid.Column="0" RowDefinitions="Auto,*">
+                        <Border Grid.Row="0" Margin="6,6,14,14" Background="#1E293B" CornerRadius="8" Padding="15">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="SONUÇ ÖZETİ" FontWeight="Bold" Foreground="#94A3B8" FontSize="12"/>
+                                <UniformGrid Columns="3">
+                                    <StackPanel>
+                                        <TextBlock Text="Ses Hızı" Foreground="#64748B" FontSize="10"/>
+                                        <TextBlock Text="{Binding Result.SpeedOfSound, StringFormat='{}{0} m/s'}" Foreground="White" FontSize="16" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Schroeder Frekansı" Foreground="#64748B" FontSize="10"/>
+                                        <TextBlock Text="{Binding Result.SchroederFrequency, StringFormat='{}{0} Hz', TargetNullValue='—'}" Foreground="#C49BE4" FontSize="16" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Result.EffectiveRT60, StringFormat='RT60: {0:F2} s'}" Foreground="#64748B" FontSize="10"/>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Toplam Mod Sayısı" Foreground="#64748B" FontSize="10"/>
+                                        <TextBlock Text="{Binding Result.Modes.Count}" Foreground="White" FontSize="16" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <DataGrid Grid.Row="1"
+                                  Margin="6,0,14,6"
+                                  ItemsSource="{Binding Result.Modes}"
+                                  SelectedItem="{Binding SelectedMode}"
+                                  IsReadOnly="True"
+                                  CanUserResizeColumns="True"
+                                  BorderThickness="1"
+                                  BorderBrush="#334155"
+                                  Background="#1E293B">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Frekans (Hz)" Binding="{Binding Frequency}" Width="100"/>
+                                <DataGridTextColumn Header="nx, ny, nz" Binding="{Binding Indices}" Width="100"/>
+                                <DataGridTextColumn Header="Mod Tipi" Binding="{Binding Type}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+
+                    <!-- SAĞ PANEL: 3D BASINÇ HARİTASI -->
+                    <Border Grid.Column="1" Background="#1E293B" BorderBrush="#334155" BorderThickness="1,0,0,0">
+                        <Grid RowDefinitions="*,Auto">
+                            <ctrl:RoomModePressureControl Grid.Row="0"
+                                                        Points="{Binding PressurePoints}"
+                                                        RoomLengthX="{Binding LengthX}"
+                                                        RoomLengthY="{Binding LengthY}"
+                                                        RoomLengthZ="{Binding LengthZ}"/>
+
+                            <Border Grid.Row="1" Background="#0F172A" Padding="20" BorderBrush="#334155" BorderThickness="0,1,0,0">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="SEÇİLİ MOD DETAYI" FontWeight="Bold" Foreground="#C49BE4" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedMode.Frequency, StringFormat='{}{0} Hz'}" Foreground="White" FontSize="18" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding SelectedMode.Type}" Foreground="#94A3B8"/>
+                                    <TextBlock Text="{Binding SelectedMode.Indices}" Foreground="#64748B" FontSize="14"/>
+
+                                    <TextBlock Text="Orbit kamera için sağ tıkla döndür, tekerlek ile yakınlaş."
+                                               Foreground="#475569"
+                                               FontSize="10"
+                                               FontStyle="Italic"
+                                               Margin="0,10,0,0"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Difüzör Tasarımı">
+                <Grid ColumnDefinitions="320,*" RowDefinitions="*">
+                    <Border Grid.Column="0" Margin="6,6,14,6" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="16">
+                        <ScrollViewer>
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="DİFÜZÖR PARAMETRELERİ" FontWeight="Bold" Foreground="#C49BE4" FontSize="14"/>
+
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="Hedef Frekans [Hz]" Foreground="#94A3B8" FontSize="12"/>
+                                    <NumericUpDown Value="{Binding DiffuserTargetFrequency}" Minimum="40" Maximum="4000" Increment="5" FormatString="0"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="Asal Sıra (7, 11, 13, 17)" Foreground="#94A3B8" FontSize="12"/>
+                                    <NumericUpDown Value="{Binding DiffuserPrimeOrder}" Minimum="7" Maximum="17" Increment="2" FormatString="0"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="Kuyu/Hücre Genişliği [mm]" Foreground="#94A3B8" FontSize="12"/>
+                                    <NumericUpDown Value="{Binding DiffuserWellWidthMm}" Minimum="20" Maximum="300" Increment="5" FormatString="0"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="Panel Yüksekliği [mm]" Foreground="#94A3B8" FontSize="12"/>
+                                    <NumericUpDown Value="{Binding DiffuserPanelHeightMm}" Minimum="200" Maximum="3000" Increment="50" FormatString="0"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="Maks. Derinlik [mm]" Foreground="#94A3B8" FontSize="12"/>
+                                    <NumericUpDown Value="{Binding DiffuserMaxDepthMm}" Minimum="40" Maximum="1000" Increment="10" FormatString="0"/>
+                                </StackPanel>
+
+                                <Button Content="DİFÜZÖRÜ HESAPLA"
+                                        Command="{Binding CalculateDiffuserCommand}"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Background="#C49BE4"
+                                        Foreground="Black"
+                                        FontWeight="Bold"
+                                        Padding="12"/>
+
+                                <Border CornerRadius="8" Padding="12" Background="#0F172A">
+                                    <StackPanel Spacing="7">
+                                        <TextBlock Text="UYGUNLUK" FontWeight="Bold" Foreground="#94A3B8" FontSize="12"/>
+                                        <TextBlock Text="{Binding DiffuserResult.SuitabilityText}" Foreground="#F5A623" FontSize="16" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding DiffuserResult.Recommendation}" Foreground="#CBD5E1" FontSize="11" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border CornerRadius="8" Padding="12" Background="#172033">
+                                    <TextBlock Text="{Binding DiffuserResult.WarningText}" Foreground="#F5A623" FontSize="11" TextWrapping="Wrap"/>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <TabControl Grid.Column="1" Margin="0,6,6,6">
+                        <TabItem Header="QRD 1D">
+                            <Grid RowDefinitions="Auto,260,*">
+                                <Border Grid.Row="0" Margin="0,0,0,14" Background="#1E293B" CornerRadius="8" Padding="15">
+                                    <UniformGrid Columns="4">
+                                        <StackPanel>
+                                            <TextBlock Text="Çalışma Bandı" Foreground="#64748B" FontSize="10"/>
+                                            <TextBlock Text="{Binding DiffuserResult.WorkingBandText}" Foreground="White" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Panel Ölçüsü" Foreground="#64748B" FontSize="10"/>
+                                            <TextBlock Text="{Binding DiffuserResult.PanelSizeText}" Foreground="White" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Kuyu Sayısı" Foreground="#64748B" FontSize="10"/>
+                                            <TextBlock Text="{Binding DiffuserResult.WellCount}" Foreground="#C49BE4" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Ort. Derinlik" Foreground="#64748B" FontSize="10"/>
+                                            <TextBlock Text="{Binding DiffuserResult.AverageDepthMm, StringFormat='{}{0:F0} mm'}" Foreground="White" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </UniformGrid>
+                                </Border>
+
+                                <Border Grid.Row="1" Margin="0,0,0,14" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="8">
+                                    <ctrl:QrdDiffuserPreviewControl Wells="{Binding DiffuserResult.Wells}"/>
+                                </Border>
+
+                                <DataGrid Grid.Row="2"
+                                          ItemsSource="{Binding DiffuserResult.Wells}"
+                                          IsReadOnly="True"
+                                          CanUserResizeColumns="True"
+                                          BorderThickness="1"
+                                          BorderBrush="#334155"
+                                          Background="#1E293B">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="#" Binding="{Binding Index}" Width="60"/>
+                                        <DataGridTextColumn Header="Kalıntı" Binding="{Binding Residue}" Width="90"/>
+                                        <DataGridTextColumn Header="Genişlik (mm)" Binding="{Binding WidthMm}" Width="120"/>
+                                        <DataGridTextColumn Header="Derinlik (mm)" Binding="{Binding DepthMm}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem Header="Skyline 2D">
+                            <Grid RowDefinitions="Auto,360,*">
+                                <Border Grid.Row="0" Margin="0,0,0,14" Background="#1E293B" CornerRadius="8" Padding="15">
+                                    <UniformGrid Columns="4">
+                                        <StackPanel>
+                                            <TextBlock Text="Çalışma Bandı" Foreground="#64748B" FontSize="10"/>
+                                            <TextBlock Text="{Binding SkylineResult.WorkingBandText}" Foreground="White" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Panel Ölçüsü" Foreground="#64748B" FontSize="10"/>
+                                            <TextBlock Text="{Binding SkylineResult.PanelSizeText}" Foreground="White" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Hücre Sayısı" Foreground="#64748B" FontSize="10"/>
+                                            <TextBlock Text="{Binding SkylineResult.CellCount}" Foreground="#C49BE4" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Ort. Derinlik" Foreground="#64748B" FontSize="10"/>
+                                            <TextBlock Text="{Binding SkylineResult.AverageDepthMm, StringFormat='{}{0:F0} mm'}" Foreground="White" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </UniformGrid>
+                                </Border>
+
+                                <Border Grid.Row="1" Margin="0,0,0,14" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="8">
+                                    <ctrl:SkylineDiffuserPreviewControl Cells="{Binding SkylineResult.Cells}"/>
+                                </Border>
+
+                                <DataGrid Grid.Row="2"
+                                          ItemsSource="{Binding SkylineResult.Cells}"
+                                          IsReadOnly="True"
+                                          CanUserResizeColumns="True"
+                                          BorderThickness="1"
+                                          BorderBrush="#334155"
+                                          Background="#1E293B">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Satır" Binding="{Binding Row}" Width="70"/>
+                                        <DataGridTextColumn Header="Sütun" Binding="{Binding Column}" Width="70"/>
+                                        <DataGridTextColumn Header="Kalıntı" Binding="{Binding Residue}" Width="90"/>
+                                        <DataGridTextColumn Header="Hücre (mm)" Binding="{Binding SizeMm}" Width="110"/>
+                                        <DataGridTextColumn Header="Derinlik (mm)" Binding="{Binding DepthMm}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

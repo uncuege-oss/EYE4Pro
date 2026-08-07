@@ -1,0 +1,15 @@
+[
+  { "Ad": "1 kVAr Monofaze",   "GucKVar": 1.0,   "FazTipi": "Monofaze", "GerilimV": 230 },
+  { "Ad": "2.5 kVAr Monofaze", "GucKVar": 2.5,   "FazTipi": "Monofaze", "GerilimV": 230 },
+  { "Ad": "5 kVAr Monofaze",   "GucKVar": 5.0,   "FazTipi": "Monofaze", "GerilimV": 230 },
+  { "Ad": "2.5 kVAr Trifaze",  "GucKVar": 2.5,   "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "5 kVAr Trifaze",    "GucKVar": 5.0,   "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "10 kVAr Trifaze",   "GucKVar": 10.0,  "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "15 kVAr Trifaze",   "GucKVar": 15.0,  "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "20 kVAr Trifaze",   "GucKVar": 20.0,  "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "25 kVAr Trifaze",   "GucKVar": 25.0,  "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "30 kVAr Trifaze",   "GucKVar": 30.0,  "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "50 kVAr Trifaze",   "GucKVar": 50.0,  "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "75 kVAr Trifaze",   "GucKVar": 75.0,  "FazTipi": "Trifaze",  "GerilimV": 400 },
+  { "Ad": "100 kVAr Trifaze",  "GucKVar": 100.0, "FazTipi": "Trifaze",  "GerilimV": 400 }
+]

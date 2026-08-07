@@ -1,0 +1,321 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.BasitProjeCiz.Views.MahalListesiWindow"
+        Width="1100" Height="640"
+        MinWidth="700" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="#081009"
+        Title="Mahal Listesi">
+
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+        <Style Selector="ToggleButton">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Foreground" Value="#DDEED2"/>
+            <Setter Property="Background" Value="#102010"/>
+            <Setter Property="BorderBrush" Value="#245424"/>
+        </Style>
+        <Style Selector="ToggleButton:checked">
+            <Setter Property="Background" Value="#2C5A1E"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#78A060"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel Margin="12">
+        <!-- Üst bar: kat filtresi + disiplin + kalem ekle -->
+        <Border DockPanel.Dock="Top" Background="#0A140B" BorderBrush="#1A3018"
+                BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Spacing="10"
+                        x:CompileBindings="False"
+                        IsEnabled="{Binding MahalDuzenlemeAktif}">
+                <TextBlock Classes="lbl" Text="Kat:"/>
+                <ComboBox x:Name="KatCombo" MinWidth="180"/>
+
+                <!-- M12/M16 kabuk ayrımı: disiplin sekmeleri yalnız tek modüllü
+                     eski yapıda görünürdü; modüle sabitlenince x:Name ile koddan gizlenir. -->
+                <Border x:Name="DisiplinAyirici1" Width="1" Background="#1A3018" Margin="6,0"/>
+
+                <ToggleButton x:Name="KuvvetliBtn" Content="Kuvvetli Akım" IsChecked="True"
+                              Click="Disiplin_OnClick"/>
+                <ToggleButton x:Name="ZayifBtn" Content="Zayıf Akım"
+                              Click="Disiplin_OnClick"/>
+
+                <Border x:Name="DisiplinAyirici2" Width="1" Background="#1A3018" Margin="6,0"/>
+
+                <TextBlock Classes="lbl" Text="Kalem ekle:"/>
+                <ComboBox x:Name="KalemCombo" MinWidth="180"/>
+                <Button Content="+ Ekle" Click="KalemEkle_OnClick"
+                        Background="#1E3A12" Foreground="#DDEED2" BorderBrush="#245424" BorderThickness="1"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Üretkenlik bandı: kopyala / akıllı doldur / şablon / oda arama -->
+        <Border DockPanel.Dock="Top" Background="#0A140B" BorderBrush="#1A3018"
+                BorderThickness="1" CornerRadius="6" Padding="10,7" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        x:CompileBindings="False"
+                        IsEnabled="{Binding MahalDuzenlemeAktif}">
+                <Button Content="⧉ Kattan Kopyala" Click="KattanKopyala_OnClick"
+                        ToolTip.Tip="Başka bir katın mahal listesini bu kata kopyalar. Odalar ADA göre eşleşir; sizin açtığınız hücreler ezilmez."
+                        FontSize="11"/>
+                <Button Content="✨ Akıllı Doldur" Click="AkilliDoldur_OnClick"
+                        Background="#1E3A12" Foreground="#DDEED2" BorderBrush="#245424" BorderThickness="1"
+                        ToolTip.Tip="Oda adlarından tipik kalem setini kurar (yatak odası, mutfak, banyo…). Mevcut aktif hücrelere dokunmaz."
+                        FontSize="11"/>
+                <Border Width="1" Background="#1A3018" Margin="4,0"/>
+                <Button Content="💾 Şablon Kaydet" Click="SablonKaydet_OnClick"
+                        ToolTip.Tip="Bu katın mahal listesini adlandırılmış şablon olarak saklar"
+                        FontSize="11"/>
+                <Button Content="Şablondan Yükle" Click="SablonYukle_OnClick"
+                        ToolTip.Tip="Kayıtlı bir şablonu bu kata uygular (oda adı eşlemeli)"
+                        FontSize="11"/>
+                <Border Width="1" Background="#1A3018" Margin="4,0"/>
+                <TextBlock Classes="lbl" Text="Oda ara:"/>
+                <TextBox x:Name="OdaAramaBox" Width="140" Height="26" FontSize="11"
+                         PlaceholderText="ad filtresi"
+                         TextChanged="OdaArama_TextChanged"/>
+                <TextBlock Classes="lbl" Text="Sırala:"/>
+                <ComboBox x:Name="OdaSiraCombo" Width="120" Height="26" FontSize="11"
+                          SelectedIndex="0" SelectionChanged="OdaSira_SelectionChanged">
+                    <ComboBoxItem Content="Tespit sırası"/>
+                    <ComboBoxItem Content="Ada göre"/>
+                    <ComboBoxItem Content="Alana göre"/>
+                </ComboBox>
+            </StackPanel>
+        </Border>
+
+        <!-- Seçili Özellikleri Paneli -->
+        <Border DockPanel.Dock="Bottom" Background="#0A140B" BorderBrush="#1A3018"
+                BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,10,0,0"
+                x:CompileBindings="False"
+                IsVisible="{Binding SeciliSatirAktif}">
+            <StackPanel Spacing="5">
+                
+                <!-- GENEL AYARLAR (Satır Seçiliyse) -->
+                <Grid ColumnDefinitions="Auto,10,Auto,10,Auto,10,Auto,10,Auto,10,Auto,*" VerticalAlignment="Center"
+                      IsVisible="{Binding $parent[Window].GenelAyarPaneliAktif}" DataContext="{Binding SeciliSatir}">
+                    <TextBlock Grid.Column="0" Text="GENEL Ayarlar (Tüm Odalar):" Classes="lbl" FontWeight="Bold" Foreground="#DDEED2"/>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="lbl" Text="Yerleşim Tipi:"/>
+                        <ComboBox ItemsSource="{Binding $parent[Window].YerlesimTipleri}"
+                                  SelectedItem="{Binding YerlesimTipi, Mode=TwoWay}"
+                                  SelectionChanged="AyarCombo_SelectionChanged"
+                                  Width="110" Height="26" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="lbl" Text="Montaj:"/>
+                        <ComboBox ItemsSource="{Binding $parent[Window].MontajTipleri}"
+                                  SelectedItem="{Binding MontajTipi, Mode=TwoWay}"
+                                  Width="100" Height="26" FontSize="11"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6"
+                                IsVisible="{Binding $parent[Window].GosterGenelAyarWatt}">
+                        <TextBlock Classes="lbl" Text="Güç (W):"/>
+                        <NumericUpDown Value="{Binding GelenGucW, Mode=TwoWay}"
+                                       Minimum="0" Maximum="100000" Increment="5"
+                                       FormatString="0 W" Width="110" Height="26" FontSize="11"
+                                       ToolTip.Tip="Tüm odalar için varsayılan güç. Oda-özel ayar varsa onu ezer."
+                                       ValueChanged="GelenGucWDegisti"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="lbl" Text="Grid X:"/>
+                        <NumericUpDown Value="{Binding GridAraligiM, Mode=TwoWay}"
+                                       Minimum="0.1" Maximum="50" Increment="0.5"
+                                       FormatString="0.0" Width="80" Height="26" FontSize="11"
+                                       ShowButtonSpinner="False"
+                                       LostFocus="GridAlanLostFocus"/>
+                        <TextBlock Classes="lbl" Text="m  Y:"/>
+                        <NumericUpDown Value="{Binding GridAraligiYM, Mode=TwoWay}"
+                                       Minimum="0.1" Maximum="50" Increment="0.5"
+                                       PlaceholderText="= X"
+                                       FormatString="0.0" Width="80" Height="26" FontSize="11"
+                                       ShowButtonSpinner="False"
+                                       ToolTip.Tip="Boş bırakılırsa X aralığı kullanılır (kare grid)"
+                                       LostFocus="GridAlanLostFocus"/>
+                        <TextBlock Classes="lbl" Text="m"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="lbl" Text="Duvar aralığı:"/>
+                        <NumericUpDown Value="{Binding DuvarAraligiM, Mode=TwoWay}"
+                                       Minimum="0.1" Maximum="50" Increment="0.5"
+                                       FormatString="0.0" Width="80" Height="26" FontSize="11"
+                                       ShowButtonSpinner="False"
+                                       LostFocus="GridAlanLostFocus"/>
+                        <TextBlock Classes="lbl" Text="m"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- ODA ÖZEL AYARLARI (Hücre Seçiliyse) -->
+                <StackPanel IsVisible="{Binding $parent[Window].OdaOzelPaneliAktif}"
+                            DataContext="{Binding SeciliHucreAyar}" Spacing="6">
+
+                    <!-- Başlık + Genel Ayarları Kullan checkbox -->
+                    <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding $parent[Window].SeciliOdaAd, StringFormat='{}ODA Özel ({0}):'}"
+                                   Classes="lbl" FontWeight="Bold" Foreground="#FFFFA0"/>
+                        <CheckBox Content="Genel Ayarları Kullan"
+                                  IsChecked="{Binding GenelAyarKullan}"
+                                  IsCheckedChanged="AyarCheckbox_Changed"
+                                  Foreground="#DDEED2" FontSize="11"/>
+                    </StackPanel>
+
+                    <!-- Manuel ayarlar — yalnız GenelAyarKullan kapalıyken görünür -->
+                    <StackPanel Orientation="Horizontal" Spacing="18"
+                                IsVisible="{Binding !GenelAyarKullan}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="lbl" Text="Yerleşim Tipi:"/>
+                            <ComboBox ItemsSource="{Binding $parent[Window].YerlesimTipleri}"
+                                      SelectedItem="{Binding YerlesimTipi, Mode=TwoWay}"
+                                      SelectionChanged="AyarCombo_SelectionChanged"
+                                      Width="110" Height="26" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="lbl" Text="Grid X:"/>
+                            <NumericUpDown Value="{Binding GridAraligiM, Mode=TwoWay}"
+                                           Minimum="0.1" Maximum="50" Increment="0.5"
+                                           FormatString="0.0" Width="80" Height="26" FontSize="11"
+                                           ShowButtonSpinner="False"
+                                           LostFocus="GridAlanLostFocus"/>
+                            <TextBlock Classes="lbl" Text="m  Y:"/>
+                            <NumericUpDown Value="{Binding GridAraligiYM, Mode=TwoWay}"
+                                           Minimum="0.1" Maximum="50" Increment="0.5"
+                                           PlaceholderText="= X"
+                                           FormatString="0.0" Width="80" Height="26" FontSize="11"
+                                           ShowButtonSpinner="False"
+                                           ToolTip.Tip="Boş bırakılırsa X aralığı kullanılır (kare grid)"
+                                           LostFocus="GridAlanLostFocus"/>
+                            <TextBlock Classes="lbl" Text="m"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="lbl" Text="Duvar aralığı:"/>
+                            <NumericUpDown Value="{Binding DuvarAraligiM, Mode=TwoWay}"
+                                           Minimum="0.1" Maximum="50" Increment="0.5"
+                                           FormatString="0.0" Width="80" Height="26" FontSize="11"
+                                           ShowButtonSpinner="False"
+                                           LostFocus="GridAlanLostFocus"/>
+                            <TextBlock Classes="lbl" Text="m"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Adet alanı — Adet modunda görünür -->
+                    <StackPanel Orientation="Horizontal" Spacing="10"
+                                IsVisible="{Binding $parent[Window].EfektifAdetModu}">
+                        <TextBlock Classes="lbl" Text="Adet:"/>
+                        <NumericUpDown Value="{Binding Adet, Mode=TwoWay}"
+                                       Minimum="0" Maximum="9999" Increment="1"
+                                       Width="100" Height="26" FontSize="11"
+                                       ValueChanged="AdetDegisti"/>
+                    </StackPanel>
+
+                    <!-- Oda-özel eleman özellikleri -->
+                    <Border Height="1" Background="#1A3018" Margin="0,2"/>
+                    <TextBlock Classes="lbl" Text="Bu odadaki elemanların özellikleri:" FontWeight="Bold" Foreground="#DDEED2"/>
+                    <StackPanel Orientation="Horizontal" Spacing="18">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="lbl" Text="İsim:"/>
+                            <TextBox Text="{Binding OzelAd, Mode=TwoWay}"
+                                     PlaceholderText="(varsayılan)" Width="160" Height="26" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6"
+                                    IsVisible="{Binding $parent[Window].GosterHucreWatt}">
+                            <TextBlock Classes="lbl" Text="Güç (W):"/>
+                            <NumericUpDown Value="{Binding OzelGucW, Mode=TwoWay}"
+                                           Minimum="0" Maximum="100000" Increment="5"
+                                           FormatString="0 W" Width="110" Height="26" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6"
+                                    IsVisible="{Binding $parent[Window].GosterHucreCihazAdet}">
+                            <TextBlock Classes="lbl" Text="Cihaz adedi:"/>
+                            <NumericUpDown Value="{Binding OzelCihazAdet, Mode=TwoWay}"
+                                           Minimum="1" Maximum="999" Increment="1"
+                                           FormatString="0" Width="90" Height="26" FontSize="11"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="18">
+                        <StackPanel Orientation="Horizontal" Spacing="6"
+                                    IsVisible="{Binding $parent[Window].GosterHucreKombinePriz}">
+                            <TextBlock Classes="lbl" Text="Monofaze:"/>
+                            <NumericUpDown Value="{Binding OzelMonofazeAdet, Mode=TwoWay}"
+                                           Minimum="0" Maximum="99" Increment="1"
+                                           FormatString="0" Width="90" Height="26" FontSize="11"/>
+                            <TextBlock Classes="lbl" Text="Trifaze:"/>
+                            <NumericUpDown Value="{Binding OzelTrifazeAdet, Mode=TwoWay}"
+                                           Minimum="0" Maximum="99" Increment="1"
+                                           FormatString="0" Width="90" Height="26" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6"
+                                    IsVisible="{Binding $parent[Window].GosterHucreMegapiksel}">
+                            <TextBlock Classes="lbl" Text="MP:"/>
+                            <NumericUpDown Value="{Binding OzelMegapiksel, Mode=TwoWay}"
+                                           Minimum="0.1" Maximum="200" Increment="0.5"
+                                           FormatString="0.0 MP" Width="100" Height="26" FontSize="11"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Sensör: yalnız armatür satırlarında ve genel ayar kullanılmıyorken.
+                         Her armatüre ayrı sensör eklenir ve armatürler duvar anahtarı yerine
+                         doğrudan oda buatına bağlanır. -->
+                    <StackPanel IsVisible="{Binding $parent[Window].GosterHucreSensor}">
+                        <CheckBox Content="Sensör (her armatüre ayrı sensör, doğrudan buata)"
+                                  IsVisible="{Binding !GenelAyarKullan}"
+                                  IsChecked="{Binding $parent[Window].SeciliHucreSensorlu, Mode=TwoWay}"
+                                  Foreground="#DDEED2" FontSize="11"/>
+                    </StackPanel>
+
+                </StackPanel>
+
+            </StackPanel>
+        </Border>
+
+        <!-- Alt bar: yerleştir -->
+        <Border DockPanel.Dock="Bottom" Background="#0A140B" BorderBrush="#1A3018"
+                BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="12"
+                        x:CompileBindings="False"
+                        IsEnabled="{Binding MahalDuzenlemeAktif}">
+                <Button Content="🗺 Yerleştir" Click="OtomatikYerlestir_OnClick"
+                        Background="#1E4A12" Foreground="#DDEED2" BorderBrush="#2A6018" BorderThickness="1"
+                        ToolTip.Tip="Mahal listesindeki son duruma göre yerleştirir. Tablodaki değişiklikler ekrana yalnız bu butonla uygulanır."/>
+                <Button Content="🏢 Tüm Katlar" Click="TumKatlaraYerlestir_OnClick"
+                        ToolTip.Tip="Mahal listesi olan TÜM katlarda yerleştirmeyi çalıştırır (kat kat rapor verir)"
+                        FontSize="11"/>
+                <CheckBox x:Name="SadecaEksikleriCheck"
+                          Content="Sadece eksikleri ekle" IsChecked="False"
+                          Foreground="#78A060" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Classes="lbl" FontSize="10" VerticalAlignment="Center"
+                           Text="(işaretsiz = tam yenileme · işaretli = yalnız eksikler)"
+                           Foreground="#446634"/>
+                <Border Width="1" Background="#1A3018" Margin="4,0"/>
+                <TextBlock x:Name="KatOzetText" Classes="lbl" VerticalAlignment="Center"
+                           Foreground="#8FE0C8" FontWeight="SemiBold"
+                           ToolTip.Tip="Yerleştirme öncesi tahmin — Grid/Duvar hücrelerinde aday üreticiden hesaplanır"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Tablo (dinamik kurulur) — sol sütunlar sabit, odalar yatay kayar -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <Grid ColumnDefinitions="Auto,*">
+                <!-- Sabit sol: sil + malzeme adı -->
+                <Border x:Name="TabloHostSol" Grid.Column="0" Padding="2" VerticalAlignment="Top"
+                        Background="#081009"/>
+                <!-- Kaydırılabilir sağ: oda sütunları -->
+                <ScrollViewer x:Name="TabloYatayScroll" Grid.Column="1"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <Border x:Name="TabloHostSag" Padding="2" VerticalAlignment="Top"/>
+                </ScrollViewer>
+            </Grid>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

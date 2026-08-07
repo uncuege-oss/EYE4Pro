@@ -1,0 +1,169 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.Views.OrtaGerilimDialog"
+        Width="620" Height="760"
+        WindowStartupLocation="CenterOwner"
+        Background="#080F0A"
+        CanResize="False"
+        Title="Orta Gerilim / Trafo / Köşk">
+
+    <Window.Styles>
+        <Style Selector="TextBox, ComboBox">
+            <Setter Property="Background" Value="#0F1A0C"/>
+            <Setter Property="Foreground" Value="#E0F0D0"/>
+            <Setter Property="BorderBrush" Value="#2A4018"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="#A0C888"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="TextBlock.section">
+            <Setter Property="Foreground" Value="#E0A848"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,8,0,2"/>
+        </Style>
+        <Style Selector="Button.mini">
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Background" Value="#1A2A1A"/>
+            <Setter Property="Foreground" Value="#E0F0D0"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <TextBlock Grid.Row="0" x:Name="BaslikText" Text="🔌 Orta Gerilim Sistemi Ekle"
+                   Foreground="#E0A848" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="6">
+                <TextBlock Classes="label" Text="Beslenen Ana Pano:"/>
+                <TextBlock x:Name="AnaPanoText" Foreground="#E0F0D0" FontWeight="SemiBold"/>
+
+                <!-- KÖŞK -->
+                <TextBlock Classes="section" Text="Köşk / Trafo Merkezi"/>
+                <TextBlock Classes="label" Text="Köşk Tipi:"/>
+                <ComboBox x:Name="KoskTipiCombo" HorizontalAlignment="Stretch"/>
+
+                <!-- ŞEBEKE -->
+                <TextBlock Classes="section" Text="Şebeke (OG Besleme)"/>
+                <Grid ColumnDefinitions="*,*,*" >
+                    <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                        <TextBlock Classes="label" Text="OG Gerilim (kV):"/>
+                        <TextBox x:Name="OgGerilimBox" Text="34.5"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,6,0">
+                        <TextBlock Classes="label" Text="Kısa Devre (MVA):"/>
+                        <TextBox x:Name="SebekeMvaBox" Text="350"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Classes="label" Text="veya Ik (kA):"/>
+                        <TextBox x:Name="SebekeIkBox" Text="12.5"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- OG XLPE KABLOLARI -->
+                <TextBlock Classes="section" Text="OG XLPE Kabloları"/>
+                <Grid ColumnDefinitions="1.45*,*,*,*" ColumnSpacing="6">
+                    <TextBlock Grid.Column="0" Classes="label" Text="Segment"/>
+                    <TextBlock Grid.Column="1" Classes="label" Text="İletken"/>
+                    <TextBlock Grid.Column="2" Classes="label" Text="Kesit (mm²)"/>
+                    <TextBlock Grid.Column="3" Classes="label" Text="Metraj (m)"/>
+                </Grid>
+                <Grid ColumnDefinitions="1.45*,*,*,*" ColumnSpacing="6">
+                    <TextBlock Grid.Column="0" Text="Şebeke → Hücre" Foreground="#E0F0D0" VerticalAlignment="Center"/>
+                    <ComboBox Grid.Column="1" x:Name="SebekeHucreMalzemeCombo"/>
+                    <TextBox Grid.Column="2" x:Name="SebekeHucreKesitBox" Text="50"/>
+                    <TextBox Grid.Column="3" x:Name="SebekeHucreMesafeBox" Text="10"/>
+                </Grid>
+                <Grid ColumnDefinitions="1.45*,*,*,*" ColumnSpacing="6">
+                    <TextBlock Grid.Column="0" Text="Hücre → Trafo" Foreground="#E0F0D0" VerticalAlignment="Center"/>
+                    <ComboBox Grid.Column="1" x:Name="HucreTrafoMalzemeCombo"/>
+                    <TextBox Grid.Column="2" x:Name="HucreTrafoKesitBox" Text="50"/>
+                    <TextBox Grid.Column="3" x:Name="HucreTrafoMesafeBox" Text="10"/>
+                </Grid>
+
+                <!-- TRAFO -->
+                <TextBlock Classes="section" Text="Trafo"/>
+                <TextBlock Classes="label" Text="Trafo (boş = otomatik tayin):"/>
+                <ComboBox x:Name="TrafoCombo" HorizontalAlignment="Stretch"/>
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Classes="label" Text="Emniyet Faktörü:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Grid.Column="1" x:Name="EmniyetBox" Text="1.0" HorizontalAlignment="Left" Width="80"/>
+                </Grid>
+                <TextBlock Classes="label" Text="Trafo Katı (boş = en üstte / OG girişi):"/>
+                <ComboBox x:Name="TrafoKatCombo" HorizontalAlignment="Stretch"/>
+                <TextBlock x:Name="OnerilenTrafoText" Foreground="#7AA060" FontSize="11"/>
+
+                <!-- HÜCRELER -->
+                <TextBlock Classes="section" Text="OG Hücreleri (sıralı dizilim)"/>
+                <ListBox x:Name="HucreListe" Height="130" Background="#0C160C" BorderBrush="#2A4018" BorderThickness="1"
+                         Foreground="#E0F0D0">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Foreground" Value="#E0F0D0"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="Padding" Value="8,5"/>
+                        </Style>
+                        <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                            <Setter Property="Background" Value="#234A1A"/>
+                        </Style>
+                        <Style Selector="ListBoxItem:selected">
+                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                        </Style>
+                    </ListBox.Styles>
+                </ListBox>
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" >
+                    <ComboBox Grid.Column="0" x:Name="HucreEkleCombo" HorizontalAlignment="Stretch" Margin="0,0,6,0"/>
+                    <Button Grid.Column="1" Classes="mini" Content="+ Ekle" Click="HucreEkle_OnClick" Margin="0,0,6,0"/>
+                    <Button Grid.Column="2" Classes="mini" Content="↑" Click="HucreYukari_OnClick" Margin="0,0,4,0"/>
+                    <Button Grid.Column="3" Classes="mini" Content="↓" Click="HucreAsagi_OnClick" Margin="0,0,4,0"/>
+                    <Button Grid.Column="4" Classes="mini" Content="🗑" Click="HucreSil_OnClick" Background="#5A2018"/>
+                </Grid>
+
+                <!-- ÇIKIŞ BAĞLANTISI -->
+                <TextBlock Classes="section" Text="Trafo AG → Ana Pano Bağlantısı"/>
+                <Grid ColumnDefinitions="*,*">
+                    <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                        <TextBlock Classes="label" Text="Bağlantı Tipi:"/>
+                        <ComboBox x:Name="BaglantiTipiCombo" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Classes="label" Text="Referans (kablo/busbar):"/>
+                        <ComboBox x:Name="BaglantiReferansCombo" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*">
+                    <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                        <TextBlock Classes="label" Text="Uzunluk (m):"/>
+                        <TextBox x:Name="BaglantiUzunlukBox" Text="10"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Classes="label" Text="Minimum Paralel Kol:"/>
+                        <TextBox x:Name="ParalelKolBox" Text="1"/>
+                    </StackPanel>
+                </Grid>
+
+                <Button x:Name="KoskYerlesimBtn" Content="🏭 Köşk Yerleşimini Göster" Margin="0,8,0,0"
+                        Padding="12,6" Background="#1A2A3A" Foreground="#A0C0E0" Click="KoskYerlesim_OnClick"/>
+
+                <!-- ÖZET -->
+                <Border Background="#0E1A12" CornerRadius="4" Padding="8" Margin="0,8,0,0">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="Özet" Foreground="#E0A848" FontWeight="SemiBold" FontSize="11"/>
+                        <TextBlock x:Name="OzetText" Foreground="#C0D8B0" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+            <Button Grid.Column="0" x:Name="SilButton" Content="🗑 Sil" Padding="14,6"
+                    Background="#7A2018" Foreground="White" IsVisible="False" Click="Sil_OnClick"/>
+            <Button Grid.Column="1" Content="İptal" Padding="14,6" Background="#1A2A1A" Foreground="#E0F0D0"
+                    Margin="0,0,8,0" Click="Iptal_OnClick"/>
+            <Button Grid.Column="2" x:Name="KaydetButton" Content="Ekle" Padding="14,6" Background="#3A7A18" Foreground="White"
+                    Click="Kaydet_OnClick"/>
+        </Grid>
+    </Grid>
+</Window>
