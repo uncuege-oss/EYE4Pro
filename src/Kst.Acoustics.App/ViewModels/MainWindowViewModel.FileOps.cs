@@ -192,7 +192,11 @@ public partial class MainWindowViewModel
                 [
                     new FilePickerFileType("EYE4PRO M01 Proje Dosyaları")
                     {
-                        Patterns = ["*.e4p01"]
+                        Patterns = ["*.e4p01", "*.e4pkg"]
+                    },
+                    new FilePickerFileType("EYE4PRO Taşınabilir Proje Paketi")
+                    {
+                        Patterns = ["*.e4pkg"]
                     },
                     new FilePickerFileType("JSON Dosyaları")
                     {
@@ -224,16 +228,32 @@ public partial class MainWindowViewModel
         try
         {
             StatusMessage = "Proje açılıyor...";
-            var loadResult = await _projectFileService.LoadWithStatusAsync(path);
+            var isPackage = string.Equals(Path.GetExtension(path), ".e4pkg", StringComparison.OrdinalIgnoreCase);
+            ProjectLoadResult loadResult;
+            if (isPackage)
+            {
+                var package = await _projectPackageService.LoadProjectAsync(path);
+                var libraryNote = ImportMissingPackageLibraries(package);
+                loadResult = new ProjectLoadResult(
+                    package.Project,
+                    false,
+                    [$"Taşınabilir paket doğrulandı ve açıldı.{libraryNote}"]);
+            }
+            else
+            {
+                loadResult = await _projectFileService.LoadWithStatusAsync(path);
+            }
             var project = loadResult.Project;
             ApplyProject(
                 project,
                 project.ImportFormat,
-                markDirty: loadResult.RecoveredFromBackup,
-                savedProjectPath: path,
+                markDirty: isPackage || loadResult.RecoveredFromBackup,
+                savedProjectPath: isPackage ? null : path,
                 recoveredFromBackup: loadResult.RecoveredFromBackup);
             ApplySessionWarnings(loadResult.SessionWarnings);
-            StatusMessage = loadResult.RecoveredFromBackup
+            StatusMessage = isPackage
+                ? "Taşınabilir paket açıldı. Çalışma kopyasını .e4p01 olarak kaydedin."
+                : loadResult.RecoveredFromBackup
                 ? "Proje son sağlam yedekten kurtarıldı. İçeriği doğrulayıp yeniden kaydedin."
                 : SalonRevizyonNotu(project) is { } not
                     ? $"Proje açıldı. {not}"
@@ -246,6 +266,29 @@ public partial class MainWindowViewModel
             System.Console.Error.WriteLine($"[Project Load Error] {ex}");
             System.Diagnostics.Debug.WriteLine($"Project Load Error: {ex}");
         }
+    }
+
+    private static string ImportMissingPackageLibraries(ProjectPackageLoadResult package)
+    {
+        var materialCount = 0;
+        foreach (var material in package.Materials)
+        {
+            if (MaterialDatabase.Instance.FindById(material.Id) is null &&
+                MaterialDatabase.Instance.Add(material))
+                materialCount++;
+        }
+
+        var loudspeakerCount = 0;
+        foreach (var loudspeaker in package.Loudspeakers)
+        {
+            if (LoudspeakerDatabase.Instance.FindById(loudspeaker.Id) is null &&
+                LoudspeakerDatabase.Instance.Add(loudspeaker))
+                loudspeakerCount++;
+        }
+
+        return materialCount + loudspeakerCount == 0
+            ? string.Empty
+            : $" {materialCount} materyal ve {loudspeakerCount} hoparlör tanımı yerel kütüphaneye eklendi.";
     }
 
     private static string BuildLoadErrorMessage(Exception ex) => ex switch
@@ -309,19 +352,41 @@ public partial class MainWindowViewModel
         try
         {
             StatusMessage = "Salon yükleniyor...";
-            var (project, uyarilar) = await Task.Run(() =>
+            var mevcutProje = _currentProject is null ? null : BuildProjectSnapshot();
+            var kayitliProjeYolu = _savedProjectPath;
+            var oncekiKaynakYolu = mevcutProje?.SourceFilePath;
+            var kaynakDegisti = mevcutProje?.ImportFormat == SurfaceImportFormat.Salon &&
+                !string.IsNullOrWhiteSpace(oncekiKaynakYolu) &&
+                !PathEquals(path, oncekiKaynakYolu);
+
+            var (yeniGeometri, uyarilar) = await Task.Run(() =>
             {
                 var salon = Kst.Acoustics.Core.Salon.Services.SalonGeometriServisi.Ac(path);
                 return (Kst.Acoustics.Core.Salon.Services.SalonImporter.Cevir(salon, path),
                         Kst.Acoustics.Core.Salon.Services.SalonDogrulamaServisi.Dogrula(salon));
             });
-            project = project with { ImportWarnings = uyarilar.ToArray() };
-            SelectedFilePath = path;
-            ApplyProject(project, project.ImportFormat, markDirty: true, savedProjectPath: null);
-            SetImportWarnings(uyarilar);
-            StatusMessage = $"Salon yüklendi: {project.Surfaces.Count} yüzey · hacim ≈ {project.RoomVolume:N0} m³"
-                + (uyarilar.Count > 0
-                    ? $" · Uyarı: {uyarilar.Count} geometri sorunu — M51'de 'Kontrol' çalıştırın"
+            yeniGeometri = yeniGeometri with { ImportWarnings = uyarilar.ToArray() };
+            var project = mevcutProje is null
+                ? yeniGeometri
+                : Kst.Acoustics.Core.Salon.Services.SalonImporter.GeometriyiGuncelle(
+                    mevcutProje,
+                    yeniGeometri);
+
+            ApplyProject(
+                project,
+                project.ImportFormat,
+                markDirty: true,
+                savedProjectPath: mevcutProje is null ? null : kayitliProjeYolu);
+            SetImportWarnings(project.ImportWarnings);
+
+            var action = mevcutProje is null ? "yüklendi" : "güncellendi";
+            StatusMessage = $"Salon {action}: {project.Surfaces.Count} yüzey · hacim ≈ {project.RoomVolume:N0} m³"
+                + (mevcutProje is null
+                    ? ""
+                    : " · M01 malzemeleri, kaynak/alıcılar ve akustik ayarlar korundu")
+                + (kaynakDegisti ? " · Bağlı M51 kaynak dosyası değiştirildi" : "")
+                + (project.ImportWarnings.Count > 0
+                    ? $" · Uyarı: {project.ImportWarnings.Count} not — ayrıntılar için uyarı paneline bakın"
                     : "");
         }
         catch (Exception ex)
@@ -335,9 +400,13 @@ public partial class MainWindowViewModel
     private static string? SalonRevizyonNotu(AcousticsProject project)
     {
         if (project.ImportFormat != SurfaceImportFormat.Salon) return null;
-        if (project.KaynakGeometriRevizyon is not int rev) return null;
         var yol = project.SourceFilePath;
-        if (string.IsNullOrWhiteSpace(yol) || !File.Exists(yol)) return null;
+        if (string.IsNullOrWhiteSpace(yol))
+            return "Uyarı: Bağlı M51 kaynak dosyası yolu projede kayıtlı değil.";
+        if (project.KaynakGeometriRevizyon is not int rev)
+            return "Uyarı: Bağlı M51 kaynağının revizyon bilgisi projede kayıtlı değil; geometri güncelliği doğrulanamadı.";
+        if (!File.Exists(yol))
+            return $"Uyarı: Bağlı M51 kaynak dosyası bulunamadı ({Path.GetFileName(yol)}); taşınmış veya silinmiş olabilir.";
         try
         {
             int guncel = Kst.Acoustics.Core.Salon.Services.SalonGeometriServisi.Ac(yol).GeometriRevizyon;
@@ -347,7 +416,7 @@ public partial class MainWindowViewModel
         }
         catch
         {
-            return null; // kaynak okunamadıysa uyarı üretme
+            return $"Uyarı: Bağlı M51 kaynak dosyası okunamadı ({Path.GetFileName(yol)}); geometri güncelliği doğrulanamadı.";
         }
     }
 

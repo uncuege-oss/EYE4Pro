@@ -21,8 +21,7 @@ public static class SalonPoligonServisi
     public static List<List<Point2D>> BasitPoligonlaraAyir(List<List<Point2D>> halkalar)
     {
         var mevcut = halkalar.Where(h => h.Count >= 3).ToList();
-        int koruma = 0;
-        while (koruma++ < 32)
+        while (true)
         {
             var delik = mevcut.FirstOrDefault(h => ClipperAdaptor.IsaretliAlan(h) < 0);
             if (delik is null) break;
@@ -36,12 +35,11 @@ public static class SalonPoligonServisi
                 new(x - SeritYarimM, y0), new(x + SeritYarimM, y0),
                 new(x + SeritYarimM, y1), new(x - SeritYarimM, y1)
             };
+            int oncekiDelikSayisi = mevcut.Count(h => ClipperAdaptor.IsaretliAlan(h) < 0);
             var yeni = ClipperAdaptor.Fark(mevcut, new[] { serit });
 
             // Şerit deliği bölemiyorsa (dejenere durum) sonsuz döngüye girme.
-            if (yeni.Count == mevcut.Count &&
-                yeni.Count(h => ClipperAdaptor.IsaretliAlan(h) < 0)
-                    == mevcut.Count(h => ClipperAdaptor.IsaretliAlan(h) < 0))
+            if (yeni.Count(h => ClipperAdaptor.IsaretliAlan(h) < 0) >= oncekiDelikSayisi)
                 break;
             mevcut = yeni;
         }

@@ -15,7 +15,7 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="Sürükle = döndür · tekerlek = yakınlaştır"
                                Foreground="#26506A" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <Button Click="Kapat_OnClick"
+                    <Button Click="Kapat_OnClick" IsCancel="True" AutomationProperties.Name="3D önizlemeyi kapat"
                             Background="#0D2535" BorderBrush="#1A5070" Foreground="#C8E4F4"
                             FontSize="12" Padding="12,5" Content="Kapat"/>
                 </StackPanel>
@@ -25,6 +25,7 @@
         <controls:GeometryPreviewControl x:Name="Onizleme3D"
                                          Grid.Row="1"
                                          Projection="Isometric3D"
+                                         AutomationProperties.Name="Salon üç boyutlu önizleme alanı"
                                          UnitLabel="m"/>
     </Grid>
 </Window>

@@ -9,7 +9,7 @@ public class BinaProje
 {
     /// <summary>M08 proje belgesi için kalıcı biçim kimliği.</summary>
     public const string CurrentModuleId = "M08";
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     /// <summary>
     /// Dosyanın hangi modüle ait olduğunu doğrulamak için kullanılır. Başka bir modülün
@@ -84,4 +84,29 @@ public class BinaProje
 
     // Dış gürültü kaynakları
     public List<DisGurultuKaynagi> DisGurultuKaynaklari { get; set; } = new();
+
+    // ── Profesyonel proje iş akışı (şema v3) ─────────────────────────────
+    /// <summary>Kalıcı tasarım senaryoları; geometriyi kopyalamak yerine typed değişiklikleri taşır.</summary>
+    public List<AkustikSenaryo> Senaryolar { get; set; } = new();
+    public Guid? AktifSenaryoId { get; set; }
+
+    /// <summary>Hesap/rapor/ölçüm/revizyon onay geçmişi.</summary>
+    public List<ProjeOnayKaydi> OnayKayitlari { get; set; } = new();
+
+    /// <summary>Kullanıcıya gösterilebilir kalıcı denetim izi.</summary>
+    public List<DenetimKaydi> DenetimKayitlari { get; set; } = new();
+
+    /// <summary>Model sonuçlarını ezmeden saklanan saha doğrulama ölçümleri.</summary>
+    public List<SahaOlcumKaydi> SahaOlcumleri { get; set; } = new();
+
+    /// <summary>Belge türü, revizyon, kapsam eşiği ve imza/yetki alanları.</summary>
+    public M08RaporAyarlari RaporAyarlari { get; set; } = new();
+
+    /// <summary>Rapordan çıkarılan sonuçların gerekçe ve tarihleriyle kalıcı kapsam kaydı.</summary>
+    public List<M08RaporKapsamDisiKaydi> RaporKapsamDisiKayitlari { get; set; } = new();
+
+    /// <summary>Otomatik iş kalemlerinin kullanıcı durum/not/sorumlu katmanı.</summary>
+    public List<AkustikGorevKaydi> GorevDurumlari { get; set; } = new();
+
+    public AkustikMetrajAyar MetrajAyarlari { get; set; } = new();
 }

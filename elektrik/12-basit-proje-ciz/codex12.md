@@ -581,3 +581,29 @@ sadeleştirme + rakam/noktalama atma) — katlar arası Id farklı olduğu için
   buat-pano bağlantısı/kablosu da kaldırılır; çizilemeyen rota başarı mesajı üretmez.
 - 10 yeni M12 güvenilirlik regresyonu eklendi. Tam koşucu: **709 geçti**;
   Core koşucusu: **121 geçti**; çözüm derlemesi: 0 hata / 0 uyarı.
+
+## 22. 2026-08-07 — M50 sidecar karar/uygulama notu
+
+- Kat, oda, açıklık, kat yüksekliği ve DXF tabanı M50'nin sahipliğindedir. M12 bunları
+  `.e4bina.json` üzerinden **salt-okunur** tüketir; canvas geometri mutasyonları ve kat/oda/
+  açıklık düzenleme eylemleri kaldırılmış veya M50'ye yönlendirilmiştir. Elektrik elemanı,
+  devre, kablo, tava, topraklama ve mahal verisi M12'de düzenlenmeye devam eder.
+- Bağlantı `BinaGeometriYolu` + revizyon damgası + gömülü kopyadır. Kaydedilmiş projede
+  sidecar yolu `.e4p12` dizinine göre göreli saklanır/açılır; Farklı Kaydet yeni konuma göre
+  yeniden göreli yol üretir.
+- Durum rozeti eşit revizyonda `Güncel`, sidecar daha yeniyse `Bayat`, yol/dosya yoksa
+  `Dosya Yok`, sidecar gömülü/proje revizyonundan eskiyse `Dosya geri revizyonda`, dosya
+  ayrıştırılamazsa `Dosya okunamıyor` gösterir. Geri revizyon, eksik dosya ve okuma hatasında
+  varsa gömülü kopya kurtarma kaynağıdır.
+- `M50'de Düzenle` bağlı sidecar'ı M50'de açar; M12 açık kalır. M50 kapanınca durum yenilenir
+  ve revizyon açılıştakinden farklıysa mutabakat akışı üzerinden otomatik yeniden yüklenir;
+  revizyon değişmediyse proje gereksiz yere kirletilmez.
+- İçe aktarım atomiktir: dosya önce okunur ve askıda kalacak elektrik bağları için mutabakat
+  gösterilir; kat/oda kimlikleri mutasyondan önce doğrulanır; import derin aday proje üzerinde
+  çalışır ve yalnız tamamen başarılı olursa canlı proje tek seferde değiştirilir. Hata/iptal
+  canlı projeyi değiştirmez. Eşleşen kimliklerde M12 verileri ve oda bayrakları korunur;
+  M50'de artık bulunmayan kat elektrik verisi taşıyorsa silinmez, uyarıyla korunur.
+- `Gömülü Kurtar` seçilen yeni sidecar'ı yazıp bağlar. Eski bağlantısız `.e4p12` migrasyonu
+  yalnız kaynak artifact kimliği eşleşen mevcut sidecar'ı kullanır; yabancı, bozuk veya yarım
+  dosyanın üzerine yazmaz, benzersiz güvenli dosya üretir. Migrasyon normal Kaydet ile
+  kalıcılaşır; M12 proje kaydı ayrıca `.tmp` + `Replace/Move` ile atomik yazılır.

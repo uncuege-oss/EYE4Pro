@@ -6,6 +6,7 @@ using Kst.Acoustics.App.Architecture.KonseptPlan.Views;
 using Kst.Acoustics.App.Architecture.Materials.Views;
 using Kst.Acoustics.App.Architecture.Model3D.Views;
 using Kst.Acoustics.App.Architecture.Reports.Views;
+using Kst.Acoustics.App.Bina.Views;
 using Kst.Acoustics.App.Views;
 
 namespace Kst.Acoustics.App.Architecture.Views;
@@ -50,6 +51,9 @@ public partial class ArchitectureLauncherWindow : Window
 
     private void OpenKonseptPlan_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         OpenWindowOnSameScreen(new KonseptPlanWindow(() => new ArchitectureLauncherWindow()));
+
+    private void OpenBinaGeometrisi_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        OpenWindowOnSameScreen(new BinaGeometriWindow(() => new ArchitectureLauncherWindow()));
 
     private void OpenModel3D_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         OpenWindowOnSameScreen(new Model3DWindow(() => new ArchitectureLauncherWindow()));

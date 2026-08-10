@@ -20,8 +20,12 @@ public static class SalonBalkonServisi
     /// 3D yüzeyler. <paramref name="kabuk"/> verilirse döşeme/soffit kabuk içine
     /// kırpılır; saçak/parapet kenarları kabuk içinde kalan alt aralıklara bölünür.
     public static List<ProjectSurface> Yuzeyler(
-        BalkonGeometri b, ref int id, List<List<Point2D>>? kabuk = null)
+        BalkonGeometri b, ref int id, List<List<Point2D>>? kabuk = null,
+        string balkonKategori = "Balkon")
     {
+        balkonKategori = string.IsNullOrWhiteSpace(balkonKategori) ? "Balkon" : balkonKategori;
+        string altKategori = balkonKategori + "-Alt";
+        string parapetKategori = balkonKategori + "-Parapet";
         var surfaces = new List<ProjectSurface>();
         var poly = Footprint(b);
         double zDoseme = b.TabanKotuM;
@@ -29,23 +33,23 @@ public static class SalonBalkonServisi
 
         // Döşeme (üst yüzey)
         foreach (var p in SalonPoligonServisi.KabugaKirp(kabuk, poly))
-            surfaces.Add(new ProjectSurface(id++, $"{b.Ad} Döşeme", "Balkon",
+            surfaces.Add(new ProjectSurface(id++, $"{b.Ad} Döşeme", balkonKategori,
                 p.Select(q => new Point3D(q.X, q.Y, zDoseme)).ToList()));
 
         // Alt yüzey (soffit) — kalınlık varsa
         if (zDoseme - zAlt > 1e-6)
         {
             foreach (var p in SalonPoligonServisi.KabugaKirp(kabuk, poly))
-                surfaces.Add(new ProjectSurface(id++, $"{b.Ad} Alt", "Balkon-Alt",
+                surfaces.Add(new ProjectSurface(id++, $"{b.Ad} Alt", altKategori,
                     p.Select(q => new Point3D(q.X, q.Y, zAlt)).ToList()));
 
             // Çevre saçak (döşeme kenarı)
-            KenarYuzeyleri(surfaces, ref id, b, kabuk, zAlt, zDoseme, $"{b.Ad} Saçak", "Balkon");
+            KenarYuzeyleri(surfaces, ref id, b, kabuk, zAlt, zDoseme, $"{b.Ad} Saçak", balkonKategori);
         }
 
         // Çevre parapet (korkuluk)
         if (b.ParapetM > 1e-6)
-            KenarYuzeyleri(surfaces, ref id, b, kabuk, zDoseme, zDoseme + b.ParapetM, $"{b.Ad} Parapet", "Balkon-Parapet");
+            KenarYuzeyleri(surfaces, ref id, b, kabuk, zDoseme, zDoseme + b.ParapetM, $"{b.Ad} Parapet", parapetKategori);
 
         return surfaces;
     }

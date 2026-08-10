@@ -97,6 +97,11 @@ public static class SalonParametrikServisi
         double D = Math.Max(2, s.SalonDerinlikM);
         double sahneDer = Math.Max(1, s.SahneDerinlikM);
         double sahneGen = Math.Max(1, s.SahneGenislikM);
+        // Dairesel sahnede footprint çapı yalnız GenislikM'den türetilir. Yerleşim,
+        // sahne cebi ve seyirci başlangıcı farklı bir DerinlikM kullanırsa şablonun
+        // sığdırma garantisi bozulur; etkin derinlik de aynı çap olmalıdır.
+        if (s.SahneTip == SahneTipi.Dairesel)
+            sahneDer = sahneGen;
 
         // 1) Plan dış hattı (kapalı) → Zemin katmanı (kabuk: zemin+tavan+duvar üretir).
         //    Salon önü sahnede dış hatta sahne cebi açılır (proscenium açıklığı).
@@ -106,6 +111,8 @@ public static class SalonParametrikServisi
             double onYari = YariGenislik(s, 0);
             double cepYari = Math.Min((sahneGen + 1.0) / 2.0, onYari - 0.5);
             sahneGen = Math.Max(1, Math.Min(sahneGen, 2 * cepYari - 1.0)); // sahne cebe sığsın
+            if (s.SahneTip == SahneTipi.Dairesel)
+                sahneDer = sahneGen;
             hat = OnCepAc(hat, cepYari, sahneDer + 1.0);
         }
         salon.CizimOgeleri.Add(new SalonCizimOgesi

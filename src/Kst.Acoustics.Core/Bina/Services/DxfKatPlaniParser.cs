@@ -28,14 +28,19 @@ public class DxfKatPlaniParser
         var detectionSegments = ExtractRawSegments(dxf, unitScale, includeAnnotationLayers: false);
         var rawTexts    = ExtractRawTexts(dxf, unitScale);
         var rawArcs     = ExtractRawArcs(dxf, unitScale);
+        var acikliklar  = AciklikTespitServisi.Bul(
+            DetectionSegmentsOrRaw(detectionSegments, rawSegments), rawArcs,
+            Array.Empty<BinaAciklik>());
         // Oda tespiti annotation katmanlarını (YAZI/DIM/ÖLÇ…) duvar saymaz — birincil
         // geçiş de alternatif-ölçek geçişleriyle aynı seti kullanır (tutarlılık).
         var odalar      = DetectRoomsFromSpaces(
-            DetectionSegmentsOrRaw(detectionSegments, rawSegments), rawTexts, rawArcs, katYuksekligiM);
+            DetectionSegmentsOrRaw(detectionSegments, rawSegments), rawTexts, rawArcs,
+            katYuksekligiM, acikliklar);
 
         if (IsWeakRoomDetection(odalar, rawTexts))
         {
-            var best = new DetectionCandidate(unitScale, rawSegments, detectionSegments, rawTexts, rawArcs, odalar);
+            var best = new DetectionCandidate(
+                unitScale, rawSegments, detectionSegments, rawTexts, rawArcs, acikliklar, odalar);
             foreach (var altScale in AlternativeRoomScales(unitScale))
             {
                 var altRawSegments = ExtractRawSegments(dxf, altScale);
@@ -45,13 +50,19 @@ public class DxfKatPlaniParser
 
                 var altRawTexts = ExtractRawTexts(dxf, altScale);
                 var altRawArcs = ExtractRawArcs(dxf, altScale);
+                var altAcikliklar = AciklikTespitServisi.Bul(
+                    DetectionSegmentsOrRaw(altDetectionSegments, altRawSegments), altRawArcs,
+                    Array.Empty<BinaAciklik>());
                 var altOdalar = DetectRoomsFromSpaces(
                     DetectionSegmentsOrRaw(altDetectionSegments, altRawSegments),
                     altRawTexts,
                     altRawArcs,
-                    katYuksekligiM);
+                    katYuksekligiM,
+                    altAcikliklar);
 
-                var alt = new DetectionCandidate(altScale, altRawSegments, altDetectionSegments, altRawTexts, altRawArcs, altOdalar);
+                var alt = new DetectionCandidate(
+                    altScale, altRawSegments, altDetectionSegments, altRawTexts, altRawArcs,
+                    altAcikliklar, altOdalar);
                 if (IsBetterRoomDetection(alt, best))
                     best = alt;
             }
@@ -63,6 +74,7 @@ public class DxfKatPlaniParser
                 detectionSegments = best.DetectionSegments;
                 rawTexts = best.RawTexts;
                 rawArcs = best.RawArcs;
+                acikliklar = best.Openings;
                 odalar = best.Rooms;
                 UnitWarning = BirlestirUyari(UnitWarning,
                     $"DXF ölçeği oda taramasına göre otomatik düzeltildi (1 birim = {unitScale * 100:0.##} cm).");
@@ -93,6 +105,9 @@ public class DxfKatPlaniParser
                 detectionSegments = ExtractRawSegments(dxf, unitScale, includeAnnotationLayers: false);
                 rawTexts     = ExtractRawTexts(dxf, unitScale);
                 rawArcs      = ExtractRawArcs(dxf, unitScale);
+                acikliklar   = AciklikTespitServisi.Bul(
+                    DetectionSegmentsOrRaw(detectionSegments, rawSegments), rawArcs,
+                    Array.Empty<BinaAciklik>());
                 SnapPolygonsToWallCoords(odalar, rawSegments, snapTol: 0.5);
                     UnitWarning = BirlestirUyari(UnitWarning,
                         "Oda geometrisi TEXT etiketlerinden oluşturuldu (duvarlar kapalı poligon değil). Sınırları manuel düzenleyebilirsiniz.");
@@ -104,18 +119,30 @@ public class DxfKatPlaniParser
         {
             foreach (var altScale in new[] { UnitlessScaleMeters * 10, UnitlessScaleMeters * 100 })
             {
-                rawSegments = ExtractRawSegments(dxf, altScale);
-                detectionSegments = ExtractRawSegments(dxf, altScale, includeAnnotationLayers: false);
-                rawTexts    = ExtractRawTexts(dxf, altScale);
-                rawArcs     = ExtractRawArcs(dxf, altScale);
-                odalar      = DetectRoomsFromSpaces(rawSegments, rawTexts, rawArcs, katYuksekligiM);
-                if (odalar.Count == 0)
-                    odalar = DetectRoomsFromPolylines(dxf, katYuksekligiM, altScale);
-                if (odalar.Count == 0)
-                    odalar = DetectRoomsFromLines(dxf, katYuksekligiM, altScale);
-                if (odalar.Count > 0)
+                var altRawSegments = ExtractRawSegments(dxf, altScale);
+                var altDetectionSegments = ExtractRawSegments(
+                    dxf, altScale, includeAnnotationLayers: false);
+                var altRawTexts = ExtractRawTexts(dxf, altScale);
+                var altRawArcs = ExtractRawArcs(dxf, altScale);
+                var altAcikliklar = AciklikTespitServisi.Bul(
+                    DetectionSegmentsOrRaw(altDetectionSegments, altRawSegments), altRawArcs,
+                    Array.Empty<BinaAciklik>());
+                var altOdalar = DetectRoomsFromSpaces(
+                    DetectionSegmentsOrRaw(altDetectionSegments, altRawSegments),
+                    altRawTexts, altRawArcs, katYuksekligiM, altAcikliklar);
+                if (altOdalar.Count == 0)
+                    altOdalar = DetectRoomsFromPolylines(dxf, katYuksekligiM, altScale);
+                if (altOdalar.Count == 0)
+                    altOdalar = DetectRoomsFromLines(dxf, katYuksekligiM, altScale);
+                if (altOdalar.Count > 0)
                 {
                     unitScale = altScale;
+                    rawSegments = altRawSegments;
+                    detectionSegments = altDetectionSegments;
+                    rawTexts = altRawTexts;
+                    rawArcs = altRawArcs;
+                    acikliklar = altAcikliklar;
+                    odalar = altOdalar;
                     UnitWarning = $"DXF Unitless: ölçek otomatik algılandı (1 birim = {altScale * 100:0.##} cm). Yanlışsa Kat Yöneticisi'nden düzeltin.";
                     break;
                 }
@@ -126,12 +153,14 @@ public class DxfKatPlaniParser
 
         kat.Odalar       = new ObservableCollection<BinaOda>(odalar);
         kat.HamSegmentler = rawSegments is List<(Point2D, Point2D)> l ? l : rawSegments.ToList();
+        kat.TespitSegmentler = DetectionSegmentsOrRaw(detectionSegments, rawSegments).ToList();
         kat.HamMetinler  = rawTexts is List<(Point2D, string)> lt ? lt : rawTexts.ToList();
         kat.DxfArclar    = rawArcs
             .Select(a => new BinaDxfArc { Merkez = a.Merkez, R = a.R, BasAciDeg = a.BasDeg, BitAciDeg = a.BitDeg })
             .ToList();
 
-        kat.Acikliklar = AciklikTespitServisi.Bul(kat.HamSegmentler, rawArcs, Array.Empty<BinaAciklik>());
+        kat.Acikliklar = acikliklar;
+        kat.DxfBirimOlcegiM = unitScale;
 
         if (normalizeOrigin)
             NormalizeOrigin(kat);
@@ -147,11 +176,22 @@ public class DxfKatPlaniParser
     public static void NormalizeOrigin(BinaKat kat)
     {
         var polPts = kat.Odalar.SelectMany(m => m.Poligon).ToList();
+        if (polPts.Count == 0)
+        {
+            var kaynakSegmentler = kat.TespitSegmentler.Count > 0
+                ? kat.TespitSegmentler
+                : kat.HamSegmentler;
+            polPts = kaynakSegmentler.SelectMany(s => new[] { s.A, s.B }).ToList();
+        }
         if (polPts.Count == 0) return;
 
         var minX = polPts.Min(p => p.X);
         var minY = polPts.Min(p => p.Y);
         if (Math.Abs(minX) < 1e-6 && Math.Abs(minY) < 1e-6) return;
+
+        kat.DxfNormalizeOfsetiM = new Point2D(
+            kat.DxfNormalizeOfsetiM.X + minX,
+            kat.DxfNormalizeOfsetiM.Y + minY);
 
         foreach (var oda in kat.Odalar)
         {
@@ -174,17 +214,27 @@ public class DxfKatPlaniParser
                           new Point2D(s.B.X - minX, s.B.Y - minY)))
             .ToList();
 
+        kat.TespitSegmentler = kat.TespitSegmentler
+            .Select(s => (new Point2D(s.A.X - minX, s.A.Y - minY),
+                          new Point2D(s.B.X - minX, s.B.Y - minY)))
+            .ToList();
+
         kat.HamMetinler = kat.HamMetinler
             .Select(t => (new Point2D(t.Pos.X - minX, t.Pos.Y - minY), t.Value))
             .ToList();
     }
 
-    public static int OdalariBosluklardanYenidenTara(BinaKat kat)
+    public static int OdalariBosluklardanYenidenTara(
+        BinaKat kat,
+        IReadOnlyList<BinaAciklik>? oncedenBulunanAcikliklar = null)
     {
         var rawArcs = kat.DxfArclar
             .Select(a => (a.Merkez, a.R, a.BasAciDeg, a.BitAciDeg))
             .ToList();
-        var odalar = DetectRoomsFromSpaces(kat.HamSegmentler, kat.HamMetinler, rawArcs, kat.KatYuksekligiM);
+        var segmentler = DetectionSegmentsOrRaw(kat.TespitSegmentler, kat.HamSegmentler);
+        var odalar = DetectRoomsFromSpaces(
+            segmentler, kat.HamMetinler, rawArcs, kat.KatYuksekligiM,
+            oncedenBulunanAcikliklar);
         if (odalar.Count == 0) return 0;
         MapRoomNamesFromTexts(odalar, kat.HamMetinler);
         kat.Odalar = new ObservableCollection<BinaOda>(odalar);
@@ -193,9 +243,52 @@ public class DxfKatPlaniParser
 
     public List<(Point2D A, Point2D B)> ExtractRawSegmentsFromFile(string filePath)
     {
+        // Eski çağıranlar için de içe aktarımla aynı alternatif ölçek ve orijin
+        // kararlarını kullan. Böylece kayıt öncesi/sonrası koordinatlar değişmez.
+        return Parse(filePath, 0, 3.0, normalizeOrigin: true).TespitSegmentler;
+    }
+
+    /// <summary>
+    /// Kayıtlı katın içe aktarım ölçeği, yerel-ofseti ve (çoklu-kat DXF ise)
+    /// seçili dünya bölgesini kullanarak açıklık taramasına uygun tam segment
+    /// setini yeniden üretir.
+    /// </summary>
+    public List<(Point2D A, Point2D B)> ExtractRawSegmentsFromFile(string filePath, BinaKat kat)
+    {
+        ArgumentNullException.ThrowIfNull(kat);
+        if (!(kat.DxfBirimOlcegiM > 0) || !double.IsFinite(kat.DxfBirimOlcegiM))
+            return ExtractRawSegmentsFromFile(filePath);
+
         var dxf = DxfDocument.Load(filePath) ?? throw new Exception("DXF dosyası yüklenemedi.");
-        var unitScale = EstimateScaleFromTexts(dxf) ?? GetMetersPerDrawingUnit(dxf.DrawingVariables.InsUnits);
-        return ExtractRawSegments(dxf, unitScale);
+        var segmentler = ExtractRawSegments(
+            dxf, kat.DxfBirimOlcegiM, includeAnnotationLayers: false);
+
+        if (kat.DxfKaynakBolgesiMinM is { } min && kat.DxfKaynakBolgesiMaxM is { } max)
+            segmentler = segmentler.Where(s => BolgeyleKesisir(s, min, max)).ToList();
+
+        var ofset = kat.DxfNormalizeOfsetiM;
+        if (Math.Abs(ofset.X) > 1e-12 || Math.Abs(ofset.Y) > 1e-12)
+        {
+            segmentler = segmentler
+                .Select(s => (
+                    new Point2D(s.A.X - ofset.X, s.A.Y - ofset.Y),
+                    new Point2D(s.B.X - ofset.X, s.B.Y - ofset.Y)))
+                .ToList();
+        }
+
+        return segmentler;
+    }
+
+    private static bool BolgeyleKesisir(
+        (Point2D A, Point2D B) segment, Point2D min, Point2D max)
+    {
+        const double tol = 1e-6;
+        double sMinX = Math.Min(segment.A.X, segment.B.X);
+        double sMaxX = Math.Max(segment.A.X, segment.B.X);
+        double sMinY = Math.Min(segment.A.Y, segment.B.Y);
+        double sMaxY = Math.Max(segment.A.Y, segment.B.Y);
+        return sMaxX >= min.X - tol && sMinX <= max.X + tol &&
+               sMaxY >= min.Y - tol && sMinY <= max.Y + tol;
     }
 
     private sealed record DetectionCandidate(
@@ -204,6 +297,7 @@ public class DxfKatPlaniParser
         List<(Point2D A, Point2D B)> DetectionSegments,
         List<(Point2D Pos, string Value)> RawTexts,
         List<(Point2D Merkez, double R, double BasDeg, double BitDeg)> RawArcs,
+        List<BinaAciklik> Openings,
         List<BinaOda> Rooms);
 
     private static IReadOnlyList<(Point2D A, Point2D B)> DetectionSegmentsOrRaw(
@@ -398,11 +492,13 @@ public class DxfKatPlaniParser
         IReadOnlyList<(Point2D A, Point2D B)> rawSegments,
         IReadOnlyList<(Point2D Pos, string Value)> rawTexts,
         IReadOnlyList<(Point2D Merkez, double R, double BasDeg, double BitDeg)> rawArcs,
-        double katYuksekligiM)
+        double katYuksekligiM,
+        IReadOnlyList<BinaAciklik>? oncedenBulunanAcikliklar = null)
     {
         if (rawSegments.Count == 0) return new();
 
-        var acikliklar = AciklikTespitServisi.Bul(rawSegments, rawArcs, Array.Empty<BinaAciklik>());
+        var acikliklar = oncedenBulunanAcikliklar
+            ?? AciklikTespitServisi.Bul(rawSegments, rawArcs, Array.Empty<BinaAciklik>());
         var sanalDuvarlar = acikliklar
             .Where(a => !a.IptalEdildi)
             .Select(a => (a.Bas, a.Bit))

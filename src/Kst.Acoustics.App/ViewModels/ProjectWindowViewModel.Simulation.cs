@@ -459,7 +459,7 @@ public sealed partial class ProjectWindowViewModel
                 SimulationStatusText =
                     $"✓ Tamamlandı — {result.TotalArrivals:N0} geliş, {result.Elapsed.TotalSeconds:F1} sn";
                 OnSimulationCompleted(result);
-                MarkDirty();
+                MarkDirty("Simülasyon sonucu güncellendi");
                 NavigateToResults?.Invoke();
             }
 
@@ -507,11 +507,14 @@ public sealed partial class ProjectWindowViewModel
 
     internal void RestoreSimulationSettings(SimulationParameters? settings)
     {
-        if (settings is null) return;
+        var metersPerUnit = ProjectScalingService.GetMetersPerUnit(_project.Unit);
+        settings ??= new SimulationParameters(
+            ReceiverRadius: 1.0 / metersPerUnit,
+            UnitScale: metersPerUnit);
 
         _rayCount = Math.Clamp(settings.RayCount, 100, 100_000);
         _maxOrder = Math.Clamp(settings.MaxOrder, 10, 500);
-        var radiusMeters = settings.ReceiverRadius * ProjectScalingService.GetMetersPerUnit(_project.Unit);
+        var radiusMeters = settings.ReceiverRadius * metersPerUnit;
         _receiverRadius = double.IsFinite(radiusMeters) ? Math.Clamp(radiusMeters, 0.01, 10.0) : 1.0;
         _airTempC = double.IsFinite(settings.AirTemperatureCelsius)
             ? Math.Clamp(settings.AirTemperatureCelsius, -20.0, 50.0)
@@ -524,6 +527,7 @@ public sealed partial class ProjectWindowViewModel
         _convergenceModeIndex = Math.Clamp(settings.ConvergenceModeIndex, 0, 2);
         _maskGridOutsideRoom = settings.MaskGridOutsideRoom;
 
+        _gridMapEnabled = false;
         if (settings.ReceiverGrid is { } grid)
         {
             _gridMapEnabled = true;
@@ -630,7 +634,7 @@ public sealed partial class ProjectWindowViewModel
                 ResultComparisonText = BuildResultComparison(_previousResult, finalRun.Result);
                 MaterialAuditText = BuildMaterialAuditText(BuildCategoryMaterialMap());
                 OnSimulationCompleted(finalRun.Result);
-                MarkDirty();
+                MarkDirty("Yakınsama simülasyonu sonucu güncellendi");
                 NavigateToResults?.Invoke();
                 SimulationStatusText = "✓ Yakınsama analizi tamamlandı.";
             }
@@ -690,6 +694,8 @@ public sealed partial class ProjectWindowViewModel
         OnPropertyChanged(nameof(CanRunSimulation));
         OnPropertyChanged(nameof(HasSimulationBlockingIssues));
         OnPropertyChanged(nameof(SimulationPreflightText));
+        RefreshTargetPerformance();
+        RefreshScenarioComparisons();
     }
 
     private IReadOnlyList<int> BuildConvergenceRayCounts()
@@ -845,7 +851,7 @@ public sealed partial class ProjectWindowViewModel
     private void OnSimulationInputSettingChanged(string reason)
     {
         InvalidateSimulationResult(reason);
-        MarkDirty();
+        MarkDirty(reason.TrimEnd('.'));
         OnPropertyChanged(nameof(GridCellCount));
         OnPropertyChanged(nameof(GridEstimatedWorkText));
         OnPropertyChanged(nameof(CanRunSimulation));

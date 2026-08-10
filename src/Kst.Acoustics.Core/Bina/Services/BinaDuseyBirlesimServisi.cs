@@ -259,9 +259,10 @@ public static class BinaDuseyBirlesimServisi
     {
         if (kucukOda.Poligon.Count < 3) return null;
 
-        double cx = kucukOda.Poligon.Average(p => p.X) + kucukKat.OriginOffset.X;
-        double cy = kucukOda.Poligon.Average(p => p.Y) + kucukKat.OriginOffset.Y;
-        var centroidWorld = new Point2D(cx, cy);
+        var icNokta = kucukOda.Merkez;
+        var centroidWorld = new Point2D(
+            icNokta.X + kucukKat.OriginOffset.X,
+            icNokta.Y + kucukKat.OriginOffset.Y);
 
         BinaOda? best = null;
         double bestAlan = -1;

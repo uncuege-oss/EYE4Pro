@@ -11,7 +11,7 @@ namespace Kst.Acoustics.Core.Salon.Services;
 public static class SalonGeometriServisi
 {
     /// Geçerli şema sürümü — migrasyon tetikleyicisi.
-    public const int GuncelSemaSurum = 1;
+    public const int GuncelSemaSurum = 2;
 
     private static readonly JsonSerializerOptions JsonAyar = new()
     {
@@ -27,7 +27,9 @@ public static class SalonGeometriServisi
     {
         ArgumentNullException.ThrowIfNull(salon);
         ArgumentException.ThrowIfNullOrWhiteSpace(dosyaYolu);
+        Migrate(salon);
         Normalize(salon);
+        SalonModelButunlukServisi.DogrulaVeFirlat(salon);
 
         salon.GeometriRevizyon++;
         var tmp = dosyaYolu + ".tmp";
@@ -65,6 +67,7 @@ public static class SalonGeometriServisi
                     ?? throw new InvalidDataException("Anlık görüntü okunamadı.");
         Migrate(salon);
         Normalize(salon);
+        SalonModelButunlukServisi.DogrulaVeFirlat(salon);
         return salon;
     }
 
@@ -80,6 +83,7 @@ public static class SalonGeometriServisi
         salon.DosyaYolu = dosyaYolu;
         Migrate(salon);
         Normalize(salon);
+        SalonModelButunlukServisi.DogrulaVeFirlat(salon);
         return salon;
     }
 
@@ -116,10 +120,12 @@ public static class SalonGeometriServisi
             SalonKatmanTipi.Balkon,
             SalonKatmanTipi.Orkestra,
             SalonKatmanTipi.Kapi,
-            SalonKatmanTipi.Pencere
+            SalonKatmanTipi.Pencere,
+            SalonKatmanTipi.Yansitici
         };
         foreach (var t in tipler)
-            salon.Katmanlar.Add(SalonKatman.Olustur(t));
+            if (!salon.Katmanlar.Any(k => k is not null && k.Tip == t))
+                salon.Katmanlar.Add(SalonKatman.Olustur(t));
     }
 
     // ── Migrasyon ─────────────────────────────────────────────────────────────
@@ -141,7 +147,17 @@ public static class SalonGeometriServisi
         if (salon.SemaSurum >= GuncelSemaSurum) return;
 
         // Sürüm 0 → 1: ilk resmi şema; özel dönüşüm gerekmez.
-        salon.SemaSurum = GuncelSemaSurum;
+        if (salon.SemaSurum < 1)
+            salon.SemaSurum = 1;
+
+        // Sürüm 1 → 2: kalıcı tasarım öğeleri eklendi. Koleksiyonlar property
+        // initializer/Normalize ile oluşturulur; eski veya eksik dosyaya tüm semantik
+        // katmanları birer kez eklemek yeni araçların güvenli varsayılanlarını sağlar.
+        if (salon.SemaSurum < 2)
+        {
+            VarsayilanKatmanlariEkle(salon);
+            salon.SemaSurum = 2;
+        }
     }
 
     /// <summary>Eksik/eski JSON alanlarını domain'in null taşımayan sözleşmesine getirir.</summary>
@@ -150,18 +166,23 @@ public static class SalonGeometriServisi
         ArgumentNullException.ThrowIfNull(salon);
 
         salon.SalonAdi ??= string.Empty;
-        salon.Katmanlar = new ObservableCollection<SalonKatman>(
-            (salon.Katmanlar ?? []).Where(item => item is not null));
-        salon.CizimOgeleri = new ObservableCollection<SalonCizimOgesi>(
-            (salon.CizimOgeleri ?? []).Where(item => item is not null));
-        salon.SeyirciSekciyonlari = new ObservableCollection<SeyirciSekciyonu>(
-            (salon.SeyirciSekciyonlari ?? []).Where(item => item is not null));
-        salon.Balkonlar = new ObservableCollection<BalkonGeometri>(
-            (salon.Balkonlar ?? []).Where(item => item is not null));
-        salon.Acikliklar = new ObservableCollection<DuvarAcikligi>(
-            (salon.Acikliklar ?? []).Where(item => item is not null));
-        salon.TavanProfili = new ObservableCollection<TavanKirilimNoktasi>(
-            (salon.TavanProfili ?? []).Where(item => item is not null));
+        // Mevcut koleksiyon örneklerini koru: editör ItemsSource bağları bu nesnelere
+        // abonedir. Her kayıtta yeni ObservableCollection atamak UI'ı eski listede bırakır.
+        salon.Katmanlar = KoleksiyonuNormalizeEt(salon.Katmanlar);
+        salon.CizimOgeleri = KoleksiyonuNormalizeEt(salon.CizimOgeleri);
+        salon.SeyirciSekciyonlari = KoleksiyonuNormalizeEt(salon.SeyirciSekciyonlari);
+        salon.Balkonlar = KoleksiyonuNormalizeEt(salon.Balkonlar);
+        salon.Acikliklar = KoleksiyonuNormalizeEt(salon.Acikliklar);
+        salon.TavanProfili = KoleksiyonuNormalizeEt(salon.TavanProfili);
+        salon.Olculendirmeler = KoleksiyonuNormalizeEt(salon.Olculendirmeler);
+        salon.GeometrikKisitlar = KoleksiyonuNormalizeEt(salon.GeometrikKisitlar);
+        salon.ReferansAltliklar = KoleksiyonuNormalizeEt(salon.ReferansAltliklar);
+        salon.YansiticiPaneller = KoleksiyonuNormalizeEt(salon.YansiticiPaneller);
+
+        // Üretilen her 3B kategorinin katman listesinde bir karşılığı olmalıdır.
+        // Bu aynı zamanda doğrudan `new SalonGeometri()` ile oluşturulup kaydedilen
+        // boş modelleri güvenli, tam bir semantik katman setine getirir.
+        VarsayilanKatmanlariEkle(salon);
 
         foreach (var item in salon.Katmanlar)
         {
@@ -195,6 +216,50 @@ public static class SalonGeometriServisi
             item.Ad ??= item.Tip == AciklikTipi.Kapi ? "Kapı" : "Pencere";
         }
 
+        foreach (var item in salon.Olculendirmeler)
+        {
+            if (string.IsNullOrWhiteSpace(item.Id)) item.Id = Guid.NewGuid().ToString("N");
+            item.Ad ??= "Ölçü";
+            item.SonEk ??= "m";
+        }
+
+        foreach (var item in salon.GeometrikKisitlar)
+        {
+            if (string.IsNullOrWhiteSpace(item.Id)) item.Id = Guid.NewGuid().ToString("N");
+            item.Ad ??= "Kısıt";
+            item.OgeId ??= string.Empty;
+        }
+
+        foreach (var item in salon.ReferansAltliklar)
+        {
+            if (string.IsNullOrWhiteSpace(item.Id)) item.Id = Guid.NewGuid().ToString("N");
+            item.Ad ??= "Referans";
+            item.DosyaYolu ??= string.Empty;
+            item.Segmentler ??= [];
+            item.Segmentler.RemoveAll(segment => segment is null);
+            foreach (var segment in item.Segmentler)
+                segment.Katman ??= "0";
+        }
+
+        foreach (var item in salon.YansiticiPaneller)
+        {
+            if (string.IsNullOrWhiteSpace(item.Id)) item.Id = Guid.NewGuid().ToString("N");
+            item.Ad ??= "Yansıtıcı";
+            item.Kategori ??= "Yansıtıcı";
+            if (string.IsNullOrWhiteSpace(item.KatmanId))
+                item.KatmanId = salon.Katmanlar.First(k => k.Tip == SalonKatmanTipi.Yansitici).Id;
+        }
+
         salon.FasetKenarSayisi = Math.Clamp(salon.FasetKenarSayisi <= 0 ? 48 : salon.FasetKenarSayisi, 12, 128);
+    }
+
+    private static ObservableCollection<T> KoleksiyonuNormalizeEt<T>(ObservableCollection<T>? koleksiyon)
+        where T : class
+    {
+        koleksiyon ??= new ObservableCollection<T>();
+        for (int i = koleksiyon.Count - 1; i >= 0; i--)
+            if (koleksiyon[i] is null)
+                koleksiyon.RemoveAt(i);
+        return koleksiyon;
     }
 }

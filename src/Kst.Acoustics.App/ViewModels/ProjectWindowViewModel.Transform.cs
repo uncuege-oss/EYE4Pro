@@ -166,7 +166,7 @@ public sealed partial class ProjectWindowViewModel
             var rotated = SurfaceTransformService.RotateAroundCentroid(_workingSurfaces[idx], axis, signedAngle);
             _workingSurfaces[idx] = ClampGeneratedPanelBelowCeiling(rotated);
         }
-        NotifySurfacesChanged();
+        NotifySurfacesChanged("Yüzeyler döndürüldü");
 
         RefreshSelectedSurfaces();
         StatusMessage = $"{targets.Count} yüzey {angle:+0.#;-0.#}° döndürüldü ({axis} ekseni).";
@@ -200,7 +200,7 @@ public sealed partial class ProjectWindowViewModel
 
             _workingSurfaces[idx] = SurfaceTransformService.Translate(_workingSurfaces[idx], signedDx, dy, dz);
         }
-        NotifySurfacesChanged();
+        NotifySurfacesChanged("Yüzeyler taşındı");
 
         RefreshSelectedSurfaces();
         StatusMessage = $"{targets.Count} yüzey taşındı: ΔX={dx:+0.##;-0.##}, ΔY={dy:+0.##;-0.##}, ΔZ={dz:+0.##;-0.##}.";
@@ -244,7 +244,7 @@ public sealed partial class ProjectWindowViewModel
         _lastPanelTransformSnapshot = null;
         CanUndo = false;
 
-        NotifySurfacesChanged();
+        NotifySurfacesChanged("Son yüzey dönüşümü geri alındı");
         RefreshSelectedSurfaces();
         StatusMessage = "Son dönüşüm geri alındı.";
     }
@@ -278,7 +278,7 @@ public sealed partial class ProjectWindowViewModel
             return;
         }
 
-        NotifySurfacesChanged();
+        NotifySurfacesChanged("Tüm yüzey dönüşümleri sıfırlandı");
         RefreshSelectedSurface(HighlightedSurfaceId);
         StatusMessage = "Tüm dönüşümler sıfırlandı.";
     }
@@ -326,8 +326,7 @@ public sealed partial class ProjectWindowViewModel
         else
         {
             RebuildCategoryNodes();
-            MarkDirty();
-            NotifySurfacesChanged();
+            NotifySurfacesChanged("Seçili yüzeyler silindi");
         }
 
         RefreshSelectedSurfaces();

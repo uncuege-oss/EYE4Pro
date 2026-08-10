@@ -379,6 +379,8 @@ public sealed partial class ProjectWindowViewModel
         RefreshReliability(result.Reliability);
         RefreshResults();
         GenerateReport();
+        RefreshTargetPerformance();
+        RefreshScenarioComparisons();
     }
 
     /// <summary>
@@ -420,6 +422,8 @@ public sealed partial class ProjectWindowViewModel
         TargetRtText = "Hedef RT60: —";
         OnPropertyChanged(nameof(CanAuralizeSelectedPair));
         OnPropertyChanged(nameof(ImpulseResponseAvailabilityText));
+        RefreshTargetPerformance();
+        RefreshScenarioComparisons();
     }
 
     private void RefreshReliability(SimulationReliabilityReport? reliability)
@@ -479,7 +483,7 @@ public sealed partial class ProjectWindowViewModel
             ? result.ComputedParameters[idx]
             : AcousticParameterCalculator.Compute(echogram, result.Parameters);
 
-        var criteria = RoomTypeRegistry.All.FirstOrDefault(c => c.Type == _project.SelectedRoomType) ?? RoomTypeRegistry.All[0];
+        var criteria = RoomTypeRegistry.All.FirstOrDefault(c => c.Type == CurrentRoomType) ?? RoomTypeRegistry.All[0];
         var (min, max) = criteria.GetTargetRtMid(RoomVolume);
         TargetRtText = $"Hedef RT60 (Mid): {min:F2} - {max:F2} s ({criteria.DisplayName})";
 

@@ -73,7 +73,12 @@ public class DxfKatYukleyici
         string OnerilenAd,
         double SiraDegeri,
         bool EtiketBulundu,
-        bool OneriliDahil);
+        bool OneriliDahil,
+        string KaynakDosyaYolu = "",
+        string? BirimUyarisi = null,
+        double DxfBirimOlcegiM = 0,
+        IReadOnlyList<(Kst.Acoustics.Core.Common.Geometry.Point2D A,
+                       Kst.Acoustics.Core.Common.Geometry.Point2D B)>? HamSegmentler = null);
 
     public sealed record CokluKatTespitSonucu(
         IReadOnlyList<CokluKatAdayi> Adaylar,
@@ -98,7 +103,10 @@ public class DxfKatYukleyici
             .Select(a => (a.Merkez, a.R, a.BasAciDeg, a.BitAciDeg))
             .ToList();
         var kumeler = KatKumelemeServisi.Kumele(
-            birlesikKat.HamSegmentler, birlesikKat.HamMetinler, arcTuple, kumeAyar);
+            birlesikKat.TespitSegmentler.Count > 0
+                ? birlesikKat.TespitSegmentler
+                : birlesikKat.HamSegmentler,
+            birlesikKat.HamMetinler, arcTuple, kumeAyar);
         if (kumeler.Count <= 1) return null;
 
         var (planlar, planDegil) = KatKumelemeServisi.PlanFiltrele(kumeler, kumeAyar);
@@ -108,7 +116,13 @@ public class DxfKatYukleyici
         var adaylar = hepsi.Select(k =>
         {
             var tahmin = KatEtiketServisi.TahminEt(k);
-            return new CokluKatAdayi(k, tahmin.OnerilenAd, tahmin.SiraDegeri, tahmin.EtiketBulundu, planSet.Contains(k));
+            var hamKume = birlesikKat.HamSegmentler
+                .Where(s => BolgeyleKesisir(s, k.MinX, k.MinY, k.MaxX, k.MaxY))
+                .ToList();
+            return new CokluKatAdayi(
+                k, tahmin.OnerilenAd, tahmin.SiraDegeri, tahmin.EtiketBulundu,
+                planSet.Contains(k), filePath, UnitWarning,
+                birlesikKat.DxfBirimOlcegiM, hamKume);
         }).ToList();
 
         return new CokluKatTespitSonucu(adaylar, UnitWarning);
@@ -129,14 +143,33 @@ public class DxfKatYukleyici
             KatNo = katNo,
             Ad = string.IsNullOrWhiteSpace(katAdi) ? aday.OnerilenAd : katAdi.Trim(),
             KatYuksekligiM = katYuksekligiM,
-            HamSegmentler = kume.Segmentler.ToList(),
+            DxfFilePath = aday.KaynakDosyaYolu,
+            UnitWarning = aday.BirimUyarisi,
+            DxfBirimOlcegiM = aday.DxfBirimOlcegiM,
+            DxfKaynakBolgesiMinM = aday.DxfBirimOlcegiM > 0
+                ? new Kst.Acoustics.Core.Common.Geometry.Point2D(kume.MinX, kume.MinY)
+                : null,
+            DxfKaynakBolgesiMaxM = aday.DxfBirimOlcegiM > 0
+                ? new Kst.Acoustics.Core.Common.Geometry.Point2D(kume.MaxX, kume.MaxY)
+                : null,
+            HamSegmentler = aday.HamSegmentler?.ToList() ?? kume.Segmentler.ToList(),
+            TespitSegmentler = kume.Segmentler.ToList(),
             HamMetinler = kume.Metinler.ToList(),
             DxfArclar = kume.Arclar
                 .Select(a => new BinaDxfArc { Merkez = a.Merkez, R = a.R, BasAciDeg = a.BasDeg, BitAciDeg = a.BitDeg })
                 .ToList()
         };
 
-        DxfKatPlaniParser.OdalariBosluklardanYenidenTara(kat);
+        var arcTuple = kat.DxfArclar
+            .Select(a => (a.Merkez, a.R, a.BasAciDeg, a.BitAciDeg))
+            .ToList();
+        var tespitSegmentleri = kat.TespitSegmentler.Count > 0
+            ? kat.TespitSegmentler
+            : kat.HamSegmentler;
+        var tespitAcikliklari = AciklikTespitServisi.Bul(
+            tespitSegmentleri, arcTuple, Array.Empty<BinaAciklik>());
+
+        DxfKatPlaniParser.OdalariBosluklardanYenidenTara(kat, tespitAcikliklari);
 
         if (!ayar.AciklikTespit)
         {
@@ -144,8 +177,7 @@ public class DxfKatYukleyici
         }
         else
         {
-            var arcTuple = kat.DxfArclar.Select(a => (a.Merkez, a.R, a.BasAciDeg, a.BitAciDeg)).ToList();
-            kat.Acikliklar = AciklikTespitServisi.Bul(kat.HamSegmentler, arcTuple, Array.Empty<BinaAciklik>());
+            kat.Acikliklar = tespitAcikliklari;
             AciklikYardimci.DisindaKalanlariSil(kat);
             if (ayar.KomsuDuvarlariTamamla)
                 AciklikYardimci.KomsuDuvarlariTamamla(kat);
@@ -160,5 +192,17 @@ public class DxfKatYukleyici
             .ToList();
 
         return kat;
+    }
+
+    private static bool BolgeyleKesisir(
+        (Kst.Acoustics.Core.Common.Geometry.Point2D A,
+         Kst.Acoustics.Core.Common.Geometry.Point2D B) segment,
+        double minX, double minY, double maxX, double maxY)
+    {
+        const double tol = 1e-6;
+        return Math.Max(segment.A.X, segment.B.X) >= minX - tol &&
+               Math.Min(segment.A.X, segment.B.X) <= maxX + tol &&
+               Math.Max(segment.A.Y, segment.B.Y) >= minY - tol &&
+               Math.Min(segment.A.Y, segment.B.Y) <= maxY + tol;
     }
 }

@@ -26,6 +26,8 @@ public class DuseyMekanBirlesimi
 
 public class DuseyMekanBirlesimUyesi
 {
+    /// <summary>M50 katının kararlı kimliği; eski belgelerde boş olabilir.</summary>
+    public string KatId { get; set; } = "";
     public int KatNo { get; set; }
     public Guid MekanId { get; set; }
     /// Bu mekanın tavanı (üst birleşim üyesine bağlanan yüzey) açık mı.

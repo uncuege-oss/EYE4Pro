@@ -40,8 +40,11 @@ public static class SalonSeyirciServisi
     /// <paramref name="kabuk"/> verilirse basamaklar ve kornişler salon dış hattının
     /// içine kırpılır — dışarı taşan yerleşim kabuk-dışı hayalet yüzey üretmez.
     public static List<ProjectSurface> Yuzeyler(
-        SeyirciSekciyonu s, ref int id, List<List<Point2D>>? kabuk = null)
+        SeyirciSekciyonu s, ref int id, List<List<Point2D>>? kabuk = null,
+        string seyirciKategori = "Seyirci", string kornisKategori = "Korniş")
     {
+        seyirciKategori = string.IsNullOrWhiteSpace(seyirciKategori) ? "Seyirci" : seyirciKategori;
+        kornisKategori = string.IsNullOrWhiteSpace(kornisKategori) ? "Korniş" : kornisKategori;
         var surfaces = new List<ProjectSurface>();
         int n = Math.Max(1, s.KademeSayisi);
         double xL = s.MerkezX - s.GenislikM / 2, xR = s.MerkezX + s.GenislikM / 2;
@@ -54,7 +57,7 @@ public static class SalonSeyirciServisi
             double z = taban + i * rise;
             var basamak = new List<Point2D> { new(xL, yA), new(xR, yA), new(xR, yB), new(xL, yB) };
             foreach (var p in SalonPoligonServisi.KabugaKirp(kabuk, basamak))
-                surfaces.Add(new ProjectSurface(id++, $"{s.Ad} Kademe {i + 1}", "Seyirci",
+                surfaces.Add(new ProjectSurface(id++, $"{s.Ad} Kademe {i + 1}", seyirciKategori,
                     p.Select(q => new Point3D(q.X, q.Y, z)).ToList()));
         }
 
@@ -64,7 +67,7 @@ public static class SalonSeyirciServisi
                 double yb = KademeY(s, i, n);
                 double zLow = taban + (i - 1) * rise, zHigh = taban + i * rise;
                 foreach (var (px1, px2) in SalonPoligonServisi.YatayParcalar(kabuk, yb, xL, xR))
-                    surfaces.Add(new ProjectSurface(id++, $"{s.Ad} Korniş {i}", "Korniş", new List<Point3D>
+                    surfaces.Add(new ProjectSurface(id++, $"{s.Ad} Korniş {i}", kornisKategori, new List<Point3D>
                     {
                         new(px1, yb, zLow), new(px2, yb, zLow), new(px2, yb, zHigh), new(px1, yb, zHigh)
                     }));

@@ -11,6 +11,9 @@
         WindowStartupLocation="CenterScreen"
         Background="#060E14"
         KeyDown="Window_KeyDown"
+        DragDrop.AllowDrop="True"
+        DragDrop.DragOver="Window_DragOver"
+        DragDrop.Drop="Window_Drop"
         Title="Eye4Pro - Bina Geometrisi">
 
     <Window.Styles>
@@ -70,8 +73,8 @@
             <Setter Property="CornerRadius" Value="4"/>
         </Style>
         <Style Selector="Button.iconBtn">
-            <Setter Property="Width" Value="26"/>
-            <Setter Property="Height" Value="22"/>
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="30"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -140,15 +143,40 @@
                     <TextBlock Text="DXF kat planı içe aktarma, oda tespiti, açıklık yönetimi ve geometri kaydetme"
                                Foreground="#5A8CA8"
                                FontSize="12"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ComboBox x:Name="SonDosyalarCombo"
+                                  Width="190" PlaceholderText="Son Dosyalar"
+                                  SelectionChanged="SonDosyalar_SelectionChanged"
+                                  ToolTip.Tip="Yakın zamanda açılan bina geometrileri"
+                                  Background="#0B2030" Foreground="#A8D4EC">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Ad}" TextTrimming="CharacterEllipsis"
+                                               ToolTip.Tip="{Binding DosyaYolu}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button x:Name="KurtarmaAcBtn" Classes="headerAction"
+                                IsVisible="False" Click="KurtarmaAc_OnClick"
+                                Padding="8,4" FontSize="11"
+                                ToolTip.Tip="Otomatik kaydedilmiş kurtarma kopyasını aç"
+                                Content="Kurtarmayı Aç"/>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- Eylemler -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Button Classes="headerAction" Click="Onizleme3D_OnClick" Content="🧊 3D Önizleme"/>
-                    <Button Classes="headerAction" Click="Yeni_OnClick" Content="Yeni"/>
-                    <Button Classes="headerAction" Click="Ac_OnClick" Content="Aç…"/>
-                    <Button Classes="accent" Click="Kaydet_OnClick" Content="Kaydet"/>
-                    <Button Classes="headerAction" Click="FarkliKaydet_OnClick" Content="Farklı Kaydet…"/>
+                    <Button Classes="accent" Click="DxfYukle_OnClick" Content="DXF İçe Aktar…"
+                            ToolTip.Tip="Yeni kat planını DXF dosyasından içe aktar (Cmd/Ctrl+I)"/>
+                    <Button Classes="headerAction" Click="Yeni_OnClick" Content="Yeni"
+                            ToolTip.Tip="Yeni bina geometrisi (Cmd/Ctrl+N)"/>
+                    <Button Classes="headerAction" Click="Ac_OnClick" Content="Aç…"
+                            ToolTip.Tip="Bina geometrisi aç (Cmd/Ctrl+O)"/>
+                    <Button Classes="accent" Click="Kaydet_OnClick" Content="Kaydet"
+                            ToolTip.Tip="Kaydet (Cmd/Ctrl+S)"/>
+                    <Button Classes="headerAction" Click="FarkliKaydet_OnClick" Content="Farklı Kaydet…"
+                            ToolTip.Tip="Farklı kaydet (Shift+Cmd/Ctrl+S)"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -175,13 +203,13 @@
                                 <!-- Yukarı -->
                                 <Button Classes="iconBtn"
                                         Click="KatYukari_OnClick"
-                                        IsEnabled="{Binding KatVarMi}"
+                                        IsEnabled="{Binding KatYukariTasinabilir}"
                                         ToolTip.Tip="Katı yukarı taşı"
                                         Content="↑"/>
                                 <!-- Aşağı -->
                                 <Button Classes="iconBtn"
                                         Click="KatAsagi_OnClick"
-                                        IsEnabled="{Binding KatVarMi}"
+                                        IsEnabled="{Binding KatAsagiTasinabilir}"
                                         ToolTip.Tip="Katı aşağı taşı"
                                         Content="↓"/>
                                 <!-- Sil -->
@@ -291,8 +319,9 @@
                                         <TextBlock Classes="fieldLabel" Text="Ad"/>
                                         <TextBox Grid.Column="1"
                                                  Classes="fieldInput"
-                                                 Text="{Binding SeciliKat.Ad}"
-                                                 x:Name="KatAdText"/>
+                                                 x:Name="KatAdText"
+                                                 LostFocus="KatAdi_LostFocus"
+                                                 KeyDown="KatAdi_KeyDown"/>
                                     </Grid>
 
                                     <!-- Kat yüksekliği -->
@@ -302,7 +331,8 @@
                                                  Classes="fieldInput"
                                                  x:Name="KatYukseklikText"
                                                  LostFocus="KatYukseklik_LostFocus"
-                                                 KeyDown="KatYukseklik_KeyDown"/>
+                                                 KeyDown="KatYukseklik_KeyDown"
+                                                 ToolTip.Tip="0,20–100 m aralığında değer girin"/>
                                         <TextBlock Grid.Column="2"
                                                    Classes="fieldLabel" Text="m"
                                                    Margin="0,0,2,0"/>
@@ -319,7 +349,7 @@
                                                 FontSize="11"
                                                 Padding="6,4"
                                                 HorizontalAlignment="Stretch"
-                                                Content="DXF Kat Planı Yükle…"/>
+                                                Content="Kat DXF’ini Yükle / Değiştir…"/>
                                     </Grid>
 
                                     <!-- DXF dosya adı (kısa) -->
@@ -331,9 +361,11 @@
 
                                     <!-- Görünüm toggleları -->
                                     <StackPanel Spacing="4" Margin="64,2,0,0">
-                                        <CheckBox IsChecked="{Binding SeciliKat.DxfGoster}"
+                                        <CheckBox x:Name="DxfGosterCheck"
+                                                  Click="DxfGoster_OnClick"
                                                   Content="DXF arka planı göster"/>
-                                        <CheckBox IsChecked="{Binding SeciliKat.BloklariGoster}"
+                                        <CheckBox x:Name="BloklariGosterCheck"
+                                                  Click="BloklariGoster_OnClick"
                                                   Content="Blokları göster"/>
                                     </StackPanel>
 
@@ -351,7 +383,8 @@
                                                  Classes="fieldInput"
                                                  x:Name="OfsetXText"
                                                  LostFocus="OfsetX_LostFocus"
-                                                 KeyDown="OfsetX_KeyDown"/>
+                                                 KeyDown="OfsetX_KeyDown"
+                                                 ToolTip.Tip="±10.000.000 m aralığında sonlu değer"/>
                                         <Button Grid.Column="2" Classes="iconBtn"
                                                 Click="OfsetXAzalt_OnClick" Content="−"
                                                 ToolTip.Tip="−0.5 m"/>
@@ -368,7 +401,8 @@
                                                  Classes="fieldInput"
                                                  x:Name="OfsetYText"
                                                  LostFocus="OfsetY_LostFocus"
-                                                 KeyDown="OfsetY_KeyDown"/>
+                                                 KeyDown="OfsetY_KeyDown"
+                                                 ToolTip.Tip="±10.000.000 m aralığında sonlu değer"/>
                                         <Button Grid.Column="2" Classes="iconBtn"
                                                 Click="OfsetYAzalt_OnClick" Content="−"
                                                 ToolTip.Tip="−0.5 m"/>
@@ -429,10 +463,11 @@
                             Padding="12,8">
                         <StackPanel Spacing="3">
                             <TextBlock Classes="panelTitle" Text="BİNA"/>
-                            <TextBlock Text="{Binding Geo.BinaAdi}"
-                                       Foreground="#8ABCD6"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"/>
+                            <TextBox x:Name="BinaAdText"
+                                     Classes="fieldInput"
+                                     LostFocus="BinaAdi_LostFocus"
+                                     KeyDown="BinaAdi_KeyDown"
+                                     PlaceholderText="Bina adı"/>
                             <TextBlock Foreground="#7AA8C4" FontSize="11">
                                 <Run Text="{Binding Geo.Katlar.Count}"/>
                                 <Run Text=" kat · Rev. "/>
@@ -505,8 +540,10 @@
                                     IsVisible="{Binding OdaSecili}">
                             <TextBlock Classes="fieldLabel" Text="Oda adı" VerticalAlignment="Center"/>
                             <TextBox Classes="fieldInput"
+                                     x:Name="OdaAdText"
                                      Width="160"
-                                     Text="{Binding SeciliOda.Ad}"/>
+                                     LostFocus="OdaAdi_LostFocus"
+                                     KeyDown="OdaAdi_KeyDown"/>
                             <TextBlock Text="{Binding SeciliOdaBilgi}"
                                        Foreground="#3A7898"
                                        FontSize="11"
@@ -536,6 +573,16 @@
                                     ToolTip.Tip="Bu odanın bağlı olduğu düşey birleşimi kaldır"
                                     Content="↺ Birleşimi Kaldır"/>
                         </StackPanel>
+
+                        <Border Grid.Column="2" Margin="14,0" Padding="8,3"
+                                Background="#0B2535" BorderBrush="#1A5070"
+                                BorderThickness="1" CornerRadius="4"
+                                VerticalAlignment="Center" HorizontalAlignment="Left">
+                            <TextBlock x:Name="ModDurumuText"
+                                       Text="MOD: SEÇİM"
+                                       Foreground="#70C8E8" FontSize="10"
+                                       FontWeight="SemiBold"/>
+                        </Border>
 
                         <!-- İpucu + görünürlük -->
                         <StackPanel Grid.Column="3"
@@ -567,7 +614,7 @@
                             <TextBlock Classes="panelTitle" Text="AÇIKLIK" FontSize="10"
                                        VerticalAlignment="Center" Margin="0,0,4,0"/>
                             <Button Click="AciklikTara_OnClick"
-                                    IsEnabled="{Binding KatVarMi}"
+                                    IsEnabled="{Binding AciklikTaranabilir}"
                                     FontSize="11" Padding="8,4"
                                     ToolTip.Tip="DXF segmentlerinden kapı/pencereyi yeniden tara (manuel ve iptaller korunur)"
                                     Content="⟳ Tara"/>
@@ -610,12 +657,14 @@
                             <TextBox Classes="fieldInput" Width="56"
                                      x:Name="AciklikYukseklikText"
                                      LostFocus="AciklikYukseklik_LostFocus"
-                                     KeyDown="AciklikYukseklik_KeyDown"/>
+                                     KeyDown="AciklikYukseklik_KeyDown"
+                                     ToolTip.Tip="Pozitif olmalı; eşik ile toplamı kat yüksekliğini aşamaz"/>
                             <TextBlock Classes="fieldLabel" Text="Eşik"/>
                             <TextBox Classes="fieldInput" Width="56"
                                      x:Name="AciklikEsikText"
                                      LostFocus="AciklikEsik_LostFocus"
-                                     KeyDown="AciklikEsik_KeyDown"/>
+                                     KeyDown="AciklikEsik_KeyDown"
+                                     ToolTip.Tip="0 veya daha büyük olmalı; açıklık üst kotu kat içinde kalmalı"/>
                             <CheckBox x:Name="AciklikIptalCheck"
                                       Click="AciklikIptal_OnClick"
                                       FontSize="11"
@@ -629,13 +678,31 @@
                 </Border>
 
                 <!-- ── 2D plan viewport ── -->
-                <local:BinaGeometriCanvas x:Name="PlanCanvas"
-                                          Grid.Row="2"
-                                          Kat="{Binding SeciliKat}"
-                                          ReferansKat="{Binding EtkinReferansKat}"
-                                          SeciliOdaId="{Binding SeciliOdaId}"
-                                          CetvelGoster="{Binding CetvelGoster}"
-                                          SeciliAciklikId="{Binding SeciliAciklikId}"/>
+                <Grid Grid.Row="2">
+                    <local:BinaGeometriCanvas x:Name="PlanCanvas"
+                                              Kat="{Binding SeciliKat}"
+                                              ReferansKat="{Binding EtkinReferansKat}"
+                                              SeciliOdaId="{Binding SeciliOdaId}"
+                                              CetvelGoster="{Binding CetvelGoster}"
+                                              SeciliAciklikId="{Binding SeciliAciklikId}"/>
+                    <Border IsVisible="{Binding KatYokMu}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Background="#E6081622" BorderBrush="#2A789A"
+                            BorderThickness="1" CornerRadius="12" Padding="28">
+                        <StackPanel Spacing="12" HorizontalAlignment="Center">
+                            <TextBlock Text="İlk katınızı oluşturun"
+                                       Foreground="#D8EEFA" FontSize="18" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="DXF dosyasını buraya bırakın veya aşağıdaki seçeneklerden başlayın."
+                                       Foreground="#7AA8C4" FontSize="12" TextWrapping="Wrap"
+                                       MaxWidth="420" TextAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                <Button Classes="accent" Click="DxfYukle_OnClick" Content="DXF İçe Aktar…"/>
+                                <Button Click="KatEkle_OnClick" Content="Boş Kat Ekle"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Grid>
 
             <!-- Sağ splitter -->
@@ -734,6 +801,23 @@
                            FontSize="11"
                            VerticalAlignment="Center"/>
             </Grid>
+        </Border>
+
+        <!-- Uzun DXF işlemlerinde çift komutu engeller; kullanıcı iptal edebilir. -->
+        <Border x:Name="IslemOverlay" Grid.RowSpan="3" IsVisible="False"
+                Background="#B0000810" ZIndex="100">
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#0D2535" BorderBrush="#2A9ACA" BorderThickness="1"
+                    CornerRadius="10" Padding="26,20">
+                <StackPanel Spacing="14" MinWidth="300">
+                    <ProgressBar IsIndeterminate="True" Height="5"/>
+                    <TextBlock x:Name="IslemMesajText" Text="İşlem sürüyor…"
+                               Foreground="#D8EEFA" FontSize="14"
+                               HorizontalAlignment="Center"/>
+                    <Button x:Name="IslemIptalBtn" Click="IslemIptal_OnClick"
+                            Content="İptal" HorizontalAlignment="Center" MinWidth="100"/>
+                </StackPanel>
+            </Border>
         </Border>
 
     </Grid>

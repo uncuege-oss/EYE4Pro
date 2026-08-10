@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Kst.Acoustics.Core.Bina.Models;
 using Kst.Acoustics.Core.Common.Geometry;
 
@@ -52,9 +53,18 @@ public static class AciklikTespitServisi
                 GenislikM = a.GenislikM,
                 YukseklikM = a.YukseklikM,
                 EsikYuksekligiM = a.EsikYuksekligiM,
-                IptalEdildi = a.IptalEdildi, ManuelEklendi = a.ManuelEklendi, Kaynak = a.Kaynak
+                IptalEdildi = a.IptalEdildi, ManuelEklendi = a.ManuelEklendi, Kaynak = a.Kaynak,
+                EkAlanlar = EkAlanlariKopyala(a.EkAlanlar)
             })
             .ToList();
+        var mevcutOtomatik = mevcut
+            .Where(a => !a.ManuelEklendi && !a.IptalEdildi &&
+                        !(a.Kaynak?.Contains("-yansima", StringComparison.OrdinalIgnoreCase) ?? false))
+            .ToList();
+        var eslesenMevcut = new HashSet<BinaAciklik>();
+        var yeniOtomatik = new List<BinaAciklik>();
+        var cakismaListesi = new List<BinaAciklik>(sonuc);
+        var segmentIndeksi = new SegmentUzamsalIndeksi(duvarSegmentleri);
 
         // (A) ARC tabanlı — yüksek güven
         foreach (var (merkez, r, basDeg, bitDeg) in arclar)
@@ -70,45 +80,89 @@ public static class AciklikTespitServisi
                 merkez.X + r * Math.Cos(bitDeg * Math.PI / 180),
                 merkez.Y + r * Math.Sin(bitDeg * Math.PI / 180));
 
-            if (MinSegMesafesi(merkez, duvarSegmentleri) > ayar.MaxMenteseWallDistM) continue;
+            if (segmentIndeksi.MinMesafe(merkez, ayar.MaxKapiR + ayar.MaxMenteseWallDistM) > ayar.MaxMenteseWallDistM)
+                continue;
 
-            double dBas = MinSegMesafesi(bas, duvarSegmentleri);
-            double dBit = MinSegMesafesi(bit, duvarSegmentleri);
+            double aramaYaricapi = ayar.MaxKapiR + ayar.MaxMenteseWallDistM;
+            double dBas = segmentIndeksi.MinMesafe(bas, aramaYaricapi);
+            double dBit = segmentIndeksi.MinMesafe(bit, aramaYaricapi);
             var aciklikUcu = dBas <= dBit ? bas : bit;
 
-            if (!CakisiyorMu(sonuc, merkez, aciklikUcu, ayar.DedupTolM))
+            if (!CakisiyorMu(cakismaListesi, merkez, aciklikUcu, ayar.DedupTolM))
             {
                 double genis = Mesafe(merkez, aciklikUcu);
-                sonuc.Add(new BinaAciklik { Bas = merkez, Bit = aciklikUcu,
+                var yeni = new BinaAciklik { Bas = merkez, Bit = aciklikUcu,
                     Tip = BinaAciklikTipi.Kapi, Kaynak = "arc", GenislikM = genis,
-                    YukseklikM = BinaAciklik.VarsayilanYukseklik(BinaAciklikTipi.Kapi) });
+                    YukseklikM = BinaAciklik.VarsayilanYukseklik(BinaAciklikTipi.Kapi) };
+                yeniOtomatik.Add(yeni);
+                cakismaListesi.Add(yeni);
             }
         }
 
         // (B) Duvar boşluk analizi
-        foreach (var aciklik in DuvarBosluklariBul(duvarSegmentleri, ayar))
+        foreach (var aciklik in DuvarBosluklariBul(duvarSegmentleri, segmentIndeksi, ayar))
         {
-            if (!CakisiyorMu(sonuc, aciklik.Bas, aciklik.Bit, ayar.DedupTolM))
-                sonuc.Add(aciklik);
+            if (!CakisiyorMu(cakismaListesi, aciklik.Bas, aciklik.Bit, ayar.DedupTolM))
+            {
+                yeniOtomatik.Add(aciklik);
+                cakismaListesi.Add(aciklik);
+            }
+        }
+
+        // Yeniden taramada aynı fiziksel açıklığın kimliği ve kullanıcı
+        // tarafından düzenlenmiş tip/yükseklik/eşik alanları kararlı kalır.
+        foreach (var yeni in yeniOtomatik)
+        {
+            var eski = EnIyiMevcutEslesme(yeni, mevcutOtomatik, eslesenMevcut, ayar.DedupTolM);
+            if (eski is not null)
+            {
+                yeni.Id = eski.Id;
+                yeni.Tip = eski.Tip;
+                if (eski.YukseklikM > 0) yeni.YukseklikM = eski.YukseklikM;
+                yeni.EsikYuksekligiM = eski.EsikYuksekligiM;
+                yeni.EkAlanlar = EkAlanlariKopyala(eski.EkAlanlar);
+                eslesenMevcut.Add(eski);
+            }
+            sonuc.Add(yeni);
         }
 
         return sonuc;
     }
 
+    private static Dictionary<string, JsonElement>? EkAlanlariKopyala(
+        Dictionary<string, JsonElement>? alanlar)
+        => alanlar?.ToDictionary(kv => kv.Key, kv => kv.Value.Clone(), StringComparer.Ordinal);
+
     private static IEnumerable<BinaAciklik> DuvarBosluklariBul(
-        IReadOnlyList<(Point2D A, Point2D B)> segs, Ayarlar ayar)
+        IReadOnlyList<(Point2D A, Point2D B)> segs, SegmentUzamsalIndeksi indeks, Ayarlar ayar)
     {
-        foreach (var aciklik in EksendeBosluk(segs, yatay: true, ayar))
+        foreach (var aciklik in EksendeBosluk(segs, indeks, yatay: true, ayar))
             yield return aciklik;
-        foreach (var aciklik in EksendeBosluk(segs, yatay: false, ayar))
+        foreach (var aciklik in EksendeBosluk(segs, indeks, yatay: false, ayar))
             yield return aciklik;
     }
 
     private static bool SoveVarMi(
-        IReadOnlyList<(Point2D A, Point2D B)> segs, bool yatayAciklik,
+        SegmentUzamsalIndeksi indeks, bool yatayAciklik,
         double ucKonum, double eksen, Ayarlar ayar)
     {
-        foreach (var (a, b) in segs)
+        double minX, minY, maxX, maxY;
+        if (yatayAciklik)
+        {
+            minX = ucKonum - ayar.SoveAramaUcM;
+            maxX = ucKonum + ayar.SoveAramaUcM;
+            minY = eksen - ayar.SoveEksenYakinM;
+            maxY = eksen + ayar.SoveEksenYakinM;
+        }
+        else
+        {
+            minX = eksen - ayar.SoveEksenYakinM;
+            maxX = eksen + ayar.SoveEksenYakinM;
+            minY = ucKonum - ayar.SoveAramaUcM;
+            maxY = ucKonum + ayar.SoveAramaUcM;
+        }
+
+        foreach (var (a, b) in indeks.Sorgula(minX, minY, maxX, maxY))
         {
             double dx = b.X - a.X, dy = b.Y - a.Y;
             double len = Math.Sqrt(dx * dx + dy * dy);
@@ -139,10 +193,19 @@ public static class AciklikTespitServisi
     }
 
     private static bool KarsiDuvarVarMi(
-        IReadOnlyList<(Point2D A, Point2D B)> segs, bool yatayAciklik,
+        SegmentUzamsalIndeksi indeks, bool yatayAciklik,
         double ortaKonum, double eksen, Ayarlar ayar)
     {
-        foreach (var (a, b) in segs)
+        const double uzanti = 0.10;
+        var adaylar = yatayAciklik
+            ? indeks.Sorgula(
+                ortaKonum - uzanti, eksen - ayar.MaxKarsiDuvarM,
+                ortaKonum + uzanti, eksen + ayar.MaxKarsiDuvarM)
+            : indeks.Sorgula(
+                eksen - ayar.MaxKarsiDuvarM, ortaKonum - uzanti,
+                eksen + ayar.MaxKarsiDuvarM, ortaKonum + uzanti);
+
+        foreach (var (a, b) in adaylar)
         {
             double dx = b.X - a.X, dy = b.Y - a.Y;
             double len = Math.Sqrt(dx * dx + dy * dy);
@@ -173,7 +236,8 @@ public static class AciklikTespitServisi
     }
 
     private static IEnumerable<BinaAciklik> EksendeBosluk(
-        IReadOnlyList<(Point2D A, Point2D B)> segs, bool yatay, Ayarlar ayar)
+        IReadOnlyList<(Point2D A, Point2D B)> segs, SegmentUzamsalIndeksi indeks,
+        bool yatay, Ayarlar ayar)
     {
         var aday = new List<(double Eksen, double Bas, double Bit)>();
         foreach (var (a, b) in segs)
@@ -249,10 +313,10 @@ public static class AciklikTespitServisi
                 double sagUzun = kosumlar[i + 1].Bit - kosumlar[i + 1].Bas;
                 if (solUzun < ayar.KenarTamponM || sagUzun < ayar.KenarTamponM) continue;
 
-                if (!SoveVarMi(segs, yatay, gapBas, eksenDegeri, ayar)) continue;
-                if (!SoveVarMi(segs, yatay, gapBit, eksenDegeri, ayar)) continue;
+                if (!SoveVarMi(indeks, yatay, gapBas, eksenDegeri, ayar)) continue;
+                if (!SoveVarMi(indeks, yatay, gapBit, eksenDegeri, ayar)) continue;
                 double orta = (gapBas + gapBit) * 0.5;
-                if (!KarsiDuvarVarMi(segs, yatay, orta, eksenDegeri, ayar)) continue;
+                if (!KarsiDuvarVarMi(indeks, yatay, orta, eksenDegeri, ayar)) continue;
 
                 Point2D bas, bit;
                 if (yatay)
@@ -280,17 +344,41 @@ public static class AciklikTespitServisi
         return s;
     }
 
-    private static double MinSegMesafesi(Point2D p, IReadOnlyList<(Point2D A, Point2D B)> segs)
+    private static BinaAciklik? EnIyiMevcutEslesme(
+        BinaAciklik yeni,
+        IReadOnlyList<BinaAciklik> mevcut,
+        HashSet<BinaAciklik> kullanilan,
+        double tolerans)
     {
-        double min = double.MaxValue;
-        foreach (var (a, b) in segs)
+        double esik = Math.Max(0.15, tolerans);
+        var yeniOrta = OrtaNokta(yeni);
+        BinaAciklik? enIyi = null;
+        double enIyiPuan = double.MaxValue;
+
+        foreach (var eski in mevcut)
         {
-            double d = PoligonYardimci.SegmentMesafesi(p, a, b);
-            if (d < min) min = d;
-            if (min < 1e-6) return min;
+            if (kullanilan.Contains(eski)) continue;
+            double ortaUzaklik = Mesafe(yeniOrta, OrtaNokta(eski));
+            if (ortaUzaklik > esik) continue;
+
+            double ayniYon = Mesafe(yeni.Bas, eski.Bas) + Mesafe(yeni.Bit, eski.Bit);
+            double tersYon = Mesafe(yeni.Bas, eski.Bit) + Mesafe(yeni.Bit, eski.Bas);
+            double ucOrtalamasi = Math.Min(ayniYon, tersYon) * 0.5;
+            if (ucOrtalamasi > esik * 1.5) continue;
+
+            double uzunlukFarki = Math.Abs(
+                Mesafe(yeni.Bas, yeni.Bit) - Mesafe(eski.Bas, eski.Bit));
+            double puan = ortaUzaklik + ucOrtalamasi * 0.5 + uzunlukFarki * 0.25;
+            if (puan >= enIyiPuan) continue;
+            enIyiPuan = puan;
+            enIyi = eski;
         }
-        return min;
+
+        return enIyi;
     }
+
+    private static Point2D OrtaNokta(BinaAciklik a)
+        => new((a.Bas.X + a.Bit.X) * 0.5, (a.Bas.Y + a.Bit.Y) * 0.5);
 
     private static bool CakisiyorMu(List<BinaAciklik> liste, Point2D bas, Point2D bit, double tol)
     {
@@ -307,5 +395,119 @@ public static class AciklikTespitServisi
     {
         double dx = a.X - b.X, dy = a.Y - b.Y;
         return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    /// <summary>
+    /// Çok sayıda DXF segmentinde nokta/yakın çevre sorgularını tüm listeyi
+    /// dolaşmadan yapabilmek için metre tabanlı sabit hücreli uzamsal indeks.
+    /// Çok geniş segmentler hücreleri şişirmemek için ayrı listede tutulur.
+    /// </summary>
+    private sealed class SegmentUzamsalIndeksi
+    {
+        private const double HucreM = 1.0;
+        private const int EnCokHucre = 4096;
+        private const long EnCokSorguHucresi = 100_000;
+        private readonly IReadOnlyList<(Point2D A, Point2D B)> _segmentler;
+        private readonly Dictionary<(int X, int Y), List<int>> _hucreler = new();
+        private readonly List<int> _genisSegmentler = new();
+
+        public SegmentUzamsalIndeksi(IReadOnlyList<(Point2D A, Point2D B)> segmentler)
+        {
+            _segmentler = segmentler;
+            for (int i = 0; i < segmentler.Count; i++)
+            {
+                var (a, b) = segmentler[i];
+                if (!Sonlu(a) || !Sonlu(b)) continue;
+                int minX = Hucre(Math.Min(a.X, b.X));
+                int maxX = Hucre(Math.Max(a.X, b.X));
+                int minY = Hucre(Math.Min(a.Y, b.Y));
+                int maxY = Hucre(Math.Max(a.Y, b.Y));
+                long xSayisi = (long)maxX - minX + 1;
+                long ySayisi = (long)maxY - minY + 1;
+                if (xSayisi > EnCokHucre || ySayisi > EnCokHucre ||
+                    xSayisi > EnCokHucre / Math.Max(1, ySayisi))
+                {
+                    _genisSegmentler.Add(i);
+                    continue;
+                }
+
+                for (int x = minX; x <= maxX; x++)
+                for (int y = minY; y <= maxY; y++)
+                {
+                    var anahtar = (x, y);
+                    if (!_hucreler.TryGetValue(anahtar, out var liste))
+                        _hucreler[anahtar] = liste = new List<int>();
+                    liste.Add(i);
+                }
+            }
+        }
+
+        public double MinMesafe(Point2D p, double aramaYaricapi)
+        {
+            if (!Sonlu(p) || !double.IsFinite(aramaYaricapi) || aramaYaricapi < 0)
+                return double.MaxValue;
+
+            double min = double.MaxValue;
+            foreach (var (a, b) in Sorgula(
+                         p.X - aramaYaricapi, p.Y - aramaYaricapi,
+                         p.X + aramaYaricapi, p.Y + aramaYaricapi))
+            {
+                double d = PoligonYardimci.SegmentMesafesi(p, a, b);
+                if (d < min) min = d;
+                if (min < 1e-9) break;
+            }
+            return min;
+        }
+
+        public IEnumerable<(Point2D A, Point2D B)> Sorgula(
+            double minX, double minY, double maxX, double maxY)
+        {
+            if (!double.IsFinite(minX) || !double.IsFinite(minY) ||
+                !double.IsFinite(maxX) || !double.IsFinite(maxY))
+                yield break;
+
+            if (minX > maxX) (minX, maxX) = (maxX, minX);
+            if (minY > maxY) (minY, maxY) = (maxY, minY);
+
+            int ilkX = Hucre(minX), sonX = Hucre(maxX);
+            int ilkY = Hucre(minY), sonY = Hucre(maxY);
+            long xSayisi = (long)sonX - ilkX + 1;
+            long ySayisi = (long)sonY - ilkY + 1;
+            if (xSayisi > EnCokSorguHucresi || ySayisi > EnCokSorguHucresi ||
+                xSayisi > EnCokSorguHucresi / Math.Max(1, ySayisi))
+            {
+                // Aşırı büyük fakat sonlu koordinat/sorguda milyarlarca hücreyi
+                // dolaşmak yerine güvenli O(n) geri dönüşü kullan.
+                for (int i = 0; i < _segmentler.Count; i++)
+                {
+                    var s = _segmentler[i];
+                    if (Sonlu(s.A) && Sonlu(s.B)) yield return s;
+                }
+                yield break;
+            }
+
+            var gorulen = new HashSet<int>();
+            for (int x = ilkX; x <= sonX; x++)
+            for (int y = ilkY; y <= sonY; y++)
+            {
+                if (!_hucreler.TryGetValue((x, y), out var liste)) continue;
+                foreach (int i in liste)
+                    if (gorulen.Add(i)) yield return _segmentler[i];
+            }
+
+            foreach (int i in _genisSegmentler)
+                if (gorulen.Add(i)) yield return _segmentler[i];
+        }
+
+        private static int Hucre(double deger)
+        {
+            double hucre = Math.Floor(deger / HucreM);
+            if (hucre <= int.MinValue + 1.0) return int.MinValue + 1;
+            if (hucre >= int.MaxValue - 1.0) return int.MaxValue - 1;
+            return (int)hucre;
+        }
+
+        private static bool Sonlu(Point2D p)
+            => double.IsFinite(p.X) && double.IsFinite(p.Y);
     }
 }

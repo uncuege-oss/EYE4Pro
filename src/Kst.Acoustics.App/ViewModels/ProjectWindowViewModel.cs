@@ -13,7 +13,10 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
     private readonly AcousticsProject _project;
     private readonly IReadOnlyList<string> _sessionWarnings;
 
-    public ProjectWindowViewModel(AcousticsProject project, IReadOnlyList<string>? sessionWarnings = null)
+    public ProjectWindowViewModel(
+        AcousticsProject project,
+        IReadOnlyList<string>? sessionWarnings = null,
+        ProjectVersionHistoryService? versionHistoryService = null)
     {
         _project = project;
         _sessionWarnings = sessionWarnings?
@@ -33,7 +36,7 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
                 node.PropertyChanged += (_, e) =>
                 {
                     if (e.PropertyName == nameof(CategoryNodeViewModel.IsVisible))
-                        OnPropertyChanged(nameof(VisibleSurfaces));
+                        NotifyViewportPerformanceChanged();
                 };
                 return node;
             })
@@ -43,6 +46,7 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
 
         _originalSurfaces = project.Surfaces;
         _workingSurfaces  = project.Surfaces.ToList();
+        InitializeLargeModelPerformanceMode();
         LoadPoints(project.Sources, project.Receivers);
 
         // Materyal satırları — her kategori için bir VM
@@ -102,10 +106,14 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
 
         InitPanels();
         InitSurfaceMaterials();
+        InitMaterialMappingTemplates();
+        InitScenarios(project);
+        InitializeDocumentHistory(versionHistoryService);
     }
 
     public void Dispose()
     {
+        DisposeDocumentHistory();
         CancelActiveSimulation();
         MaterialDatabase.Instance.Changed -= OnMaterialDatabaseChanged;
     }
@@ -204,10 +212,11 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
                 {
                     _roomVolumeOrigin = RoomVolumeOrigin.UserProvided;
                     RoomVolumeSourceText = BuildRoomVolumeSourceText(_roomVolumeOrigin);
-                    MarkDirty();
                     InvalidateSimulationResult("Oda hacmi değiştirildi.");
+                    MarkDirty("Oda hacmi değiştirildi");
                 }
                 RefreshSabineCalculation();
+                RefreshTargetPerformance();
             }
         }
     }
@@ -331,14 +340,14 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<ProjectSurface> ProjectSurfaces => _workingSurfaces;
 
-    internal void NotifySurfacesChanged()
+    internal void NotifySurfacesChanged(string historyDescription = "Geometri değiştirildi")
     {
         OnPropertyChanged(nameof(ProjectSurfaces));
-        OnPropertyChanged(nameof(VisibleSurfaces));
-        MarkDirty();
+        NotifyViewportPerformanceChanged();
         RefreshRoomVolumeAfterGeometryChange();
         InvalidateSimulationResult("Geometri değiştirildi.");
         RefreshSabineCalculation();
+        MarkDirty(historyDescription);
     }
 
     private void RefreshRoomVolumeAfterGeometryChange()
@@ -365,12 +374,7 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>Viewport'a yalnızca görünür kategorilerin yüzeylerini gönderir.</summary>
-    public IReadOnlyList<ProjectSurface> VisibleSurfaces =>
-        _workingSurfaces
-            .Where(s => CategoryNodes
-                .FirstOrDefault(n => string.Equals(n.Name, s.Category, StringComparison.OrdinalIgnoreCase))
-                ?.IsVisible != false)
-            .ToList();
+    public IReadOnlyList<ProjectSurface> VisibleSurfaces => BuildViewportSurfaceList();
 
     private void SelectSurfaceById(int id) => HighlightedSurfaceId = id;
 
@@ -411,6 +415,8 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
             {
                 RefreshSelectedSurface(value);
                 OnPropertyChanged(nameof(CanDeleteSelectedSurface));
+                OnPropertyChanged(nameof(VisibleSurfaces));
+                OnPropertyChanged(nameof(PerformanceModeSummary));
             }
         }
     }
@@ -428,6 +434,8 @@ public sealed partial class ProjectWindowViewModel : ViewModelBase, IDisposable
                 SyncPanelRowsFromSelectedSurfaceIds(normalized);
                 OnPropertyChanged(nameof(CanApplyTransform));
                 OnPropertyChanged(nameof(CanDeleteSelectedSurface));
+                OnPropertyChanged(nameof(VisibleSurfaces));
+                OnPropertyChanged(nameof(PerformanceModeSummary));
             }
         }
     }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Kst.Acoustics.Core.Bina.Models;
 
@@ -22,6 +24,9 @@ public class BinaDuseyBirlesim : IBinaDuseyBirlesim
     /// Patlat öncesi alt katın oda listesi (derin kopya). Geri-al için.
     public List<BinaOda>? GeriAlmaAltKatOdalari { get; set; }
 
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? EkAlanlar { get; set; }
+
     // IBinaDuseyBirlesim
     IReadOnlyList<IBinaBirlesimUyesi> IBinaDuseyBirlesim.Uyeler => Uyeler;
 }
@@ -41,4 +46,7 @@ public class BinaBirlesimUyesi : IBinaBirlesimUyesi
     public bool TavanAcik { get; set; } = true;
     /// Bu odanın döşemesi birleşim gereği açık mı (alttaki odaya açılır).
     public bool DosemeAcik { get; set; } = true;
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? EkAlanlar { get; set; }
 }

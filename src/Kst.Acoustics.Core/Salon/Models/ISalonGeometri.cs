@@ -28,6 +28,10 @@ public interface ISalonGeometri
     IReadOnlyList<IDuvarAcikligi> Acikliklar { get; }
     /// Tavan kesit profili (boş = düz tavan `SalonYuksekligiM`'de).
     IReadOnlyList<ITavanKirilimNoktasi> TavanProfili { get; }
+    IReadOnlyList<SalonOlculendirme> Olculendirmeler { get; }
+    IReadOnlyList<SalonGeometrikKisit> GeometrikKisitlar { get; }
+    IReadOnlyList<SalonReferansAltlik> ReferansAltliklar { get; }
+    IReadOnlyList<SalonYansiticiPanel> YansiticiPaneller { get; }
 }
 
 public interface ISahneGeometri
@@ -55,6 +59,12 @@ public interface ISeyirciSekciyonu
     double MerkezX { get; }
     double MerkezY { get; }
     bool TersYon { get; }
+    double KoltukGenisligiM { get; }
+    double SiraAraligiM { get; }
+    double YanKoridorGenisligiM { get; }
+    int OrtaKoridorSayisi { get; }
+    double OrtaKoridorGenisligiM { get; }
+    int TekerlekliSandalyeYeri { get; }
 }
 
 public interface IBalkonGeometri
@@ -106,6 +116,7 @@ public interface ISalonKatman
     SalonKatmanTipi Tip { get; }
     string RenkHex { get; }
     bool Gorunur { get; }
+    bool Kilitli { get; }
 }
 
 public interface ISalonCizimOgesi
@@ -119,4 +130,6 @@ public interface ISalonCizimOgesi
     double AciBitisDeg { get; }
     bool Kapali { get; }
     string KatmanId { get; }
+    string? GrupId { get; }
+    string? BlokAdi { get; }
 }

@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Salon.Views.SalonKomutPaletiWindow" x:CompileBindings="False"
+        Width="620" Height="460" WindowStartupLocation="CenterOwner" Background="#0B1118"
+        Title="Komut Paleti" KeyDown="Window_KeyDown">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="16" RowSpacing="10">
+    <TextBox x:Name="AramaText" PlaceholderText="Komut, araç veya işlev ara…" TextChanged="Arama_TextChanged"
+             FontSize="16" Padding="12"/>
+    <ListBox x:Name="KomutList" Grid.Row="1" DoubleTapped="KomutList_DoubleTapped">
+      <ListBox.ItemTemplate><DataTemplate>
+        <Grid ColumnDefinitions="*,Auto" Margin="8,6">
+          <StackPanel><TextBlock Text="{Binding Ad}" Foreground="#E6EEF6" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding Grup}" Foreground="#71899D" FontSize="11"/></StackPanel>
+          <TextBlock Grid.Column="1" Text="{Binding Kisayol}" Foreground="#7FB7D8" VerticalAlignment="Center"/>
+        </Grid>
+      </DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+    <TextBlock Grid.Row="2" Text="Enter: çalıştır · Esc: kapat" Foreground="#71899D"/>
+  </Grid>
+</Window>

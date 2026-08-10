@@ -23,6 +23,10 @@ public static class KatKumelemeServisi
         /// kümeler antet/lejant/görünüş gibi plan-dışı öğe sayılır.
         public double MinPlanAlaniM2 = 20.0;
 
+        /// Plan başlığı gibi bbox'ın hemen dışında duran metinlerin en yakın
+        /// kümeye atanabileceği azami mesafe (m).
+        public double EtiketAtamaMesafesiM = 3.0;
+
         public long MaxHucre = 4_000_000;
     }
 
@@ -89,8 +93,10 @@ public static class KatKumelemeServisi
         foreach (var (a, b) in segmentler)
             CizgiCiz(dolu, w, h, CX(a.X), CY(a.Y), CX(b.X), CY(b.Y));
 
-        // Boşluk eşiği kadar genişlet (dilate) — bu mesafedeki hücreler birleşir.
-        int R = Math.Max(1, (int)Math.Round(ayar.KumeBoslukEsigiM / cs, MidpointRounding.AwayFromZero));
+        // Her iki küme de R kadar genişlediğinden toplam birleşme mesafesi yaklaşık
+        // 2R'dir. Eşiğin tamamını iki yana uygulamak, 5 m ayarında yaklaşık 10 m
+        // uzaktaki ayrı planları yanlışlıkla tek kümeye bağlıyordu.
+        int R = Math.Max(0, (int)Math.Floor(ayar.KumeBoslukEsigiM / (2.0 * cs)));
         var genisletilmis = Dilate(dolu, w, h, R);
 
         // Bağlı bileşen etiketleme (8-komşuluk) genişletilmiş ızgarada.
@@ -142,10 +148,29 @@ public static class KatKumelemeServisi
                 kMaxY = Math.Max(kMaxY, Math.Max(a.Y, b.Y));
             }
 
-            var metinlerK = metinler.Where(t => IcindeMi(t.Pos, kMinX, kMinY, kMaxX, kMaxY)).ToList();
             var arclarK = arclar.Where(ar => IcindeMi(ar.Merkez, kMinX, kMinY, kMaxX, kMaxY)).ToList();
 
-            sonuc.Add(new KatKumesi(kMinX, kMinY, kMaxX, kMaxY, segs, metinlerK, arclarK));
+            sonuc.Add(new KatKumesi(kMinX, kMinY, kMaxX, kMaxY, segs, new(), arclarK));
+        }
+
+        // Metinleri her kümenin yalnız tam bbox içinden toplamak, plan başlığını
+        // çoğu CAD çiziminde olduğu gibi çerçevenin hemen dışındaysa kaybediyordu.
+        // Her metin en fazla bir kez, tolerans içindeki en yakın bbox'a atanır.
+        foreach (var metin in metinler)
+        {
+            KatKumesi? enYakinKume = null;
+            double enYakinMesafe = double.MaxValue;
+            foreach (var kume in sonuc)
+            {
+                double mesafe = DikdortgeneMesafe(
+                    metin.Pos, kume.MinX, kume.MinY, kume.MaxX, kume.MaxY);
+                if (mesafe >= enYakinMesafe) continue;
+                enYakinMesafe = mesafe;
+                enYakinKume = kume;
+            }
+
+            if (enYakinKume is not null && enYakinMesafe <= ayar.EtiketAtamaMesafesiM)
+                enYakinKume.Metinler.Add(metin);
         }
 
         return sonuc.OrderBy(k => k.MinY).ThenBy(k => k.MinX).ToList();
@@ -185,6 +210,14 @@ public static class KatKumelemeServisi
 
     private static bool IcindeMi(Point2D p, double minX, double minY, double maxX, double maxY)
         => p.X >= minX && p.X <= maxX && p.Y >= minY && p.Y <= maxY;
+
+    private static double DikdortgeneMesafe(
+        Point2D p, double minX, double minY, double maxX, double maxY)
+    {
+        double dx = p.X < minX ? minX - p.X : p.X > maxX ? p.X - maxX : 0;
+        double dy = p.Y < minY ? minY - p.Y : p.Y > maxY ? p.Y - maxY : 0;
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
 
     private static void CizgiCiz(bool[] grid, int w, int h, int x0, int y0, int x1, int y1)
     {

@@ -118,6 +118,7 @@ public static class AcousticsProjectValidator
             issues,
             expectedUnitScale);
         ValidateSimulationResult(project.LastResult, issues);
+        ValidateScenarios(project, issues);
 
         return issues;
     }
@@ -515,5 +516,79 @@ public static class AcousticsProjectValidator
     {
         if (!double.IsFinite(left) || !double.IsFinite(right)) return false;
         return Math.Abs(left - right) <= Math.Max(1e-12, Math.Abs(right) * 1e-9);
+    }
+
+    private static void ValidateScenarios(
+        AcousticsProject project,
+        List<ProjectValidationIssue> issues)
+    {
+        if (project.Scenarios is null)
+        {
+            issues.Add(new ProjectValidationIssue(
+                "Senaryo koleksiyonu boş (null) olamaz.", ProjectValidationSeverity.Error));
+            return;
+        }
+
+        var ids = new HashSet<Guid>();
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var scenario in project.Scenarios)
+        {
+            if (scenario is null)
+            {
+                issues.Add(new ProjectValidationIssue(
+                    "Senaryo listesinde boş öğe var.", ProjectValidationSeverity.Error));
+                continue;
+            }
+
+            if (scenario.Id == Guid.Empty || !ids.Add(scenario.Id))
+                issues.Add(new ProjectValidationIssue(
+                    $"Senaryo ID'si boş veya yineleniyor: {scenario.Id}.", ProjectValidationSeverity.Error));
+            if (string.IsNullOrWhiteSpace(scenario.Name))
+                issues.Add(new ProjectValidationIssue(
+                    $"Senaryo {scenario.Id} adı boş olamaz.", ProjectValidationSeverity.Error));
+            else if (!names.Add(scenario.Name.Trim()))
+                issues.Add(new ProjectValidationIssue(
+                    $"Yinelenen senaryo adı: '{scenario.Name.Trim()}'.",
+                    ProjectValidationSeverity.Warning));
+            if (scenario.CreatedAtUtc == default || scenario.UpdatedAtUtc == default ||
+                scenario.UpdatedAtUtc < scenario.CreatedAtUtc)
+                issues.Add(new ProjectValidationIssue(
+                    $"Senaryo '{scenario.Name}' geçersiz tarih bilgisi içeriyor.",
+                    ProjectValidationSeverity.Error));
+            if (scenario.State is null)
+            {
+                issues.Add(new ProjectValidationIssue(
+                    $"Senaryo '{scenario.Name}' çalışma snapshot'ı içermiyor.",
+                    ProjectValidationSeverity.Error));
+                continue;
+            }
+
+            if (scenario.State.Surfaces is null || scenario.State.Sources is null ||
+                scenario.State.Receivers is null || scenario.State.CategoryMaterials is null ||
+                scenario.State.SurfaceMaterials is null ||
+                scenario.State.Surfaces.Any(s => s is null) ||
+                scenario.State.Sources.Any(p => p is null) ||
+                scenario.State.Receivers.Any(p => p is null))
+            {
+                issues.Add(new ProjectValidationIssue(
+                    $"Senaryo '{scenario.Name}' eksik veya boş koleksiyon öğesi içeriyor.",
+                    ProjectValidationSeverity.Error));
+                continue;
+            }
+
+            var scenarioProject = AcousticScenarioCloner.ApplyToProject(project, scenario.State) with
+            {
+                Scenarios = [],
+                ActiveScenarioId = null
+            };
+            foreach (var nested in Validate(scenarioProject))
+                issues.Add(new ProjectValidationIssue(
+                    $"Senaryo '{scenario.Name}': {nested.Message}", nested.Severity));
+        }
+
+        if (project.ActiveScenarioId is { } active && !ids.Contains(active))
+            issues.Add(new ProjectValidationIssue(
+                $"Etkin senaryo ID'si listede bulunmuyor: {active}.",
+                ProjectValidationSeverity.Error));
     }
 }

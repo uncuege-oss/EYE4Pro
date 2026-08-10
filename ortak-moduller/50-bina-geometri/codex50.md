@@ -1,7 +1,7 @@
 # CODEX 50 — Bina Geometrisi (Ortak Modül)
 
 > **Durum:** Tamamlandı — Faz 1-5 bitti, M12/M08 köprüleri kurulu (2026-06-13). §9 Çoklu Kat Tek
-> DXF (2026-07-17) tamamlandı. Aktif/üretimde.
+> DXF (2026-07-17) ve güvenilirlik/hızlı kullanım paketi (2026-08-07) tamamlandı. Aktif/üretimde.
 > **Bağlı codex'ler:** [codex8](../../akustik/08-bina-gurultu/codex8.md), [codex12](../../elektrik/12-basit-proje-ciz/codex12.md)
 > **Çekirdek:** `src/Kst.Acoustics.Core/Bina/` · **UI:** `src/Kst.Acoustics.App/Bina/`
 
@@ -50,6 +50,7 @@ ve çift yönlü Core bağımlılığıyla taşıyordu. M50 ile:
 ```
 BinaGeometri            ← kök: SemaSurum, GeometriRevizyon, Katlar[], DuseyBirlesimler[]
 ├── BinaKat             ← Id, Ad, KatNo, KatYuksekligiM, OriginOffset, DxfFilePath,
+│                         DxfBirimOlcegiM/DxfNormalizeOfsetiM/DxfKaynakBolgesi* (v3),
 │                         DxfGoster/BloklariGoster (INPC), Odalar[], Acikliklar[],
 │                         DxfSegmentler (sadeleşmiş), DxfArclar
 ├── BinaOda             ← Id, Ad (INPC), Poligon, AlanM2, Merkez,
@@ -63,6 +64,10 @@ BinaGeometri            ← kök: SemaSurum, GeometriRevizyon, Katlar[], DuseyBi
 
 ### 3.2 `.e4bina` dosya formatı
 - JSON, uzantı `.e4bina.json`. `SemaSurum` migrasyon deseni baştan dahil (M12'de kanıtlandı).
+- Güncel `SemaSurum=3`: DXF birim ölçeği, yerel normalize ofseti ve tek-DXF çoklu-kat
+  kaynak bölgesi kalıcıdır. v2 dosyalar bu alanları `0/null` fallback ile açar.
+- `DxfFilePath` JSON'da `.e4bina` klasörüne göre göreli, canlı modelde çözümlenmiş mutlak
+  yol tutulur; proje klasörü taşındığında DXF bağı korunur.
 - `GeometriRevizyon`: her kayıtta artan damga. Modül projesi yüklediği revizyonu saklar;
   açılışta fark varsa "bina geometrisi güncellenmiş" uyarısı.
 
@@ -187,17 +192,23 @@ Dosya taşınsa/silinse bile modül projesi açılır; revizyon farkı varsa kul
 ## 7. Kullanım Kılavuzu (özet)
 
 ### M50'de geometri hazırlama
-1. Herhangi bir ana başlık girişinden **⬡ Bina Geometrisi** ile M50'yi aç.
+1. Herhangi bir ana başlık girişinden **⬡ Bina Geometrisi** ile M50'yi aç. Boş ekrandaki
+   **DXF İçe Aktar** çağrısını kullanabilir veya `.dxf` / `.e4bina.json` dosyasını pencereye
+   sürükleyip bırakabilirsin. Son kullanılan dosyalar üst çubuktan doğrudan açılır.
 2. **DXF Kat Planı Yükle** ile katları sırayla ekle (odalar + açıklıklar otomatik taranır)
    veya boş kat ekleyip **✏ Oda Çiz** ile elle çiz. Seçilen DXF'te yan yana birden fazla
    plan tespit edilirse (§9) **Çoklu Kat Dağıtımı** diyaloğu açılır: her plan kümesi için
    önerilen ad/sıra/yükseklik düzenlenip dahil/hariç işaretlenir; onaylanınca katlar tek
    seferde ▲ üst → ▼ alt sırasıyla listeye eklenir.
-3. Düzenleme: köşe sürükle · kenara çift tık = köşe ekle · köşeye sağ tık = köşe sil ·
+3. Etkin araç üstteki **MOD** göstergesinde görünür. Düzenleme: köşe sürükle · kenarı
+   sürükle = duvarı taşı · kenara çift tık = köşe ekle · köşeye sağ tık = köşe sil ·
    araç çubuğundan oda adı/silme · AÇIKLIK çubuğundan tara / + Kapı / + Pencere /
-   tip-boyut-eşik düzenleme · ⬆⬇ Tavan/Döşeme Patlat · ↶↷ undo (Cmd/Ctrl+Z).
+   tip-boyut-eşik düzenleme · ⬆⬇ Tavan/Döşeme Patlat · ↶↷ undo/redo. `Esc` modu iptal,
+   `Enter` oda çizimini tamamlar; `Delete`, `F/D/K/P`, Cmd/Ctrl+S/O/N/I/Z kısayolları vardır.
 4. **🧊 3D Önizleme** ile kontrol et, **Kaydet** ile `.e4bina.json` üret
-   (her kayıt `GeometriRevizyon`'u artırır).
+   (her kayıt `GeometriRevizyon`'u artırır). Aktif metin kutusu önce uygulanır; 45 saniyelik
+   otomatik kurtarma yalnız kirli belgeyi yazar ve başarılı kayıtta temizlenir. Aynı dosya
+   başka bir M50 oturumunda değişmişse kayıt çakışması sessiz overwrite yerine reddedilir.
 
 ### Modüllerde kullanma (M12 / M08)
 - Araç çubuğundaki **"Bina Geo." / "Bina Geometrisi Yükle"** ile `.e4bina` seç:
@@ -206,9 +217,14 @@ Dosya taşınsa/silinse bile modül projesi açılır; revizyon farkı varsa kul
 - Yüklemeden önce **mutabakat raporu**: yeni geometride karşılığı olmayan oda bağları
   listelenir; "Yine de Yükle" veya "Vazgeç".
 - Proje açılışında bağlı `.e4bina` daha yeni revizyondaysa durum çubuğunda uyarı çıkar;
-  **"M50'de Düzenle"** kısayolu geometriyi M50'de açar (modül penceresi kapanmaz).
+  durum **Güncel / Bayat / Dosya geri revizyonda / Dosya Yok / Dosya okunamıyor** olarak
+  ayrılır. **"M50'de Düzenle"** kısayolu geometriyi yardımcı/owner penceresinde açar;
+  aynı yol ikinci kez açılmaz, mevcut pencere öne gelir ve M50 kapanınca kaydedilmiş yeni
+  revizyon otomatik içe alınır.
 - Eski projeler (`.e4p12`/`.e4p08`): ilk açılışta gömülü geometri otomatik `.e4bina`'ya
-  dışa aktarılır ve bağlanır; kalıcılaşması için projeyi kaydetmek yeterli.
+  güvenli benzersiz yan dosyaya dışa aktarılır ve bağlanır; kalıcılaşması için projeyi
+  kaydetmek yeterli. Yan dosya kayıpsa **Gömülü Kurtar**, canlı proje kopyasını değiştirmeden
+  bağımsız bir kopya üretir ve mutabakat/onaydan sonra atomik uygular.
 
 ## 8. Karar Günlüğü
 | Tarih | Karar |
@@ -234,6 +250,9 @@ kümeleyip katlara dağıtan özellik uçtan uca çalışır: `KatKumelemeServis
 `CokluKatDagitimWindow` UI, `DxfYukle_OnClick` entegrasyonu. Gerçek test koşucusu
 `dotnet run --project Kst.Acoustics.Tests`: **597 test geçer** (12 yeni §9 testi dahil);
 Core.Tests (`dotnet run --project Kst.Acoustics.Core.Tests`): **121 test geçer**. |
+| 2026-08-07 | **M50 güvenilirlik paketi — SemaSurum 2→3.** Otomatik açıklık ve komşu-duvar yansıma Id'leri yeniden taramada kararlı; kullanıcı tip/yükseklik/eşik alanları korunur. İçbükey odalarda içeride kalan temsil noktası kullanılır. DXF ölçek + normalize ofset + çoklu-kat kaynak bbox'ı kalıcılaştırıldı; kayıt sonrası tam-segment yeniden okuma aynı yerel koordinatı üretir ve `DxfFilePath` proje klasörüne göre göreli yazılır. Annotation katmanları kümeleri birleştirmez; boşluk eşiğinin çift uygulanması ve bbox dışı yakın etiket kaybı düzeltildi. Şema/kimlik/fiziksel sınır/poligon invariantları doğrulanır; bilinmeyen güncel-şema JSON alanları kayıpsız yazılır. |
+| 2026-08-07 | **Editör güvenilirliği ve hızlı kullanım.** Undo/redo artık katlar, odalar, açıklıklar, patlatma ve metadata dahil tam belge snapshot'ıdır; save checkpoint ile `IsDirty` doğru izlenir, no-op sürükleme adım üretmez. Seçili-kat DXF yenileme pahalı işi önce adayda tamamlayıp Id/ileri-uyum alanlarını güvenli eşler; split/merge belirsizliğinde eski oda Id'sini keyfi devretmez. Yansıma çifti deterministik Id ile düzenlenir; yakın bağımsız açıklık etkilenmez. Boş-durum CTA, sürükle-bırak, görünür araç modu, büyük hedefler, ad alanları, busy/iptal, son dosyalar, otomatik kurtarma ve belge kısayolları eklendi. Kaynak DXF/tam segment kümesi yoksa kayıplı önizleme verisiyle açıklık taraması yapılmaz. |
+| 2026-08-07 | **Kayıt ve tüketici güvenliği.** Atomik kayıt canlı koleksiyon referanslarını değiştirmez; aynı sidecar'ın bayat revizyonla üzerine yazılması reddedilir. Süreçler arası hedef-bitişik dosya kilidi, kilit altında revizyon karşılaştırması ve işleme özel geçici dosya eşzamanlı iki M50 oturumunda sessiz veri ezilmesini engeller. Aynı oda birden fazla aktif düşey birleşime giremez. M08/M12 sidecar yolları proje-klasörüne göre göreli saklanır ve bozuk yollar UI binding'ini düşürmez. Gömülü kurtarma bağımsız kopyadan yapılır. M08/M12 çapraz-kat oda taşımada tek global oda kimliği ve domain bayrak/akustik verisi korunur; mutabakat OdaId+KatId çiftini denetler. M50 üstten-alta kat sırası M08 darbe/patlatma yönünde KatId+koleksiyon sırasıyla yorumlanır; geometride silinip domain verisi için korunan eski katlar güncel komşuluk hesabına katılmaz. M12 geometriyi kilitli/salt-okunur ve aday-kopyada atomik tüketir; eski yerel geometri komutları yayınlanmaz. |
 
 ## 9. Çoklu Kat Tek DXF (Yan Yana Planlar) — Tamamlandı (2026-07-17)
 

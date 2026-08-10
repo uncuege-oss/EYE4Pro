@@ -36,7 +36,8 @@ public class SalonTasarlaViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(Acikliklar));
             OnPropertyChanged(nameof(PencereBasligi));
             OnPropertyChanged(nameof(SalonYuksekligiM));
-            SeciliKatman = _salon.Katmanlar.Count > 0 ? _salon.Katmanlar[0] : null;
+            SeciliKatman = _salon.Katmanlar.FirstOrDefault(k => k.Gorunur)
+                ?? _salon.Katmanlar.FirstOrDefault();
             SeciliSeyirci = null;
             SeciliBalkon = null;
             SeciliTavanNoktasi = null;
@@ -52,8 +53,9 @@ public class SalonTasarlaViewModel : INotifyPropertyChanged
     public SeyirciSekciyonu? SeciliSeyirci
     {
         get => _seciliSeyirci;
-        set { if (_seciliSeyirci == value) return; _seciliSeyirci = value; OnPropertyChanged(); }
+        set { if (_seciliSeyirci == value) return; _seciliSeyirci = value; OnPropertyChanged(); OnPropertyChanged(nameof(SeciliSeyirciVar)); }
     }
+    public bool SeciliSeyirciVar => _seciliSeyirci is not null;
 
     public System.Collections.ObjectModel.ObservableCollection<BalkonGeometri> Balkonlar => _salon.Balkonlar;
 
@@ -61,8 +63,9 @@ public class SalonTasarlaViewModel : INotifyPropertyChanged
     public BalkonGeometri? SeciliBalkon
     {
         get => _seciliBalkon;
-        set { if (_seciliBalkon == value) return; _seciliBalkon = value; OnPropertyChanged(); }
+        set { if (_seciliBalkon == value) return; _seciliBalkon = value; OnPropertyChanged(); OnPropertyChanged(nameof(SeciliBalkonVar)); }
     }
+    public bool SeciliBalkonVar => _seciliBalkon is not null;
 
     public System.Collections.ObjectModel.ObservableCollection<TavanKirilimNoktasi> TavanProfili => _salon.TavanProfili;
 
@@ -70,8 +73,9 @@ public class SalonTasarlaViewModel : INotifyPropertyChanged
     public TavanKirilimNoktasi? SeciliTavanNoktasi
     {
         get => _seciliTavanNoktasi;
-        set { if (_seciliTavanNoktasi == value) return; _seciliTavanNoktasi = value; OnPropertyChanged(); }
+        set { if (_seciliTavanNoktasi == value) return; _seciliTavanNoktasi = value; OnPropertyChanged(); OnPropertyChanged(nameof(SeciliTavanNoktasiVar)); }
     }
+    public bool SeciliTavanNoktasiVar => _seciliTavanNoktasi is not null;
 
     public System.Collections.ObjectModel.ObservableCollection<DuvarAcikligi> Acikliklar => _salon.Acikliklar;
 
@@ -79,16 +83,18 @@ public class SalonTasarlaViewModel : INotifyPropertyChanged
     public DuvarAcikligi? SeciliAciklik
     {
         get => _seciliAciklik;
-        set { if (_seciliAciklik == value) return; _seciliAciklik = value; OnPropertyChanged(); }
+        set { if (_seciliAciklik == value) return; _seciliAciklik = value; OnPropertyChanged(); OnPropertyChanged(nameof(SeciliAciklikVar)); }
     }
+    public bool SeciliAciklikVar => _seciliAciklik is not null;
 
     private SalonKatman? _seciliKatman;
     /// Aktif katman — yeni çizilen öğeler buraya atanır.
     public SalonKatman? SeciliKatman
     {
         get => _seciliKatman;
-        set { if (_seciliKatman == value) return; _seciliKatman = value; OnPropertyChanged(); }
+        set { if (_seciliKatman == value) return; _seciliKatman = value; OnPropertyChanged(); OnPropertyChanged(nameof(SeciliKatmanVar)); }
     }
+    public bool SeciliKatmanVar => _seciliKatman is not null;
 
     public double SalonYuksekligiM
     {
@@ -123,13 +129,50 @@ public class SalonTasarlaViewModel : INotifyPropertyChanged
         }
     }
 
+    private bool _uygulanmamisTaslakVar;
+    /// Panelde henüz "Oluştur / Güncelle" ile modele uygulanmamış kullanıcı girişi.
+    /// Model dirty durumundan ayrı tutulur; kapanış ve belge değiştirme korumasına dahildir.
+    public bool UygulanmamisTaslakVar
+    {
+        get => _uygulanmamisTaslakVar;
+        set
+        {
+            if (_uygulanmamisTaslakVar == value) return;
+            _uygulanmamisTaslakVar = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PencereBasligi));
+        }
+    }
+
+    private bool _canUndo;
+    public bool CanUndo
+    {
+        get => _canUndo;
+        set { if (_canUndo == value) return; _canUndo = value; OnPropertyChanged(); }
+    }
+
+    private bool _canRedo;
+    public bool CanRedo
+    {
+        get => _canRedo;
+        set { if (_canRedo == value) return; _canRedo = value; OnPropertyChanged(); }
+    }
+
+    private string _koordinatMesaji = "x: 0,00 m   y: 0,00 m";
+    /// Fare koordinatı ve ölçek; komut talimatından ayrı gösterilir.
+    public string KoordinatMesaji
+    {
+        get => _koordinatMesaji;
+        set { if (_koordinatMesaji == value) return; _koordinatMesaji = value; OnPropertyChanged(); }
+    }
+
     public string PencereBasligi
     {
         get
         {
             var ad = string.IsNullOrWhiteSpace(_salon.SalonAdi) ? "Adsız Salon" : _salon.SalonAdi;
             var dosya = string.IsNullOrWhiteSpace(_salon.DosyaYolu) ? "" : $" — {Path.GetFileName(_salon.DosyaYolu)}";
-            var kirli = _isDirty ? " *" : "";
+            var kirli = _isDirty || _uygulanmamisTaslakVar ? " *" : "";
             return $"Salon Tasarla — {ad}{dosya}{kirli}";
         }
     }
@@ -138,5 +181,17 @@ public class SalonTasarlaViewModel : INotifyPropertyChanged
     {
         OnPropertyChanged(nameof(PencereBasligi));
         OnPropertyChanged(nameof(SalonYuksekligiM));
+    }
+
+    /// Kaydet/normalize aynı model örneğindeki koleksiyon nesnelerini yenileyebilir;
+    /// binding'lerin eski koleksiyonda kalmaması için tüm türetilmiş kaynakları bildirir.
+    public void ModelBaglariniYenile()
+    {
+        OnPropertyChanged(nameof(Katmanlar));
+        OnPropertyChanged(nameof(CizimOgeleri));
+        OnPropertyChanged(nameof(SeyirciSekciyonlari));
+        OnPropertyChanged(nameof(Balkonlar));
+        OnPropertyChanged(nameof(TavanProfili));
+        OnPropertyChanged(nameof(Acikliklar));
     }
 }

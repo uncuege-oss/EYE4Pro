@@ -24,6 +24,9 @@ public class Bolme : INotifyPropertyChanged
     public List<BolmeAcikligi> Acikliklar { get; set; } = new();
     public List<Menfez> Menfezler { get; set; } = new();
     public List<Junction> Junctions { get; set; } = new();
+    /// <summary>Rapor ve akustik proje paketindeki pafta/detay anahtarı.</summary>
+    public string PaftaReferansi { get; set; } = "";
+    public string UygulamaNotu { get; set; } = "";
     public double AciklikAlani => Acikliklar.Sum(a => Math.Max(0, a.Alan));
     public double NetOpakAlan => Math.Max(0, Alan - AciklikAlani);
     
@@ -104,6 +107,8 @@ public enum BolmeAcikligiTipi
 
 public class BolmeAcikligi
 {
+    /// <summary>Senaryo/görev hedeflemesi için M08 içindeki kalıcı kimlik.</summary>
+    public Guid Id { get; set; } = Guid.NewGuid();
     public BolmeAcikligiTipi Tip { get; set; }
     public YapiElemani? YapiElemani { get; set; }
 

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Kst.Acoustics.Core.Bina.Models;
 
@@ -7,7 +9,7 @@ namespace Kst.Acoustics.Core.Bina.Models;
 public class BinaGeometri : IBinaGeometri
 {
     /// Şema versiyon numarası — migrasyon tetikleyicisi.
-    public int SemaSurum { get; set; } = 1;
+    public int SemaSurum { get; set; } = 3;
 
     /// Her kayıtta artan revizyon sayacı. Modüller yükledikleri değeri projeye
     /// yazar; fark varsa "geometri güncellenmiş" uyarısı gösterilir.
@@ -23,6 +25,10 @@ public class BinaGeometri : IBinaGeometri
 
     public ObservableCollection<BinaKat> Katlar { get; set; } = new();
     public List<BinaDuseyBirlesim> DuseyBirlesimleri { get; set; } = new();
+
+    /// Güncel şemaya ait üreticiye-özel alanları kayıp olmadan yeniden yazmak için.
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? EkAlanlar { get; set; }
 
     // IBinaGeometri read-only görünümleri
     IReadOnlyList<IBinaKat> IBinaGeometri.Katlar => Katlar;

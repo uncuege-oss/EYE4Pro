@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Line = Avalonia.Controls.Shapes.Line;
+using Kst.Acoustics.App.Bina.Views;
 using Kst.Acoustics.App.Controls;
 using Kst.Acoustics.App.Electric.BasitProjeCiz.ViewModels;
 using Kst.Acoustics.App.Views;
@@ -23,8 +25,14 @@ namespace Kst.Acoustics.App.Electric.BasitProjeCiz.Views;
 
 public partial class BasitProjeCizWindow : Window
 {
+    private static readonly StringComparer DosyaYoluKarsilastiricisi =
+        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
     private readonly BasitProjeCizViewModel _vm = new();
     private readonly BasitProjeCizDxfServisi _dxf = new();
+    private readonly Dictionary<string, BinaGeometriWindow> _acikM50Pencereleri =
+        new(DosyaYoluKarsilastiricisi);
     // Çoklu eleman drag: diğer seçili elemanların birinciye göre ofseti
     private readonly System.Collections.Generic.Dictionary<string, (double dX, double dY)>
         _dragOtherOffsets = new();
@@ -260,12 +268,6 @@ public partial class BasitProjeCizWindow : Window
                     _vm.EklenecekSembolKanvasaEkle(
                         worldX - seciliKat.OriginOffset.X,
                         worldY - seciliKat.OriginOffset.Y);
-                    return;
-                }
-
-                if (_vm.ManuelAciklikModu)
-                {
-                    _vm.ManuelAciklikTiklama(worldX, worldY);
                     return;
                 }
 
@@ -585,14 +587,51 @@ public partial class BasitProjeCizWindow : Window
     /// Bağlı .e4bina'yı M50 penceresinde açar (M12 penceresi açık kalır).
     private void M50DeDuzenle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var win = new Kst.Acoustics.App.Bina.Views.BinaGeometriWindow(null);
-        var yol = _vm.Proje.BinaGeometriYolu;
+        if (_vm.KilitliyseDur("M50 geometri düzenlemesini açmak")) return;
+        var yol = _vm.BinaGeometriDosyaYolunuCoz();
+        if (!string.IsNullOrWhiteSpace(yol) &&
+            _acikM50Pencereleri.TryGetValue(yol, out var acikM50))
+        {
+            acikM50.Activate();
+            acikM50.Focus();
+            _vm.DurumMesaji = "Bağlı geometri zaten M50'de açık; pencere öne getirildi.";
+            return;
+        }
+
+        var win = new BinaGeometriWindow(null, yardimciMod: true)
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        var oncekiRevizyon = _vm.Proje.BinaGeometriRevizyon;
+        win.Closed += async (_, _) =>
+        {
+            if (!string.IsNullOrWhiteSpace(yol) &&
+                _acikM50Pencereleri.TryGetValue(yol, out var kayitliM50) &&
+                ReferenceEquals(kayitliM50, win))
+                _acikM50Pencereleri.Remove(yol);
+            _vm.BinaGeometriDurumunuYenile();
+            if (string.IsNullOrWhiteSpace(yol) || !File.Exists(yol) || _vm.ProjeKilitli) return;
+            try
+            {
+                var guncel = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Ac(yol);
+                if (oncekiRevizyon is null || guncel.GeometriRevizyon != oncekiRevizyon.Value)
+                    await BagliBinaGeometrisiniGuncelle();
+            }
+            catch (Exception ex)
+            {
+                _vm.DurumMesaji = $"M50 dönüşünde geometri okunamadı: {ex.Message}";
+            }
+        };
+        win.Show(this);
+        if (!string.IsNullOrWhiteSpace(yol))
+            _acikM50Pencereleri[yol] = win;
+        // DosyaAc, pencerenin başlangıç abonelikleri kurulduktan sonra çağrılır;
+        // ilk kat seçimi ve dirty takibi böylece kaçırılmaz.
         if (!string.IsNullOrWhiteSpace(yol) && File.Exists(yol))
-            win.DosyaAc(yol!);
-        win.Show();
+            win.DosyaAc(yol);
         _vm.DurumMesaji = string.IsNullOrWhiteSpace(yol)
-            ? "M50 Bina Geometrisi açıldı — geometriyi kaydedip 'Bina Geo.' ile bu projeye yükleyin."
-            : "Bağlı geometri M50'de açıldı — kaydedince 'Bina Geo.' ile yeniden yükleyin.";
+            ? "M50 Bina Geometrisi açıldı — geometriyi kaydedip bu projeye yükleyin."
+            : "Bağlı geometri M50'de açıldı — M50 kapanınca değişiklik otomatik yeniden yüklenecek.";
     }
 
     private async void Ac_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -634,6 +673,7 @@ public partial class BasitProjeCizWindow : Window
 
     private async void BinaGeometrisiYukle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        if (_vm.KilitliyseDur("bina geometrisini yüklemek")) return;
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Bina Geometrisi Yükle (.e4bina)",
@@ -644,6 +684,28 @@ public partial class BasitProjeCizWindow : Window
         var path = files.FirstOrDefault()?.Path.LocalPath;
         if (string.IsNullOrWhiteSpace(path)) return;
 
+        await BinaGeometrisiniMutabakatlaUygula(path);
+    }
+
+    private async void BagliBinaGeometrisiniGuncelle_OnClick(
+        object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await BagliBinaGeometrisiniGuncelle();
+
+    private async Task BagliBinaGeometrisiniGuncelle()
+    {
+        if (_vm.KilitliyseDur("bina geometrisini güncellemek")) return;
+        var path = _vm.BinaGeometriDosyaYolunuCoz();
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            _vm.DurumMesaji = "Bağlı .e4bina dosyası yok. Gömülü Kurtar ile yeniden oluşturabilirsiniz.";
+            _vm.BinaGeometriDurumunuYenile();
+            return;
+        }
+        await BinaGeometrisiniMutabakatlaUygula(path);
+    }
+
+    private async Task<bool> BinaGeometrisiniMutabakatlaUygula(string path)
+    {
         try
         {
             // 3.4 — Mutabakat: askıda kalacak veri varsa önce diyalogla onay al.
@@ -654,14 +716,55 @@ public partial class BasitProjeCizWindow : Window
                 if (!devam)
                 {
                     _vm.DurumMesaji = "Bina geometrisi yüklemesi iptal edildi (askıda veri).";
-                    return;
+                    return false;
                 }
             }
             _vm.BinaGeometrisiUygula(geo, path);
+            return true;
         }
         catch (Exception ex)
         {
             _vm.DurumMesaji = $"Bina geometrisi yüklenemedi: {ex.Message}";
+            return false;
+        }
+    }
+
+    private async void GomuluBinaGeometrisiniKurtar_OnClick(
+        object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_vm.KilitliyseDur("gömülü bina geometrisini kurtarmak")) return;
+        var geo = _vm.Proje.BinaGeometriKopya;
+        if (geo is null)
+        {
+            _vm.DurumMesaji = "Kurtarılabilecek gömülü bina geometrisi yok.";
+            return;
+        }
+
+        var varsayilan = !string.IsNullOrWhiteSpace(_vm.ProjeDosyaYolu)
+            ? Path.GetFileNameWithoutExtension(_vm.ProjeDosyaYolu) + ".e4bina.json"
+            : "bina.e4bina.json";
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Gömülü Bina Geometrisini Kurtar",
+            SuggestedFileName = varsayilan,
+            DefaultExtension = "json",
+            FileTypeChoices = [new FilePickerFileType("EYE4PRO Bina Geometrisi (.e4bina.json)")
+                { Patterns = ["*.e4bina.json"] }]
+        });
+        var path = file?.Path.LocalPath;
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        try
+        {
+            var kurtarmaKopyasi = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi
+                .DerinKopyala(geo);
+            Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Kaydet(kurtarmaKopyasi, path);
+            if (await BinaGeometrisiniMutabakatlaUygula(path))
+                _vm.DurumMesaji = $"Gömülü geometri kurtarıldı: {Path.GetFileName(path)}";
+        }
+        catch (Exception ex)
+        {
+            _vm.DurumMesaji = $"Gömülü geometri kurtarılamadı: {ex.Message}";
         }
     }
 

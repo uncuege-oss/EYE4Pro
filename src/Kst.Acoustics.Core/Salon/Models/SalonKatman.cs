@@ -20,7 +20,8 @@ public enum SalonKatmanTipi
     Balkon,
     Orkestra,
     Kapi,
-    Pencere
+    Pencere,
+    Yansitici
 }
 
 /// Salon çizim/yüzey katmanı. Şablonlar bu katmanları otomatik atar; kullanıcı yeni
@@ -49,6 +50,10 @@ public class SalonKatman : ISalonKatman, INotifyPropertyChanged
     private bool _gorunur = true;
     public bool Gorunur { get => _gorunur; set => Set(ref _gorunur, value); }
 
+    private bool _kilitli;
+    /// Kilitli katmandaki öğeler seçilemez, taşınamaz veya silinemez.
+    public bool Kilitli { get => _kilitli; set => Set(ref _kilitli, value); }
+
     /// Tür için varsayılan kategori adı (M01'e gidecek string).
     public static string VarsayilanAd(SalonKatmanTipi tip) => tip switch
     {
@@ -63,6 +68,7 @@ public class SalonKatman : ISalonKatman, INotifyPropertyChanged
         SalonKatmanTipi.Orkestra     => "Orkestra",
         SalonKatmanTipi.Kapi         => "Kapı",
         SalonKatmanTipi.Pencere      => "Pencere",
+        SalonKatmanTipi.Yansitici    => "Yansıtıcı",
         _                            => "Genel"
     };
 
@@ -80,6 +86,7 @@ public class SalonKatman : ISalonKatman, INotifyPropertyChanged
         SalonKatmanTipi.Orkestra     => "#4A9EA8",
         SalonKatmanTipi.Kapi         => "#C4813C",
         SalonKatmanTipi.Pencere      => "#5FB6D8",
+        SalonKatmanTipi.Yansitici    => "#E0B84F",
         _                            => "#A0A0A0"
     };
 

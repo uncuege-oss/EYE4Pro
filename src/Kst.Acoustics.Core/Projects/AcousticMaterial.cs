@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Kst.Acoustics.Core.Projects;
 
 /// <summary>
@@ -5,6 +7,7 @@ namespace Kst.Acoustics.Core.Projects;
 /// Alpha dizisi: [63, 125, 250, 500, 1k, 2k, 4k, 8k] Hz.
 /// Scattering dizisi: [63, 125, 250, 500, 1k, 2k, 4k, 8k] Hz.
 /// </summary>
+[method: JsonConstructor]
 public sealed record AcousticMaterial(
     string Id,
     string DisplayName,

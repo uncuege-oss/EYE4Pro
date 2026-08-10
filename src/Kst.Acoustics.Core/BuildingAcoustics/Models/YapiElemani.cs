@@ -58,9 +58,28 @@ public class YapiElemani
     public static IReadOnlyList<SpektrumVeriKaynagiSecenegi> TumSpektrumKaynagiSecenekleri =>
         _spektrumKaynagiSecenekleri;
 
+    /// <summary>
+    /// Katalog ve proje arasında kullanılan kararlı ürün kimliği. Eski kayıtlarda
+    /// <see cref="Guid.Empty"/> olabilir; yükleme migrasyonu ad+tip anahtarından
+    /// deterministik bir kimlik üretir.
+    /// </summary>
+    public Guid Id { get; set; }
+
     public string Ad { get; set; } = "";
     public YapiElemaniTipi Tip { get; set; }
     public List<YapiKatmani> Katmanlar { get; set; } = new();
+
+    // ── Ürün/katalog ve metraj bilgileri ─────────────────────────────────
+    public string Uretici { get; set; } = "";
+    public string UrunKodu { get; set; } = "";
+    public string Kategori { get; set; } = "";
+    public string PozNo { get; set; } = "";
+    public AkustikMetrajBirimi MetrajBirimi { get; set; } = AkustikMetrajBirimi.Metrekare;
+    public decimal BirimFiyat { get; set; }
+    public string ParaBirimi { get; set; } = "TRY";
+    public decimal FireYuzdesi { get; set; }
+    public DateTime? BirimFiyatTarihi { get; set; }
+    public List<UrunBelgesi> Belgeler { get; set; } = new();
 
     public double ToplamYuzeyKutlesi => Katmanlar.Sum(k => k.YuzeyKutlesi); // m' (kg/m2)
 

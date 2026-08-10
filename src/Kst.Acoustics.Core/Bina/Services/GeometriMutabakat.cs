@@ -50,8 +50,9 @@ public sealed class GeometriMutabakatRaporu
     }
 }
 
-/// Yeni geometri ile modül kayıtlarını karşılaştırır: OdaId'si yeni geometride
-/// bulunmayan kayıtlar "askıda" sayılır.
+/// Yeni geometri ile modül kayıtlarını karşılaştırır. Kat bağlamı bulunan oda
+/// kayıtları OdaId+KatId çiftiyle eşleşir; oda başka kata taşındığında eski kattaki
+/// domain verisi sessizce geçerli sayılmaz ve kullanıcıya mutabakat olarak gösterilir.
 public static class GeometriMutabakatServisi
 {
     public static GeometriMutabakatRaporu Karsilastir(
@@ -60,12 +61,17 @@ public static class GeometriMutabakatServisi
         var odaIdleri = new HashSet<string>(
             yeniGeo.Katlar.SelectMany(k => k.Odalar).Select(o => o.Id));
         var katIdleri = new HashSet<string>(yeniGeo.Katlar.Select(k => k.Id));
+        var katOdaCiftleri = new HashSet<(string KatId, string OdaId)>(
+            yeniGeo.Katlar.SelectMany(k => k.Odalar.Select(o => (k.Id, o.Id))));
 
-        var liste = kayitlar.Where(k => k.OdaId is not null || k.KatId is not null).ToList();
+        var liste = kayitlar.Where(k =>
+            !string.IsNullOrWhiteSpace(k.OdaId) || !string.IsNullOrWhiteSpace(k.KatId)).ToList();
         var askida = liste
-            .Where(k => k.OdaId is not null
-                ? !odaIdleri.Contains(k.OdaId)
-                : k.KatId is not null && !katIdleri.Contains(k.KatId))
+            .Where(k => !string.IsNullOrWhiteSpace(k.OdaId)
+                ? !string.IsNullOrWhiteSpace(k.KatId)
+                    ? !katOdaCiftleri.Contains((k.KatId!, k.OdaId!))
+                    : !odaIdleri.Contains(k.OdaId!)
+                : !string.IsNullOrWhiteSpace(k.KatId) && !katIdleri.Contains(k.KatId!))
             .ToList();
 
         return new GeometriMutabakatRaporu(askida, liste.Count);

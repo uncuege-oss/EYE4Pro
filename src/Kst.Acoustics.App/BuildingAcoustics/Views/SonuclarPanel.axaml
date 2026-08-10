@@ -50,7 +50,7 @@
             <CheckBox x:Name="FilterDusukGuven" Content="Düşük güven" Foreground="#E0B0FF"
                       FontSize="11" Margin="0,0,8,6"/>
             <Border Width="1" Height="24" Background="#1F2A37" Margin="4,0,8,6"/>
-            <Button Content="🧾 Mimari Akustik Raporu" Background="#5C3A7E" Foreground="#E8D5FF" Padding="10,5"
+            <Button Content="{Binding RaporBelgeTuruEtiketi}" Background="#5C3A7E" Foreground="#E8D5FF" Padding="10,5"
                     Margin="0,0,6,6"
                     Click="ExportMimariAkustikRaporu_OnClick" IsEnabled="{Binding DisaAktarmaEtkin}"
                     ToolTip.Tip="Yönetmelik Madde 5/5 yapısında yazdırılabilir HTML rapor — tarayıcıdan PDF'e yazdırın"/>
@@ -467,7 +467,7 @@
         <!-- ── Rapora Dahil Edilecek Odalar ve Komşuluklar ── -->
         <Border Grid.Column="4" Background="#111C26" BorderBrush="#1E3A50" BorderThickness="1,0,0,0"
                 IsVisible="{Binding RaporTablosuGozukuyor}"
-                Width="360">
+                Width="520">
             <Grid RowDefinitions="Auto, *">
 
                 <!-- Başlık + kontroller -->
@@ -509,6 +509,9 @@
                         <DataGridTextColumn Header="Tür"      Binding="{Binding HesapTuru}"    Width="44"/>
                         <DataGridTextColumn Header="Komşuluk" Binding="{Binding KomsulukTipi}" Width="100"/>
                         <DataGridTextColumn Header="Durum"    Binding="{Binding Durum}"        Width="*"/>
+                        <DataGridTextColumn Header="Hariç tutma gerekçesi"
+                                            Binding="{Binding HaricTutmaGerekcesi, Mode=TwoWay}"
+                                            Width="160"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>

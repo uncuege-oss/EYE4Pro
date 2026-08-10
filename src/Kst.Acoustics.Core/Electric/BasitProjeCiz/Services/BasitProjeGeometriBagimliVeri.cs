@@ -30,13 +30,31 @@ public sealed class BasitProjeGeometriBagimliVeri : IGeometriBagimliVeri
             // ── Elemanlar ────────────────────────────────────────────────────
             foreach (var el in kat.Elemanlar)
             {
-                if (string.IsNullOrEmpty(el.OdaId)) continue;
                 string etiket = !string.IsNullOrWhiteSpace(el.EkranAdi) ? el.EkranAdi
                     : !string.IsNullOrWhiteSpace(el.Ad) ? el.Ad
                     : el.Tip.ToString();
-                yield return new GeometriBagimliKayit(
-                    "Eleman", $"{etiket} → {OdaAd(el.OdaId)}", el.OdaId, kat.Ad, kat.Id);
+                if (!string.IsNullOrEmpty(el.OdaId))
+                    yield return new GeometriBagimliKayit(
+                        "Eleman", $"{etiket} → {OdaAd(el.OdaId)}", el.OdaId, kat.Ad, kat.Id);
+
+                // Kat panosu gibi elemanların birden çok odaya hizmet bağı da
+                // geometri silme mutabakatının parçasıdır.
+                foreach (var odaId in (el.BagliOdaIds ?? new List<string>())
+                             .Where(id => !string.IsNullOrWhiteSpace(id))
+                             .Distinct())
+                    yield return new GeometriBagimliKayit(
+                        "Pano oda ataması", $"{etiket} → {OdaAd(odaId)}", odaId, kat.Ad, kat.Id);
             }
+
+            // Buat-pano kablosunun geçtiği odalar doğrudan bir elemana bağlı
+            // olmayabilir; bu Id'ler silinen oda raporunda ayrıca görünmelidir.
+            foreach (var baglanti in kat.BuatPanoBaglantilari)
+            foreach (var odaId in (baglanti.GecisOdaIds ?? new List<string>())
+                         .Where(id => !string.IsNullOrWhiteSpace(id))
+                         .Distinct())
+                yield return new GeometriBagimliKayit(
+                    "Buat-pano geçişi", $"{baglanti.LinyePrefix} hattı → {OdaAd(odaId)}",
+                    odaId, kat.Ad, kat.Id);
 
             // ── Devreler (elemanları üzerinden dolaylı oda bağı) ─────────────
             int devreSira = 0;

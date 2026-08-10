@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kst.Acoustics.Core.Common.Geometry;
 
@@ -43,6 +44,20 @@ public class BinaKat : IBinaKat, INotifyPropertyChanged
 
     public string DxfFilePath { get; set; } = "";
     public string? UnitWarning { get; set; }
+
+    /// DXF içe aktarımında kesinleşen metre/çizim-birimi ölçeği. 0, eski bir
+    /// kayıtta ölçek bilgisinin bulunmadığını gösterir.
+    public double DxfBirimOlcegiM { get; set; }
+
+    /// Dünya koordinatlarından katın yerel koordinatlarına geçerken çıkarılan
+    /// metre cinsinden ofset. Kayıt yeniden açılıp ham DXF okunduğunda aynı
+    /// dönüşümün uygulanmasını sağlar.
+    public Point2D DxfNormalizeOfsetiM { get; set; } = new(0, 0);
+
+    /// Tek DXF içinden seçilmiş çoklu-kat planının dünya-koordinatı sınırları.
+    /// null ise tüm dosya bu kata aittir.
+    public Point2D? DxfKaynakBolgesiMinM { get; set; }
+    public Point2D? DxfKaynakBolgesiMaxM { get; set; }
 
     /// Farklı DXF orijinleri için manuel hizalama ofseti (m).
     public Point2D OriginOffset { get; set; } = new(0, 0);
@@ -85,9 +100,17 @@ public class BinaKat : IBinaKat, INotifyPropertyChanged
     [JsonIgnore]
     public List<(Point2D A, Point2D B)> HamSegmentler { get; set; } = new();
 
+    /// Oda tespiti ve çoklu-kat kümelemesi için annotation katmanları ayıklanmış
+    /// tam segment seti. JSON'a yazılmaz; boşsa HamSegmentler kullanılır.
+    [JsonIgnore]
+    public List<(Point2D A, Point2D B)> TespitSegmentler { get; set; } = new();
+
     /// Ham TEXT/MTEXT etiketleri — oda ismi ataması için. JSON'a yazılmaz.
     [JsonIgnore]
     public List<(Point2D Pos, string Value)> HamMetinler { get; set; } = new();
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? EkAlanlar { get; set; }
 
     // IBinaKat read-only görünümleri
     IReadOnlyList<IBinaOda> IBinaKat.Odalar => Odalar;

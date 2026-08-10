@@ -42,6 +42,12 @@ public class SalonCizimOgesi : ISalonCizimOgesi
     /// Bağlı katman kimliği (<see cref="SalonKatman.Id"/>). Boş = atanmamış.
     public string KatmanId { get; set; } = "";
 
+    /// Birlikte seçilip dönüştürülen isteğe bağlı grup kimliği.
+    public string? GrupId { get; set; }
+
+    /// Yeniden kullanılabilir blok örneğinin adı; null = bağımsız öğe.
+    public string? BlokAdi { get; set; }
+
     // ISalonCizimOgesi salt-okunur görünüm
     IReadOnlyList<Point2D> ISalonCizimOgesi.Noktalar => Noktalar;
 

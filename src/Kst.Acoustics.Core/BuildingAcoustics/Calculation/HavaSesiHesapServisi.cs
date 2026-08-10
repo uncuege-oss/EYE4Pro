@@ -449,10 +449,19 @@ public class HavaSesiHesapServisi
         return sonuc;
     }
 
-    private static IEnumerable<double> GetUcuncuOktavFlankingRijleri(Bolme bolme, int bandIndex, double ayiriciR)
+    /// <summary>
+    /// Bir üçüncü-oktav bandındaki bütün yanal iletim yollarını, hesap motorunun
+    /// kullandığı aynı Kij ve alan terimleriyle döndürür. Bu salt analiz API'si
+    /// yol/frekans görünümlerinin sayısal sonucu yeniden formüllemesini önler.
+    /// </summary>
+    public static IReadOnlyList<UcuncuOktavFlankingYoluSonucu> GetUcuncuOktavFlankingYollari(
+        Bolme bolme,
+        int bandIndex,
+        double ayiriciR)
     {
+        var sonuclar = new List<UcuncuOktavFlankingYoluSonucu>();
         if (bolme.KaynakMekan == null || bolme.AliciMekan == null)
-            yield break;
+            return sonuclar;
 
         double ss = bolme.Alan;
         // 1/3 oktav yolda Kij band merkezi frekansı ile değerlendirilir (a(f) ∝ √(f_ref/f)).
@@ -473,14 +482,18 @@ public class HavaSesiHesapServisi
             {
                 var aliciR = GetRThirdBand(aliciFlank, bandIndex);
                 var k = ComputeKijForPath(junction, "Df", bolme.YapiElemani, kaynakFlank, aliciFlank, ss, kaynakAlan, aliciAlan, freq);
-                yield return (ayiriciR + aliciR) / 2.0 + k + CouplingTerm(ss, ss, aliciAlan);
+                sonuclar.Add(new(junction.Id, junction.Kenar, "Df",
+                    (ayiriciR + aliciR) / 2.0 + k + CouplingTerm(ss, ss, aliciAlan),
+                    k, ayiriciR, aliciR));
             }
 
             if (kaynakFlank != null)
             {
                 var kaynakR = GetRThirdBand(kaynakFlank, bandIndex);
                 var k = ComputeKijForPath(junction, "Fd", bolme.YapiElemani, kaynakFlank, aliciFlank, ss, kaynakAlan, aliciAlan, freq);
-                yield return (kaynakR + ayiriciR) / 2.0 + k + CouplingTerm(ss, kaynakAlan, ss);
+                sonuclar.Add(new(junction.Id, junction.Kenar, "Fd",
+                    (kaynakR + ayiriciR) / 2.0 + k + CouplingTerm(ss, kaynakAlan, ss),
+                    k, kaynakR, ayiriciR));
             }
 
             if (kaynakFlank != null && aliciFlank != null)
@@ -488,10 +501,17 @@ public class HavaSesiHesapServisi
                 var kaynakR = GetRThirdBand(kaynakFlank, bandIndex);
                 var aliciR  = GetRThirdBand(aliciFlank, bandIndex);
                 var k = ComputeKijForPath(junction, "Ff", bolme.YapiElemani, kaynakFlank, aliciFlank, ss, kaynakAlan, aliciAlan, freq);
-                yield return (kaynakR + aliciR) / 2.0 + k + CouplingTerm(ss, kaynakAlan, aliciAlan);
+                sonuclar.Add(new(junction.Id, junction.Kenar, "Ff",
+                    (kaynakR + aliciR) / 2.0 + k + CouplingTerm(ss, kaynakAlan, aliciAlan),
+                    k, kaynakR, aliciR));
             }
         }
+
+        return sonuclar;
     }
+
+    private static IEnumerable<double> GetUcuncuOktavFlankingRijleri(Bolme bolme, int bandIndex, double ayiriciR) =>
+        GetUcuncuOktavFlankingYollari(bolme, bandIndex, ayiriciR).Select(y => y.Rij);
 
     private static double GetRThirdBand(YapiElemani eleman, int bandIndex)
     {
@@ -663,3 +683,12 @@ public record FlankingYoluSonucu(
     double Kij,
     double KaynakRw,
     double AliciRw);
+
+public sealed record UcuncuOktavFlankingYoluSonucu(
+    Guid JunctionId,
+    JunctionKenarTipi Kenar,
+    string YolTipi,
+    double Rij,
+    double Kij,
+    double KaynakR,
+    double AliciR);

@@ -1,7 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
+using Kst.Acoustics.App.Bina.Views;
 using Kst.Acoustics.App.BuildingAcoustics.ViewModels;
 using Kst.Acoustics.App.Controls;
 using Kst.Acoustics.App.Views;
@@ -10,6 +15,12 @@ namespace Kst.Acoustics.App.BuildingAcoustics.Views;
 
 public partial class BinaProjesiWindow : Window
 {
+    private static readonly StringComparer DosyaYoluKarsilastiricisi =
+        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
+    private readonly Dictionary<string, BinaGeometriWindow> _acikM50Pencereleri =
+        new(DosyaYoluKarsilastiricisi);
     private bool _kapanisOnaylandi;
 
     public BinaProjesiWindow()
@@ -137,31 +148,107 @@ public partial class BinaProjesiWindow : Window
             return;
         }
 
-        var window = new Kst.Acoustics.App.Bina.Views.BinaGeometriWindow(null);
-        var path = vm.Proje.BinaGeometriYolu;
-        var oncekiRevizyon = vm.Proje.BinaGeometriRevizyon;
-        if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
-            window.DosyaAc(path);
-
-        window.Closed += (_, _) =>
+        var path = vm.BinaGeometriDosyaYolunuCoz();
+        if (!string.IsNullOrWhiteSpace(path) &&
+            _acikM50Pencereleri.TryGetValue(path, out var acikM50))
         {
-            if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path)) return;
+            acikM50.Activate();
+            acikM50.Focus();
+            vm.DxfUyariMesaji = "Bağlı geometri zaten M50'de açık; pencere öne getirildi.";
+            return;
+        }
+
+        var window = new BinaGeometriWindow(null, yardimciMod: true)
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        var oncekiRevizyon = vm.Proje.BinaGeometriRevizyon;
+
+        window.Closed += async (_, _) =>
+        {
+            if (!string.IsNullOrWhiteSpace(path) &&
+                _acikM50Pencereleri.TryGetValue(path, out var kayitliM50) &&
+                ReferenceEquals(kayitliM50, window))
+                _acikM50Pencereleri.Remove(path);
+            vm.BinaGeometriDurumunuYenile();
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path) || vm.ProjeKilitli) return;
             try
             {
                 var guncel = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Ac(path);
                 if (oncekiRevizyon is null || guncel.GeometriRevizyon != oncekiRevizyon.Value)
-                    vm.BagliGeometriDegisikliginiBildir(guncel.GeometriRevizyon);
+                    await vm.BinaGeometrisiniDosyadanUygula(this, path);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 vm.DxfUyariMesaji = $"M50 geometri değişikliği denetlenemedi: {ex.Message}";
             }
         };
 
-        window.Show();
-        vm.DxfUyariMesaji = !string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path)
-            ? "Bağlı geometri M50'de açıldı. Kaydettikten sonra 'Bina Geometrisi Yükle' ile M08'i güncelleyin."
+        window.Show(this);
+        if (!string.IsNullOrWhiteSpace(path))
+            _acikM50Pencereleri[path] = window;
+        // Başlangıç seçim/dirty abonelikleri kurulduktan sonra dosyayı aç.
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            window.DosyaAc(path);
+        vm.DxfUyariMesaji = !string.IsNullOrWhiteSpace(path) && File.Exists(path)
+            ? "Bağlı geometri M50'de açıldı. M50 kapanınca değişiklik otomatik yeniden yüklenecek."
             : "M50 açıldı. Geometriyi .e4bina olarak kaydedip 'Bina Geometrisi Yükle' ile M08'e aktarın.";
+    }
+
+    private async void BagliBinaGeometrisiniGuncelle_OnClick(
+        object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not BinaProjesiViewModel vm) return;
+        var path = vm.BinaGeometriDosyaYolunuCoz();
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            vm.DxfUyariMesaji = "Bağlı .e4bina dosyası yok. Gömülü Kurtar ile yeniden oluşturabilirsiniz.";
+            vm.BinaGeometriDurumunuYenile();
+            return;
+        }
+        await vm.BinaGeometrisiniDosyadanUygula(this, path);
+    }
+
+    private async void GomuluBinaGeometrisiniKurtar_OnClick(
+        object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not BinaProjesiViewModel vm) return;
+        if (vm.ProjeKilitli)
+        {
+            vm.DxfUyariMesaji = "Kilitli projede gömülü bina geometrisi kurtarılamaz.";
+            return;
+        }
+        var geo = vm.Proje.BinaGeometriKopya;
+        if (geo is null)
+        {
+            vm.DxfUyariMesaji = "Kurtarılabilecek gömülü bina geometrisi yok.";
+            return;
+        }
+
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Gömülü Bina Geometrisini Kurtar",
+            SuggestedFileName = string.IsNullOrWhiteSpace(vm.Proje.ProjeAdi)
+                ? "bina.e4bina.json"
+                : vm.Proje.ProjeAdi + ".e4bina.json",
+            DefaultExtension = "json",
+            FileTypeChoices = [new FilePickerFileType("EYE4PRO Bina Geometrisi (.e4bina.json)")
+                { Patterns = ["*.e4bina.json"] }]
+        });
+        var path = file?.Path.LocalPath;
+        if (string.IsNullOrWhiteSpace(path)) return;
+        try
+        {
+            var kurtarmaKopyasi = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi
+                .DerinKopyala(geo);
+            Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Kaydet(kurtarmaKopyasi, path);
+            if (await vm.BinaGeometrisiniDosyadanUygula(this, path))
+                vm.DxfUyariMesaji = $"Gömülü geometri kurtarıldı: {Path.GetFileName(path)}";
+        }
+        catch (Exception ex)
+        {
+            vm.DxfUyariMesaji = $"Gömülü geometri kurtarılamadı: {ex.Message}";
+        }
     }
 
     /// "Ana Menü" — kaydedilmemiş değişiklik varsa önce sorar, sonra LauncherWindow'a döner.
@@ -295,6 +382,17 @@ public partial class BinaProjesiWindow : Window
             });
         }
         catch { /* yok say */ }
+    }
+
+    private void ProfesyonelAraclar_OnClick(
+        object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not BinaProjesiViewModel vm) return;
+        var pencere = new M08ProfesyonelAraclarWindow(vm)
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        pencere.Show(this);
     }
 
     // UX — DXF uyarı bandını kapat (× butonu)

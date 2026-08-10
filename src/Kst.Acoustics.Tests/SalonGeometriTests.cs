@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using Kst.Acoustics.Core.Common.Geometry;
 using Kst.Acoustics.Core.Importing;
+using Kst.Acoustics.Core.Projects;
 using Kst.Acoustics.Core.Salon.Models;
 using Kst.Acoustics.Core.Salon.Services;
+using Kst.Acoustics.Core.Simulation;
 
 namespace Kst.Acoustics.Tests;
 
@@ -21,8 +23,8 @@ public static class SalonGeometriTests
             salon.SalonYuksekligiM = 9.5;
 
             // YeniOlustur 11 varsayılan katman tohumlar (korniş/balkon/orkestra/kapı/pencere dahil).
-            if (salon.Katmanlar.Count != 11)
-                throw new InvalidOperationException($"11 varsayılan katman beklenir; {salon.Katmanlar.Count} bulundu.");
+            if (salon.Katmanlar.Count != 12)
+                throw new InvalidOperationException($"12 varsayılan katman beklenir; {salon.Katmanlar.Count} bulundu.");
 
             var zeminKatman = salon.Katmanlar.First(k => k.Tip == SalonKatmanTipi.Zemin);
 
@@ -60,8 +62,8 @@ public static class SalonGeometriTests
                 throw new InvalidOperationException($"SalonYuksekligiM {salon2.SalonYuksekligiM} uyuşmuyor.");
             if (salon2.SemaSurum != SalonGeometriServisi.GuncelSemaSurum)
                 throw new InvalidOperationException($"SemaSurum {SalonGeometriServisi.GuncelSemaSurum} beklenir; {salon2.SemaSurum} bulundu.");
-            if (salon2.Katmanlar.Count != 11)
-                throw new InvalidOperationException($"11 katman beklenir; {salon2.Katmanlar.Count} bulundu.");
+            if (salon2.Katmanlar.Count != 12)
+                throw new InvalidOperationException($"12 katman beklenir; {salon2.Katmanlar.Count} bulundu.");
             if (salon2.CizimOgeleri.Count != 2)
                 throw new InvalidOperationException($"2 çizim öğesi beklenir; {salon2.CizimOgeleri.Count} bulundu.");
 
@@ -459,6 +461,131 @@ public static class SalonGeometriTests
             throw new InvalidOperationException("M51 hacmi SourceModel kaynağıyla işaretlenmeli.");
         if (!project.Surfaces.Any(s => s.Category == "Zemin") || !project.Surfaces.Any(s => s.Category == "Tavan"))
             throw new InvalidOperationException("Zemin/Tavan kategorileri M01 projesine taşınmalı.");
+        if (project.SemaSurum != AcousticsProjectSchema.CurrentVersion)
+            throw new InvalidOperationException("M51 köprüsü güncel M01 proje şeması üretmeli.");
+    }
+
+    // M51 yeniden yükleme: yalnız geometri/kaynak damgası yenilenir; M01 akustik
+    // çalışması fiziksel birimleri korunarak taşınır.
+    public static void M01KopruGuncellemeAkustikCalismayiKorur()
+    {
+        var eskiSalon = KabukluSalon(10, 8, 4);
+        eskiSalon.GeometriRevizyon = 3;
+        var eskiKaynak = Path.Combine(Path.GetTempPath(), "onceki-salon.e4salon.json");
+        var eskiImport = SalonImporter.Cevir(eskiSalon, eskiKaynak);
+        var zemin = eskiImport.Surfaces.Single(surface => surface.Category == "Zemin");
+        var settings = new SimulationParameters(
+            RayCount: 12_345,
+            ReceiverRadius: 500,
+            ReceiverGrid: new ReceiverGrid(1_500, 0, 10_000, 0, 8_000, 500),
+            UnitScale: 0.001,
+            InputFingerprint: "onceki-iz");
+        var eskiProje = eskiImport with
+        {
+            Name = "M01 Akustik Çalışması",
+            Unit = SurfaceImportUnit.Millimeters,
+            Surfaces = ProjectScalingService.ConvertUnits(
+                eskiImport.Surfaces,
+                SurfaceImportUnit.Meters,
+                SurfaceImportUnit.Millimeters),
+            Sources =
+            [
+                new AcousticPoint(
+                    1, "S1", AcousticPointType.Source,
+                    new Kst.Acoustics.Core.Geometry.Point3D(1_000, 2_000, 1_500))
+            ],
+            Receivers =
+            [
+                new AcousticPoint(
+                    1, "R1", AcousticPointType.Receiver,
+                    new Kst.Acoustics.Core.Geometry.Point3D(3_000, 4_000, 1_200))
+            ],
+            CategoryMaterials = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Zemin"] = "mat-zemin",
+                ["Tavan"] = "mat-tavan"
+            },
+            SurfaceMaterials = new Dictionary<string, string>
+            {
+                [zemin.Id.ToString()] = "mat-zemin-ozel",
+                ["999"] = "mat-yetim"
+            },
+            SelectedRoomType = RoomType.MusicHall,
+            SimulationSettings = settings,
+            LastResult = new SimulationResult([], settings, TimeSpan.FromSeconds(1)),
+            PanelKonfigurasyon = new AcousticPanelKonfigurasyon
+            {
+                PanelEniM = 0.6,
+                PanelEniModu = PanelEniModu.TekTip,
+                PanelEnleriM = [0.6],
+                SarkmaCikmaM = 0.15,
+                AktifTipler = [PanelTipi.Tavan],
+                TavanYuzeyId = "2",
+                Paneller = [new AcousticPanel { Tip = PanelTipi.Tavan, PanelEniM = 0.6 }]
+            }
+        };
+        var scenario = AcousticScenarioManager.Create(
+            "Alternatif",
+            AcousticScenarioCloner.FromProject(eskiProje),
+            DateTime.UnixEpoch);
+        eskiProje = eskiProje with
+        {
+            Scenarios = [scenario],
+            ActiveScenarioId = scenario.Id
+        };
+
+        var yeniSalon = KabukluSalon(12, 8, 4);
+        yeniSalon.GeometriRevizyon = 9;
+        var yeniKaynak = Path.Combine(Path.GetTempPath(), "guncel-salon.e4salon.json");
+        var yeniGeometri = SalonImporter.Cevir(yeniSalon, yeniKaynak);
+        var merged = SalonImporter.GeometriyiGuncelle(eskiProje, yeniGeometri);
+
+        if (merged.Name != eskiProje.Name)
+            throw new InvalidOperationException("M01 proje adı geometri güncellemesinde korunmalı.");
+        if (merged.SourceFilePath != Path.GetFullPath(yeniKaynak) || merged.KaynakGeometriRevizyon != 9)
+            throw new InvalidOperationException("Yeni M51 kaynak yolu ve revizyonu birlikte güncellenmeli.");
+        if (merged.SemaSurum != AcousticsProjectSchema.CurrentVersion)
+            throw new InvalidOperationException("Merge güncel M01 şema sürümü üretmeli.");
+        if (merged.CategoryMaterials.Count != 2 || merged.CategoryMaterials["Zemin"] != "mat-zemin")
+            throw new InvalidOperationException("Kategori malzemeleri korunmalı.");
+        if (!merged.SurfaceMaterials.Values.Contains("mat-zemin-ozel"))
+            throw new InvalidOperationException("Güvenle eşleşen yüzey malzemesi korunmalı.");
+        if (merged.SurfaceMaterials.Values.Contains("mat-yetim") ||
+            !merged.ImportWarnings.Any(warning => warning.Contains("yüzey malzemesi", StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException("Eşleşmeyen yüzey override'ı yanlış yüzeye taşınmamalı ve kullanıcıya bildirilmelidir.");
+        if (merged.SelectedRoomType != RoomType.MusicHall)
+            throw new InvalidOperationException("Oda tipi korunmalı.");
+
+        var source = merged.Sources.Single();
+        var receiver = merged.Receivers.Single();
+        if (Math.Abs(source.Position.X - 1) > 1e-9 ||
+            Math.Abs(source.Position.Y - 2) > 1e-9 ||
+            Math.Abs(receiver.Position.X - 3) > 1e-9)
+            throw new InvalidOperationException("Kaynak/alıcılar eski proje biriminden metreye fiziksel konumları korunarak çevrilmeli.");
+
+        var mergedSettings = merged.SimulationSettings
+            ?? throw new InvalidOperationException("Simülasyon ayarları korunmalı.");
+        if (mergedSettings.RayCount != settings.RayCount ||
+            Math.Abs(mergedSettings.ReceiverRadius - 0.5) > 1e-9 ||
+            Math.Abs(mergedSettings.ReceiverGrid!.XMax - 10) > 1e-9 ||
+            mergedSettings.UnitScale != 1 ||
+            mergedSettings.InputFingerprint is not null)
+            throw new InvalidOperationException("Simülasyon ayarları hedef birime güvenle taşınmalı ve eski girdi izi temizlenmeli.");
+        if (merged.LastResult is not { IsStale: true })
+            throw new InvalidOperationException("Eski simülasyon sonucu yeni geometride stale işaretlenmeli.");
+        if (merged.PanelKonfigurasyon is not { PanelEniM: 0.6, SarkmaCikmaM: 0.15 } panelSettings ||
+            panelSettings.Paneller.Count != 0 || panelSettings.TavanYuzeyId is not null)
+            throw new InvalidOperationException("Panel ölçüleri korunmalı; geometriye bağlı yerleşim ve hedefler temizlenmeli.");
+        if (merged.Scenarios.Count != 1 || merged.Scenarios[0].Id != scenario.Id)
+            throw new InvalidOperationException("Akustik senaryolar geometri güncellemesinde kaybolmamalı.");
+        if (merged.ActiveScenarioId is not null)
+            throw new InvalidOperationException("Yeni M51 ana geometrisinin görünmesi için eski etkin senaryo seçimi sıfırlanmalı.");
+        if (!merged.ImportWarnings.Any(warning =>
+                warning.Contains("senaryo", StringComparison.OrdinalIgnoreCase) &&
+                warning.Contains("yeniden", StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException("Etkin senaryonun yeniden uygulanması/hesaplanması için kalıcı uyarı üretilmeli.");
+        if (Math.Abs(merged.RoomVolume - 384) > 1e-6)
+            throw new InvalidOperationException("Oda hacmi yeni M51 geometrisinden alınmalı.");
     }
 
     // DXF export: dosya üretilir, 3DFACE + kategori katman adları içerir.
@@ -480,6 +607,7 @@ public static class SalonGeometriTests
             if (!File.Exists(yol)) throw new InvalidOperationException("DXF dosyası oluşmadı.");
             var icerik = File.ReadAllText(yol);
             if (!icerik.Contains("3DFACE")) throw new InvalidOperationException("DXF 3DFACE içermeli.");
+            if (!icerik.Contains("$INSUNITS")) throw new InvalidOperationException("DXF HEADER/$INSUNITS içermeli.");
             if (!icerik.Contains("Zemin") || !icerik.Contains("Tavan"))
                 throw new InvalidOperationException("DXF kategori katman adlarını (Zemin/Tavan) içermeli.");
         }
@@ -488,6 +616,111 @@ public static class SalonGeometriTests
             if (File.Exists(yol)) File.Delete(yol);
         }
     }
+
+    // M51 DXF → M01 round-trip: metre damgası, boyutlar, kategoriler ve kapalı kabuk
+    // hacmi doğrudan parser/factory hattında korunmalı.
+    public static void DxfExportM01RoundTripBirimVeHacimKorur()
+    {
+        var salon = KabukluSalon(10, 8, 4);
+        var native = SalonImporter.Cevir(salon, null);
+        var yol = Path.Combine(Path.GetTempPath(), $"salon-dxf-roundtrip-{Guid.NewGuid():N}.dxf");
+        try
+        {
+            SalonDxfExportServisi.DisaAktar(salon, yol);
+            var parser = new DxfSurfaceParser();
+            if (!parser.TryParse(File.ReadAllText(yol), out var document) || document is null)
+                throw new InvalidOperationException("M51 DXF çıktısı M01 parser'ı tarafından okunmalı.");
+            if (!document.UnitDetected || document.Unit != SurfaceImportUnit.Meters || document.InsUnitsCode != 6)
+                throw new InvalidOperationException("M51 DXF çıktısı $INSUNITS=6 (metre) olarak algılanmalı; birim onayı gerektirmemeli.");
+
+            var roundTrip = ProjectFactory.CreateFromImport(
+                "DXF Round-trip",
+                yol,
+                new SurfaceImportResult(SurfaceImportFormat.Dxf, document));
+            var nativeBounds = Bounds(native.Surfaces);
+            var roundTripBounds = Bounds(roundTrip.Surfaces);
+            if (!BoundsClose(nativeBounds, roundTripBounds, 1e-6))
+                throw new InvalidOperationException("DXF round-trip salon boyutlarını değiştirmemeli.");
+            if (Math.Abs(roundTrip.RoomVolume - native.RoomVolume) > 1e-6)
+                throw new InvalidOperationException(
+                    $"DXF round-trip hacmi native hacimle eşleşmeli ({native.RoomVolume} / {roundTrip.RoomVolume}).");
+            if (roundTrip.VolumeOrigin != RoomVolumeOrigin.ClosedMesh)
+                throw new InvalidOperationException("Dikdörtgen M51 DXF kabuğu watertight hacim üretmeli.");
+
+            var nativeCategories = native.Surfaces.Select(surface => surface.Category).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var roundTripCategories = roundTrip.Surfaces.Select(surface => surface.Category).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (!nativeCategories.SetEquals(roundTripCategories))
+                throw new InvalidOperationException("DXF round-trip yüzey kategorilerini/katmanlarını korumalı.");
+        }
+        finally
+        {
+            if (File.Exists(yol)) File.Delete(yol);
+        }
+    }
+
+    // Genel M01 DXF export yolu proje birimini HEADER'a yazmalı; koordinatlar proje
+    // biriminde kalırken fiziksel hacim metre küp olarak aynı sonucu vermeli.
+    public static void DxfExportMilimetreRoundTripBirimVeHacimKorur()
+    {
+        var salon = KabukluSalon(2, 3, 4);
+        var native = SalonImporter.Cevir(salon, null);
+        var millimeterSurfaces = ProjectScalingService.ConvertUnits(
+            native.Surfaces,
+            SurfaceImportUnit.Meters,
+            SurfaceImportUnit.Millimeters);
+        var yol = Path.Combine(Path.GetTempPath(), $"m01-dxf-mm-roundtrip-{Guid.NewGuid():N}.dxf");
+        try
+        {
+            new Kst.Acoustics.Core.Exporting.DxfExportService().Export(
+                yol,
+                millimeterSurfaces,
+                SurfaceImportUnit.Millimeters);
+            var parser = new DxfSurfaceParser();
+            if (!parser.TryParse(File.ReadAllText(yol), out var document) || document is null)
+                throw new InvalidOperationException("Milimetre DXF çıktısı yeniden okunmalı.");
+            if (!document.UnitDetected || document.Unit != SurfaceImportUnit.Millimeters || document.InsUnitsCode != 4)
+                throw new InvalidOperationException("Milimetre proje DXF çıktısı $INSUNITS=4 taşımalı.");
+
+            var roundTrip = ProjectFactory.CreateFromImport(
+                "Milimetre DXF",
+                yol,
+                new SurfaceImportResult(SurfaceImportFormat.Dxf, document));
+            if (roundTrip.Unit != SurfaceImportUnit.Millimeters)
+                throw new InvalidOperationException("M01 round-trip proje birimini milimetre tutmalı.");
+            if (Math.Abs(roundTrip.RoomVolume - native.RoomVolume) > 1e-6)
+                throw new InvalidOperationException("Milimetre DXF round-trip fiziksel m³ hacmini değiştirmemeli.");
+            var bounds = Bounds(roundTrip.Surfaces);
+            if (Math.Abs((bounds.MaxX - bounds.MinX) - 2_000) > 1e-6 ||
+                Math.Abs((bounds.MaxY - bounds.MinY) - 3_000) > 1e-6 ||
+                Math.Abs((bounds.MaxZ - bounds.MinZ) - 4_000) > 1e-6)
+                throw new InvalidOperationException("Milimetre DXF round-trip sayısal koordinat ölçeğini korumalı.");
+        }
+        finally
+        {
+            if (File.Exists(yol)) File.Delete(yol);
+        }
+    }
+
+    private static (double MinX, double MaxX, double MinY, double MaxY, double MinZ, double MaxZ) Bounds(
+        IReadOnlyList<ProjectSurface> surfaces)
+    {
+        var points = surfaces.SelectMany(surface => surface.Vertices).ToArray();
+        return (
+            points.Min(point => point.X), points.Max(point => point.X),
+            points.Min(point => point.Y), points.Max(point => point.Y),
+            points.Min(point => point.Z), points.Max(point => point.Z));
+    }
+
+    private static bool BoundsClose(
+        (double MinX, double MaxX, double MinY, double MaxY, double MinZ, double MaxZ) left,
+        (double MinX, double MaxX, double MinY, double MaxY, double MinZ, double MaxZ) right,
+        double tolerance) =>
+        Math.Abs(left.MinX - right.MinX) <= tolerance &&
+        Math.Abs(left.MaxX - right.MaxX) <= tolerance &&
+        Math.Abs(left.MinY - right.MinY) <= tolerance &&
+        Math.Abs(left.MaxY - right.MaxY) <= tolerance &&
+        Math.Abs(left.MinZ - right.MinZ) <= tolerance &&
+        Math.Abs(left.MaxZ - right.MaxZ) <= tolerance;
 
     // Uç-uca sınırlı çizgi: iki ucu da kesicilerle değen çizgiye tıklanınca tümü silinir.
     public static void CizgiTrimUcUcaTumunuSiler()
@@ -1300,5 +1533,242 @@ public static class SalonGeometriTests
         var uyari2 = SalonDogrulamaServisi.Dogrula(bos);
         if (!uyari2.Any(u => u.Contains("Kapalı zemin poligonu yok")))
             throw new InvalidOperationException("Kabuk yokken 'kapalı zemin yok' uyarısı beklenir.");
+    }
+
+    // Regresyon: Normalize, canlı UI bağlarının izlediği koleksiyon örneklerini korur;
+    // v1 dosya yeni koleksiyonlar + eksik semantik katmanlarla v2'ye taşınır.
+    public static void KaydetNormalizeKimlikVeSemaDogrular()
+    {
+        var salon = SalonGeometriServisi.YeniOlustur("Kimlik");
+        var refs = new object[]
+        {
+            salon.Katmanlar, salon.CizimOgeleri, salon.SeyirciSekciyonlari,
+            salon.Balkonlar, salon.Acikliklar, salon.TavanProfili,
+            salon.Olculendirmeler, salon.GeometrikKisitlar,
+            salon.ReferansAltliklar, salon.YansiticiPaneller
+        };
+        var yol = Path.Combine(Path.GetTempPath(), $"salon-kimlik-{Guid.NewGuid():N}.e4salon.json");
+        var eskiYol = Path.Combine(Path.GetTempPath(), $"salon-v1-{Guid.NewGuid():N}.e4salon.json");
+        var ileriYol = Path.Combine(Path.GetTempPath(), $"salon-v-ileri-{Guid.NewGuid():N}.e4salon.json");
+        try
+        {
+            SalonGeometriServisi.Kaydet(salon, yol);
+            var sonRefs = new object[]
+            {
+                salon.Katmanlar, salon.CizimOgeleri, salon.SeyirciSekciyonlari,
+                salon.Balkonlar, salon.Acikliklar, salon.TavanProfili,
+                salon.Olculendirmeler, salon.GeometrikKisitlar,
+                salon.ReferansAltliklar, salon.YansiticiPaneller
+            };
+            if (refs.Where((t, i) => !ReferenceEquals(t, sonRefs[i])).Any())
+                throw new InvalidOperationException("Kaydet/Normalize koleksiyon kimliklerini korumalı.");
+
+            File.WriteAllText(eskiYol,
+                "{\"SemaSurum\":1,\"Katmanlar\":[{\"Id\":\"z\",\"Ad\":\"Zemin\",\"Tip\":\"Zemin\"}]," +
+                "\"Olculendirmeler\":null,\"GeometrikKisitlar\":null," +
+                "\"ReferansAltliklar\":null,\"YansiticiPaneller\":null}");
+            var migrated = SalonGeometriServisi.Ac(eskiYol);
+            if (migrated.SemaSurum != 2
+                || migrated.Olculendirmeler is null || migrated.GeometrikKisitlar is null
+                || migrated.ReferansAltliklar is null || migrated.YansiticiPaneller is null)
+                throw new InvalidOperationException("v1 salon bütün v2 koleksiyonlarıyla migrate edilmeli.");
+            foreach (SalonKatmanTipi tip in Enum.GetValues<SalonKatmanTipi>())
+                if (tip != SalonKatmanTipi.Genel && !migrated.Katmanlar.Any(k => k.Tip == tip))
+                    throw new InvalidOperationException($"Migrasyonda '{tip}' semantik katmanı eksik.");
+
+            var ileri = SalonGeometriServisi.YeniOlustur("İleri");
+            ileri.SemaSurum = SalonGeometriServisi.GuncelSemaSurum + 1;
+            bool reddedildi = false;
+            try { SalonGeometriServisi.Kaydet(ileri, ileriYol); }
+            catch (InvalidDataException) { reddedildi = true; }
+            if (!reddedildi || File.Exists(ileriYol))
+                throw new InvalidOperationException("Kaydet gelecek şema sürümünü yazmadan reddetmeli.");
+        }
+        finally
+        {
+            foreach (var p in new[] { yol, eskiYol, ileriYol })
+                if (File.Exists(p)) File.Delete(p);
+        }
+    }
+
+    // Regresyon: dolu hacim sıfır kalır; kısmi seyirci gerçek kademe Y'siyle,
+    // balkon ise tavanla düşey kesişimiyle düşülür.
+    public static void HacimSinirDurumlariDogruKirpar()
+    {
+        var dolu = KabukluSalon(10, 10, 3);
+        dolu.Sahne = new SahneGeometri
+        {
+            GenislikM = 10, DerinlikM = 10, YukseklikM = 3,
+            TabanKotuM = 0, MerkezX = 5, MerkezY = 5
+        };
+        if (Math.Abs(SalonHacimServisi.Hesapla(dolu)) > 1e-6)
+            throw new InvalidOperationException("Odayı bütünüyle dolduran sahnede hava hacmi 0 olmalı.");
+
+        var kismi = KabukluSalon(10, 5, 10); // x=0..10, y=0..5
+        var sek = new SeyirciSekciyonu
+        {
+            GenislikM = 10, DerinlikM = 10, KademeSayisi = 2,
+            KademeYuksekligiM = 1, TabanKotuM = 0, MerkezX = 5, MerkezY = 0
+        };
+        kismi.SeyirciSekciyonlari.Add(sek);
+        double yuksekYariIceride = SalonHacimServisi.Hesapla(kismi);
+        if (Math.Abs(yuksekYariIceride - 450) > 1e-6)
+            throw new InvalidOperationException($"İçerideki yüksek kademe 50 m³ düşmeli; {yuksekYariIceride:F3}.");
+        sek.TersYon = true;
+        double yuksekYariDisarida = SalonHacimServisi.Hesapla(kismi);
+        if (Math.Abs(yuksekYariDisarida - 500) > 1e-6)
+            throw new InvalidOperationException($"Dışarıdaki yüksek kademe hacim düşmemeli; {yuksekYariDisarida:F3}.");
+
+        var balkon = KabukluSalon(10, 10, 3);
+        balkon.Balkonlar.Add(new BalkonGeometri
+        {
+            GenislikM = 10, DerinlikM = 10, MerkezX = 5, MerkezY = 5,
+            TabanKotuM = 10, KalinlikM = 0.4
+        });
+        if (Math.Abs(SalonHacimServisi.Hesapla(balkon) - 300) > 1e-6)
+            throw new InvalidOperationException("Tavan üstündeki balkon oda havasından düşülmemeli.");
+    }
+
+    // Regresyon: örtüşen malzeme bölgelerinde son çizilen kazanır; toplam döşeme
+    // alanı kabuk alanını aşmaz ve coplanar çift yüzey oluşmaz.
+    public static void BolgeOrtusmeleriTekYuzeyKaplar()
+    {
+        var salon = KabukluSalon(10, 10, 4);
+        var a = SalonKatman.Olustur(SalonKatmanTipi.Genel); a.Ad = "Bölge-A";
+        var b = SalonKatman.Olustur(SalonKatmanTipi.Genel); b.Ad = "Bölge-B";
+        salon.Katmanlar.Add(a); salon.Katmanlar.Add(b);
+        salon.CizimOgeleri.Add(new SalonCizimOgesi
+        {
+            Tip = SalonCizimTipi.Dikdortgen, Kapali = true, KatmanId = a.Id,
+            Noktalar = [new(0,0), new(6,0), new(6,10), new(0,10)]
+        });
+        salon.CizimOgeleri.Add(new SalonCizimOgesi
+        {
+            Tip = SalonCizimTipi.Dikdortgen, Kapali = true, KatmanId = b.Id,
+            Noktalar = [new(4,0), new(10,0), new(10,10), new(4,10)]
+        });
+
+        var yuzeyler = Salon3DGorunumServisi.YuzeyleriOlustur(salon);
+        double doseme = yuzeyler
+            .Where(s => s.Vertices.All(v => Math.Abs(v.Z) < 1e-9))
+            .Sum(PlanAlani);
+        if (Math.Abs(doseme - 100) > 0.05)
+            throw new InvalidOperationException($"Örtüşen bölgeler toplam 100 m² olmalı; {doseme:F3}.");
+        double aAlan = yuzeyler.Where(s => s.Category == "Bölge-A").Sum(PlanAlani);
+        double bAlan = yuzeyler.Where(s => s.Category == "Bölge-B").Sum(PlanAlani);
+        if (Math.Abs(aAlan - 40) > 0.05 || Math.Abs(bAlan - 60) > 0.05)
+            throw new InvalidOperationException("Son çizilen bölge 20 m² örtüşmede öncelikli olmalı.");
+    }
+
+    // Regresyon: zemin ve tavan zıt yönlenir; otomatik panel hedefi tavanı seçer.
+    public static void ZeminTavanNormaliVeOtomatikHedefDogru()
+    {
+        var yuzeyler = Salon3DGorunumServisi.YuzeyleriOlustur(KabukluSalon(10, 8, 4));
+        var zemin = yuzeyler.Single(s => s.Category == "Zemin");
+        var tavan = yuzeyler.Single(s => s.Category == "Tavan");
+        if (IsaretliPlanAlani(zemin) >= 0 || IsaretliPlanAlani(tavan) <= 0)
+            throw new InvalidOperationException("Zemin -Z, tavan +Z yönelimli olmalı.");
+
+        var hedef = Kst.Acoustics.Core.Geometry.PanelHedefDetector.Bul(
+            yuzeyler, new AcousticPanelKonfigurasyon()).Tavan;
+        if (hedef?.Surface.Category != "Tavan")
+            throw new InvalidOperationException("Otomatik tavan hedefi zemini değil tavanı seçmeli.");
+    }
+
+    private static double IsaretliPlanAlani(ProjectSurface s)
+    {
+        double alan = 0;
+        for (int i = 0; i < s.Vertices.Count; i++)
+        {
+            var p = s.Vertices[i]; var q = s.Vertices[(i + 1) % s.Vertices.Count];
+            alan += p.X * q.Y - q.X * p.Y;
+        }
+        return alan / 2;
+    }
+
+    // Regresyon: köşedeki açıklık tek duvara atanır; genişliği duvar ucundan
+    // taşan açıklık sessizce küçülmek yerine doğrulama uyarısı verir.
+    public static void AciklikTekDuvarVeTasmaUyarisi()
+    {
+        var kose = KabukluSalon(10, 8, 4);
+        kose.Acikliklar.Add(new DuvarAcikligi
+        {
+            Ad = "Köşe Kapısı", GenislikM = 2, YukseklikM = 2,
+            MerkezX = 0, MerkezY = 0
+        });
+        var kapilar = Salon3DGorunumServisi.YuzeyleriOlustur(kose)
+            .Where(s => s.Category == "Kapı").ToList();
+        if (kapilar.Count != 1)
+            throw new InvalidOperationException($"Köşe açıklığı tek duvara bağlanmalı; {kapilar.Count} yüzey bulundu.");
+
+        var tasan = KabukluSalon(10, 8, 4);
+        tasan.Acikliklar.Add(new DuvarAcikligi
+        {
+            Ad = "Taşan Kapı", GenislikM = 2, YukseklikM = 2,
+            MerkezX = 0.2, MerkezY = 0
+        });
+        if (!SalonDogrulamaServisi.Dogrula(tasan).Any(u => u.Contains("duvar ucundan taşıyor")))
+            throw new InvalidOperationException("Duvar ucundan taşan açıklık için ölçü kırpma uyarısı beklenir.");
+    }
+
+    // Regresyon: M01 açık duvar bbox'ını oda kabul etmez; kısmi taşan sahne 3D'de
+    // de hacim hesabıyla aynı kabuk kesişimine kırpılır.
+    public static void M01AcikKabuguReddederVeSahneyiKirpar()
+    {
+        var acik = SalonGeometriServisi.YeniOlustur("Açık");
+        acik.SalonYuksekligiM = 3;
+        var duvar = acik.Katmanlar.First(k => k.Tip == SalonKatmanTipi.DuvarSeyirci);
+        acik.CizimOgeleri.Add(new SalonCizimOgesi
+        {
+            Tip = SalonCizimTipi.Polyline, Kapali = false, KatmanId = duvar.Id,
+            Noktalar = [new(0,0), new(10,0), new(10,8)]
+        });
+        bool reddedildi = false;
+        try { _ = SalonImporter.Cevir(acik, null); }
+        catch (InvalidDataException) { reddedildi = true; }
+        if (!reddedildi)
+            throw new InvalidOperationException("Kapalı zemin kabuğu olmayan salon M01'e aktarılmamalı.");
+
+        var sahneli = KabukluSalon(10, 10, 4);
+        sahneli.Sahne = new SahneGeometri
+        {
+            GenislikM = 4, DerinlikM = 4, YukseklikM = 1,
+            MerkezX = 9, MerkezY = 5
+        };
+        var sahneUstleri = Salon3DGorunumServisi.YuzeyleriOlustur(sahneli)
+            .Where(s => s.Category == "Sahne").ToList();
+        double alan = sahneUstleri.Sum(PlanAlani);
+        if (Math.Abs(alan - 12) > 0.05
+            || sahneUstleri.SelectMany(s => s.Vertices).Any(v => v.X > 10 + 1e-9))
+            throw new InvalidOperationException($"Sahne kabuğa 12 m² olarak kırpılmalı; {alan:F3}.");
+    }
+
+    // Regresyon: keyhole ayrıştırma sabit 32 delikte durmamalı.
+    public static void OtuzUcPencereDuvardanKesilir()
+    {
+        var salon = SalonGeometriServisi.YeniOlustur("33 açıklık");
+        salon.SalonYuksekligiM = 4;
+        var duvar = salon.Katmanlar.First(k => k.Tip == SalonKatmanTipi.DuvarSeyirci);
+        salon.CizimOgeleri.Add(new SalonCizimOgesi
+        {
+            Tip = SalonCizimTipi.Cizgi, KatmanId = duvar.Id,
+            Noktalar = [new(0,0), new(100,0)]
+        });
+        for (int i = 0; i < 33; i++)
+            salon.Acikliklar.Add(new DuvarAcikligi
+            {
+                Ad = $"Pencere {i + 1}", Tip = AciklikTipi.Pencere,
+                MerkezX = 2 + i * 3, MerkezY = 0,
+                GenislikM = 1, YukseklikM = 1, AltKotM = 1
+            });
+
+        var yuzeyler = Salon3DGorunumServisi.YuzeyleriOlustur(salon);
+        double pencereAlan = yuzeyler.Where(s => s.Category == "Pencere").Sum(Alan3D);
+        double duvarAlan = yuzeyler.Where(s => s.Category == "Duvar-Seyirci").Sum(Alan3D);
+        if (Math.Abs(pencereAlan - 33) > 0.05)
+            throw new InvalidOperationException($"33 pencere dolgu alanı 33 m² olmalı; {pencereAlan:F3}.");
+        if (duvarAlan < 366.2 || duvarAlan > 367.1)
+            throw new InvalidOperationException(
+                $"33 deliğin tümü duvardan çıkmalı (keyhole dahil ≈366,6 m²); {duvarAlan:F3}.");
     }
 }

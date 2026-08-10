@@ -26,8 +26,9 @@ public sealed record M08ImportSonucu(
 ///
 /// Id kararlılığı: Mekan.Id, BinaOda.Id'den deterministik üretilir (Guid ise doğrudan,
 /// değilse MD5 tabanlı kararlı Guid) — geometri yeniden yüklendiğinde eşleşme bozulmaz.
-/// Kat eşleşmesi KatNo iledir (M08 Kat modelinde Id yok); kat sırası M50 koleksiyon
-/// sırasından korunur.
+/// Kat eşleşmesi kararlı BinaKat.Id iledir; eski M08 belgelerinde yalnız ilk
+/// aktarım için KatNo geri dönüşü kullanılır. Kat sırası M50 koleksiyon sırasından
+/// korunur.
 /// </summary>
 public static class BinaGeometriMekanAdapteri
 {
@@ -41,13 +42,46 @@ public static class BinaGeometriMekanAdapteri
         proje.BinaGeometriRevizyon = geo.GeometriRevizyon;
         proje.BinaGeometriKopya = geo;
 
+        var geoKatIdleri = geo.Katlar.Select(k => k.Id).ToHashSet(StringComparer.Ordinal);
         var geoKatNolari = new HashSet<int>(geo.Katlar.Select(k => k.KatNo));
         var geoKatSirasi = geo.Katlar
-            .Select((k, index) => (k.KatNo, Index: index))
-            .ToDictionary(x => x.KatNo, x => x.Index);
+            .Select((k, index) => (k.Id, Index: index))
+            .ToDictionary(x => x.Id, x => x.Index, StringComparer.Ordinal);
+
+        // Oda bir katın KatNo'su değiştiği için başka Kat nesnesine taşınsa bile
+        // M08'in akustik alanlarını aynı Mekan nesnesi üzerinden koru.
+        var tumEskiMekanlar = proje.Katlar
+            .SelectMany(k => k.Mekanlar)
+            .GroupBy(m => m.Id)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var odaHedefKatlari = geo.Katlar
+            .SelectMany(k => k.Odalar.Select(o => (OdaId: OdaIdToGuid(o.Id), KatId: k.Id)))
+            .GroupBy(x => x.OdaId)
+            .ToDictionary(g => g.Key, g => g.Single().KatId);
+
+        // Kararlı bir oda Id'si başka kata taşındıysa aynı Mekan nesnesini önce eski
+        // sahibinden ayır. Aksi halde geometride silinmiş fakat atama taşıdığı için
+        // korunan bir kat ile yeni hedef kat aynı nesneyi/Id'yi birlikte tutabilir.
+        foreach (var eskiKat in proje.Katlar)
+        {
+            string? eslesenGeoKatId = !string.IsNullOrWhiteSpace(eskiKat.BinaGeometriKatId)
+                ? eskiKat.BinaGeometriKatId
+                : geo.Katlar.FirstOrDefault(k => k.KatNo == eskiKat.KatNo)?.Id;
+            for (int i = eskiKat.Mekanlar.Count - 1; i >= 0; i--)
+            {
+                var mekan = eskiKat.Mekanlar[i];
+                if (odaHedefKatlari.TryGetValue(mekan.Id, out var hedefKatId) &&
+                    !string.Equals(eslesenGeoKatId, hedefKatId, StringComparison.Ordinal))
+                    eskiKat.Mekanlar.RemoveAt(i);
+            }
+        }
 
         // Geometride olmayan eski katlar: atama taşıyan mekanı yoksa kaldır, varsa koru + uyar.
-        foreach (var eski in proje.Katlar.Where(k => !geoKatNolari.Contains(k.KatNo)).ToList())
+        foreach (var eski in proje.Katlar.Where(k =>
+                     !string.IsNullOrWhiteSpace(k.BinaGeometriKatId)
+                         ? !geoKatIdleri.Contains(k.BinaGeometriKatId)
+                         : !geoKatNolari.Contains(k.KatNo)).ToList())
         {
             bool atamaVar = eski.Mekanlar.Any(m =>
                 m.ZeminYapiElemani != null || m.TavanYapiElemani != null ||
@@ -58,6 +92,10 @@ public static class BinaGeometriMekanAdapteri
             }
             else
             {
+                // Bu kat artık güncel M50 koleksiyonunun üyesi değildir; yalnız
+                // akustik/domain verisini kurtarmak için tutulur. Eski KatId'yi canlı
+                // geometri bağlantısı gibi bırakmak düşey komşulukta hayalet kat üretir.
+                eski.BinaGeometriKatId = "";
                 korunan++;
                 uyarilar.Add($"'{eski.Ad}' katı yeni geometride yok; malzeme ataması taşıdığı için korundu.");
             }
@@ -67,10 +105,16 @@ public static class BinaGeometriMekanAdapteri
 
         foreach (var geoKat in geo.Katlar)
         {
-            var hedef = proje.Katlar.FirstOrDefault(k => k.KatNo == geoKat.KatNo);
+            var hedef = proje.Katlar.FirstOrDefault(k =>
+                !string.IsNullOrWhiteSpace(k.BinaGeometriKatId) &&
+                string.Equals(k.BinaGeometriKatId, geoKat.Id, StringComparison.Ordinal));
+            // Eski M08 projelerinde kararlı kimlik henüz yoktur. İlk aktarımda
+            // yalnız KatNo üzerinden eşleştirip hemen BinaGeometriKatId'yi damgala.
+            hedef ??= proje.Katlar.FirstOrDefault(k =>
+                string.IsNullOrWhiteSpace(k.BinaGeometriKatId) && k.KatNo == geoKat.KatNo);
             if (hedef is null)
             {
-                hedef = new Kat { KatNo = geoKat.KatNo };
+                hedef = new Kat { KatNo = geoKat.KatNo, BinaGeometriKatId = geoKat.Id };
                 proje.Katlar.Add(hedef);
                 yeni++;
             }
@@ -79,7 +123,7 @@ public static class BinaGeometriMekanAdapteri
                 guncellenen++;
             }
 
-            KatiGuncelle(hedef, geoKat);
+            KatiGuncelle(hedef, geoKat, tumEskiMekanlar);
 
             // Bölme üretimi — komşuluklar geometriden yeniden tespit edilir;
             // önceki YapiElemani/Acikliklar geometrik yakınlıkla korunur.
@@ -92,8 +136,8 @@ public static class BinaGeometriMekanAdapteri
 
         proje.Katlar.Sort((a, b) =>
         {
-            bool aGeo = geoKatSirasi.TryGetValue(a.KatNo, out var aIndex);
-            bool bGeo = geoKatSirasi.TryGetValue(b.KatNo, out var bIndex);
+            bool aGeo = geoKatSirasi.TryGetValue(a.BinaGeometriKatId, out var aIndex);
+            bool bGeo = geoKatSirasi.TryGetValue(b.BinaGeometriKatId, out var bIndex);
             if (aGeo && bGeo) return aIndex.CompareTo(bIndex);
             if (aGeo) return -1;
             if (bGeo) return 1;
@@ -101,22 +145,20 @@ public static class BinaGeometriMekanAdapteri
         });
 
         // 4.4 — Patlatma M50 modeline bağlanır: geometrideki düşey birleşimler
-        // M08 modeline indirgenir. Merge kuralı: M50'dekiler eklenir/güncellenir
-        // (Id eşleşmesi); M08'de yerel oluşturulmuş kayıtlara dokunulmaz.
+        // M08 modeline indirgenir. M50 tek geometri kaynağıdır; listede artık
+        // bulunmayan birleşimler M08'de tutulmaz.
+        proje.DuseyMekanBirlesimleri.Clear();
         foreach (var b in geo.DuseyBirlesimleri)
         {
             var id = OdaIdToGuid(b.Id);
-            var hedefBirlesim = proje.DuseyMekanBirlesimleri.FirstOrDefault(x => x.Id == id);
-            if (hedefBirlesim is null)
-            {
-                hedefBirlesim = new DuseyMekanBirlesimi { Id = id };
-                proje.DuseyMekanBirlesimleri.Add(hedefBirlesim);
-            }
+            var hedefBirlesim = new DuseyMekanBirlesimi { Id = id };
+            proje.DuseyMekanBirlesimleri.Add(hedefBirlesim);
             hedefBirlesim.AktifMi = b.AktifMi;
             hedefBirlesim.UstKatNo = b.UstKatNo;
             hedefBirlesim.AltKatNo = b.AltKatNo;
             hedefBirlesim.Uyeler = b.Uyeler.Select(u => new DuseyMekanBirlesimUyesi
             {
+                KatId = u.KatId,
                 KatNo = u.KatNo,
                 MekanId = OdaIdToGuid(u.OdaId),
                 TavanAcik = u.TavanAcik,
@@ -127,8 +169,11 @@ public static class BinaGeometriMekanAdapteri
         return new M08ImportSonucu(yeni, guncellenen, korunan, uyarilar);
     }
 
-    private static void KatiGuncelle(Kat hedef, BinaKat kaynak)
+    private static void KatiGuncelle(
+        Kat hedef, BinaKat kaynak, IReadOnlyDictionary<Guid, Mekan> tumEskiMekanlar)
     {
+        hedef.BinaGeometriKatId = kaynak.Id;
+        hedef.KatNo = kaynak.KatNo;
         hedef.Ad = kaynak.Ad;
         hedef.KatYuksekligi = kaynak.KatYuksekligiM;
         hedef.DxfFilePath = kaynak.DxfFilePath;
@@ -145,12 +190,11 @@ public static class BinaGeometriMekanAdapteri
             .ToList();
 
         // Mekanlar: kararlı Id eşleşmesiyle birleştir — akustik alanlar korunur.
-        var eskiler = hedef.Mekanlar.ToDictionary(m => m.Id);
         var yeniListe = new List<Mekan>();
         foreach (var oda in kaynak.Odalar)
         {
             var id = OdaIdToGuid(oda.Id);
-            if (!eskiler.TryGetValue(id, out var mekan))
+            if (!tumEskiMekanlar.TryGetValue(id, out var mekan))
             {
                 mekan = new Mekan
                 {
@@ -191,16 +235,18 @@ public static class BinaGeometriMekanAdapteri
             foreach (var b in m.Bolmeler)
                 b.Acikliklar.RemoveAll(a => a.GeometridenGelir);
 
-        // 3. M50 açıklıklarını yeniden yerleştir (DxfKatPlaniParser ile aynı kural:
-        //    orta nokta poligon içinde + en yakın bölme segmentine <= 0.20 m)
+        // 3. M50 açıklıklarını yeniden yerleştir. Poligonun üst/sağ sınırı gibi
+        // ray-cast tarafından "dışarı" sayılan kenarlar da en yakın bölmeye
+        // 20 cm tolerans içindeyse kabul edilir.
         foreach (var m in hedef.Mekanlar)
         {
             foreach (var a in kaynak.Acikliklar)
             {
                 if (a.IptalEdildi) continue;
                 var orta = new Point2D((a.Bas.X + a.Bit.X) * 0.5, (a.Bas.Y + a.Bit.Y) * 0.5);
-                if (!PoligonYardimci.IsPointInside(orta, m.Poligon)) continue;
-
+                if (!PoligonYardimci.IsPointInside(orta, m.Poligon) &&
+                    !PoligonSinirindaMi(orta, m.Poligon))
+                    continue;
                 var hedefBolme = m.Bolmeler
                     .Where(b => b.HasGeometry)
                     .Select(b => new { Bolme = b, D = PoligonYardimci.SegmentMesafesi(orta, b.Baslangic, b.Bitis) })
@@ -240,6 +286,19 @@ public static class BinaGeometriMekanAdapteri
                 });
             }
         }
+    }
+
+    private static bool PoligonSinirindaMi(
+        Point2D nokta, IReadOnlyList<Point2D> poligon, double tolerans = 1e-6)
+    {
+        if (poligon.Count < 2) return false;
+        for (var i = 0; i < poligon.Count; i++)
+        {
+            var bitis = poligon[(i + 1) % poligon.Count];
+            if (PoligonYardimci.SegmentMesafesi(nokta, poligon[i], bitis) <= tolerans)
+                return true;
+        }
+        return false;
     }
 
     private static Point2D OrtaNokta(Point2D a, Point2D b) =>

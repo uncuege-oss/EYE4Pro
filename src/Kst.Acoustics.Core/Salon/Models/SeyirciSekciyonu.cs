@@ -30,6 +30,14 @@ public class SeyirciSekciyonu : ISeyirciSekciyonu
     /// false = +Y yönünde yükselir (arka = +Y); true = −Y yönünde yükselir.
     public bool TersYon { get; set; }
 
+    /// Gerçek koltuk yerleşimi ayarları.
+    public double KoltukGenisligiM { get; set; } = 0.55;
+    public double SiraAraligiM { get; set; } = 0.90;
+    public double YanKoridorGenisligiM { get; set; } = 1.20;
+    public int OrtaKoridorSayisi { get; set; } = 1;
+    public double OrtaKoridorGenisligiM { get; set; } = 1.20;
+    public int TekerlekliSandalyeYeri { get; set; } = 2;
+
     public override string ToString()
         => $"{Ad} ({GenislikM:F0}×{DerinlikM:F0} m, {KademeSayisi} kademe)";
 }

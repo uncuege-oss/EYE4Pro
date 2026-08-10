@@ -137,23 +137,22 @@ public static class SalonDogrulamaServisi
 
         foreach (var ac in salon.Acikliklar)
         {
-            bool bagli = segmentler.Any(sg =>
-                NoktaSegmentUzakligi(sg.A, sg.B, ac.MerkezX, ac.MerkezY)
-                    <= Salon3DGorunumServisi.AciklikToleransM);
-            if (!bagli)
+            int duvar = Salon3DGorunumServisi.EnYakinDuvarIndeksi(
+                segmentler, ac, out double s, out double boy, out _);
+            if (duvar < 0)
+            {
                 uyarilar.Add($"'{ac.Ad}' hiçbir duvarın üzerinde değil — merkezi bir duvar " +
                              "çizgisinin üzerine taşıyın (3D'de kesilmez).");
-        }
-    }
+                continue;
+            }
 
-    private static double NoktaSegmentUzakligi(Point2D a, Point2D b, double px, double py)
-    {
-        double dx = b.X - a.X, dy = b.Y - a.Y;
-        double len2 = dx * dx + dy * dy;
-        if (len2 < 1e-12) return Math.Sqrt((px - a.X) * (px - a.X) + (py - a.Y) * (py - a.Y));
-        double t = Math.Clamp(((px - a.X) * dx + (py - a.Y) * dy) / len2, 0, 1);
-        double cx = a.X + t * dx, cy = a.Y + t * dy;
-        return Math.Sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+            double yari = Math.Max(0, ac.GenislikM) / 2;
+            double kullanilan = Math.Max(0,
+                Math.Min(boy, s + yari) - Math.Max(0, s - yari));
+            if (kullanilan + 1e-6 < ac.GenislikM)
+                uyarilar.Add($"'{ac.Ad}' genişliği duvar ucundan taşıyor — " +
+                             $"{ac.GenislikM:F2} m yerine 3D'de {kullanilan:F2} m'ye kırpılır.");
+        }
     }
 
     /// Üretilen 3D kabuğa ışın tabanlı sızıntı testi uygular; Türkçe özet döner.

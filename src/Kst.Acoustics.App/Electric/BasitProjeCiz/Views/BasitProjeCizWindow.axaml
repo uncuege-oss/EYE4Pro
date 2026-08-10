@@ -303,6 +303,7 @@
                         </StackPanel>
                     </Button>
                     <Button Classes="toolbarButton toolbarFile" Click="BinaGeometrisiYukle_OnClick"
+                            IsEnabled="{Binding ProjeDuzenlenebilir}"
                             ToolTip.Tip="M50'de hazırlanan .e4bina bina geometrisini yükle (kat/oda Id'leri korunur)">
                         <StackPanel>
                             <TextBlock Classes="toolbarIcon" Text="⬡"/>
@@ -480,12 +481,29 @@
                             <StackPanel Spacing="6" Margin="0,8,0,0">
                                 <Button Content="⬡ M50'de Düzenle"
                                         Click="M50DeDuzenle_OnClick"
+                                        IsEnabled="{Binding ProjeDuzenlenebilir}"
                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                         Background="#16424E" BorderBrush="#2A8AA0" Foreground="#A8E4F0"
                                         FontWeight="SemiBold"
                                         ToolTip.Tip="Bağlı bina geometrisini M50 Bina Geometrisi modülünde aç (kat/oda/açıklık düzenleme orada yapılır)"/>
+                                <Border Background="#0D2024" BorderBrush="#24515A" BorderThickness="1" CornerRadius="4" Padding="7,5">
+                                    <StackPanel Spacing="5">
+                                        <TextBlock Text="{Binding BinaGeometriDurumMetni}" Foreground="#8EDCE8"
+                                                   FontSize="10" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
+                                            <Button Grid.Column="0" Content="↻ Güncelle"
+                                                    Click="BagliBinaGeometrisiniGuncelle_OnClick"
+                                                    IsEnabled="{Binding ProjeDuzenlenebilir}"
+                                                    Padding="6,4" FontSize="10"/>
+                                            <Button Grid.Column="1" Content="⤓ Gömülü Kurtar"
+                                                    Click="GomuluBinaGeometrisiniKurtar_OnClick"
+                                                    IsEnabled="{Binding ProjeDuzenlenebilir}"
+                                                    Padding="6,4" FontSize="10"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
                                 <TextBlock Classes="label" TextWrapping="Wrap"
-                                           Text="Kat ekleme, DXF yükleme ve geometri düzenleme M50 Bina Geometrisi modülüne taşındı. Düzenledikten sonra üst çubuktaki 'Bina Geo.' ile yeniden yükleyin."/>
+                                           Text="Kat/oda/açıklık geometrisi M50'de düzenlenir. M50 kapanınca bağlı dosya otomatik yeniden yüklenir; gerekirse Güncelle'yi kullanın."/>
                             </StackPanel>
                         </Panel>
 
@@ -785,6 +803,7 @@
                                                  modları M50 Bina Geometrisi'ne taşındı. -->
                                             <Button Content="⬡ M50'de Düzenle"
                                                     Click="M50DeDuzenle_OnClick"
+                                                    IsEnabled="{Binding ProjeDuzenlenebilir}"
                                                     Margin="0,2,0,0"
                                                     ToolTip.Tip="Oda/açıklık düzenleme M50 Bina Geometrisi modülünde yapılır"/>
                                             <TextBlock Text="{Binding AciklikOzeti}"
