@@ -111,6 +111,7 @@ public static class AciklikYardimci
         double yeniGenis = Math.Sqrt((yBit.X - yBas.X) * (yBit.X - yBas.X) + (yBit.Y - yBas.Y) * (yBit.Y - yBas.Y));
         var yansima = new BinaAciklik
         {
+            Id = kaynak.Id + "-yansima",
             Bas = yBas, Bit = yBit, Tip = kaynak.Tip,
             GenislikM = yeniGenis,
             YukseklikM = kaynak.YukseklikM,

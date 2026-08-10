@@ -237,10 +237,11 @@ public partial class BasitProjeCizViewModel
         {
             if (!oda.MahalListesineDahil) continue;
             if (!satir.EfektifAktif(oda.Id)) continue;
-            if (tanim.MontajTipi == "Tavan" && tavaniAcik is not null && tavaniAcik.Contains(oda.Id)) continue;
-
             var ayar = satir.HucreGetirVeyaOlustur(oda.Id);
             var (yerlesim, montaj, gridM, duvarM) = satir.EfektifAyarlar(oda.Id);
+            if (string.Equals(montaj, "Tavan", System.StringComparison.OrdinalIgnoreCase) &&
+                tavaniAcik is not null && tavaniAcik.Contains(oda.Id))
+                continue;
             var gridYM = satir.EfektifGridY(oda.Id);
 
             var placed = _yerlestir.OdayaYerlestir(

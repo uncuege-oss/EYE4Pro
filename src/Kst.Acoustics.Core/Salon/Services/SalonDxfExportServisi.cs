@@ -1,4 +1,5 @@
 using Kst.Acoustics.Core.Exporting;
+using Kst.Acoustics.Core.Importing;
 using Kst.Acoustics.Core.Salon.Models;
 
 namespace Kst.Acoustics.Core.Salon.Services;
@@ -11,6 +12,6 @@ public static class SalonDxfExportServisi
     public static void DisaAktar(SalonGeometri salon, string dosyaYolu)
     {
         var surfaces = Salon3DGorunumServisi.YuzeyleriOlustur(salon);
-        new DxfExportService().Export(dosyaYolu, surfaces);
+        new DxfExportService().Export(dosyaYolu, surfaces, SurfaceImportUnit.Meters);
     }
 }

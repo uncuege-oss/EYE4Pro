@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Salon.Views.SalonGelismisCadWindow" x:CompileBindings="False"
+        Width="520" Height="410" WindowStartupLocation="CenterOwner" Background="#0B1118" Title="Gelişmiş CAD">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="18" RowSpacing="14">
+    <StackPanel Spacing="4"><TextBlock Text="Gelişmiş CAD ve parametrik ilişkiler" FontSize="19" FontWeight="SemiBold" Foreground="#E6EEF6"/>
+      <TextBlock Text="İşlem, ana çizimde seçili öğelere tek undo adımı olarak uygulanır." Foreground="#8199AC"/></StackPanel>
+    <StackPanel Grid.Row="1" Spacing="12">
+      <ComboBox x:Name="IslemCombo" SelectionChanged="Islem_SelectionChanged"/>
+      <TextBlock x:Name="AciklamaText" Foreground="#7FB7D8" TextWrapping="Wrap"/>
+      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+        <StackPanel><TextBlock x:Name="ALabel" Text="A" Foreground="#8199AC"/><NumericUpDown x:Name="AValue" Value="1" Increment="0.1"/></StackPanel>
+        <StackPanel Grid.Column="1"><TextBlock x:Name="BLabel" Text="B" Foreground="#8199AC"/><NumericUpDown x:Name="BValue" Value="0" Increment="0.1"/></StackPanel>
+        <StackPanel Grid.Column="2"><TextBlock x:Name="CLabel" Text="C" Foreground="#8199AC"/><NumericUpDown x:Name="CValue" Value="3" Increment="1" Minimum="0" Maximum="10000"/></StackPanel>
+      </Grid>
+    </StackPanel>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="İptal" Click="Iptal_OnClick" IsCancel="True" Padding="16,8"/>
+      <Button Content="Uygula" Click="Uygula_OnClick" IsDefault="True" Padding="16,8" Background="#176C98" Foreground="White"/>
+    </StackPanel>
+  </Grid>
+</Window>

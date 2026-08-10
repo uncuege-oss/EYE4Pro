@@ -158,6 +158,7 @@ public class YapiElemaniKutuphanesi
             eleman.Katmanlar ??= new List<YapiKatmani>();
             eleman.RThirdOctave ??= new List<double>();
             eleman.DeltaRThirdOctave ??= new List<double>();
+            eleman.Belgeler ??= new List<UrunBelgesi>();
             var sonuc = DogrulaElemanDetay(eleman, index++);
             if (sonuc.Hatalar.Count > 0)
             {
@@ -331,6 +332,7 @@ public class YapiElemaniKutuphanesi
         e.Katmanlar ??= new List<YapiKatmani>();
         e.RThirdOctave ??= new List<double>();
         e.DeltaRThirdOctave ??= new List<double>();
+        e.Belgeler ??= new List<UrunBelgesi>();
         var ad = string.IsNullOrWhiteSpace(e.Ad) ? $"#{index}" : e.Ad;
         var sonuc = new ElemanDogrulamaSonucu(index, ad);
 
@@ -341,6 +343,12 @@ public class YapiElemaniKutuphanesi
             sonuc.Hatalar.Add($"Tip geçersiz: {e.Tip}");
         if (e.Rw < 0 || e.Rw > 100)
             sonuc.Hatalar.Add($"Rw aralık dışı: {e.Rw} (beklenen 0–100)");
+        if (e.BirimFiyat < 0)
+            sonuc.Hatalar.Add($"Birim fiyat negatif olamaz: {e.BirimFiyat}");
+        if (e.FireYuzdesi is < 0 or > 100)
+            sonuc.Hatalar.Add($"Fire yüzdesi aralık dışı: {e.FireYuzdesi} (beklenen 0–100)");
+        if (string.IsNullOrWhiteSpace(e.ParaBirimi))
+            sonuc.Uyarilar.Add("Para birimi boş; TRY kullanılacak");
 
         // ── Adaptasyon terimleri (genelde negatif) ───────────────────────
         if (e.C < -20 || e.C > 5)
@@ -866,6 +874,20 @@ public class YapiElemaniKutuphanesi
     /// güvenli tarafta kalınarak Model'e düşürülür.
     public static void TamamlaOktavVerisi(YapiElemani eleman)
     {
+        ArgumentNullException.ThrowIfNull(eleman);
+        eleman.Ad ??= "";
+        eleman.Uretici ??= "";
+        eleman.UrunKodu ??= "";
+        eleman.Kategori ??= "";
+        eleman.PozNo ??= "";
+        eleman.ParaBirimi = string.IsNullOrWhiteSpace(eleman.ParaBirimi) ? "TRY" : eleman.ParaBirimi;
+        eleman.Katmanlar ??= new List<YapiKatmani>();
+        eleman.RThirdOctave ??= new List<double>();
+        eleman.DeltaRThirdOctave ??= new List<double>();
+        eleman.Belgeler ??= new List<UrunBelgesi>();
+        if (eleman.Id == Guid.Empty)
+            eleman.Id = M08KararliKimlik.YapiElemani(eleman);
+
         var baslangicHavaKaynagi = OktavBantElemanServisi.EtkinSpektrumKaynagi(eleman);
         var baslangicDarbeKaynagi = OktavBantElemanServisi.EtkinDarbeSpektrumKaynagi(eleman);
         bool havaModeliKullanildi = false;

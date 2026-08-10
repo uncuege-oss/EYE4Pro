@@ -202,7 +202,8 @@ public sealed class ProjectFileService
             SurfaceMaterials = new Dictionary<string, string>(
                 project.SurfaceMaterials, StringComparer.OrdinalIgnoreCase),
             ImportWarnings = project.ImportWarnings.ToArray(),
-            PanelKonfigurasyon = ClonePanelConfiguration(project.PanelKonfigurasyon)
+            PanelKonfigurasyon = ClonePanelConfiguration(project.PanelKonfigurasyon),
+            Scenarios = project.Scenarios.Select(AcousticScenarioCloner.Clone).ToArray()
         };
 
     private static AcousticPanelKonfigurasyon? ClonePanelConfiguration(AcousticPanelKonfigurasyon? source)

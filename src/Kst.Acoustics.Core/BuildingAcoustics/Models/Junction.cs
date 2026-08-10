@@ -40,6 +40,8 @@ public class Junction
     public JunctionStrukturelTipi StrukturelTipi { get; set; } = JunctionStrukturelTipi.Yok;
     public double Uzunluk { get; set; }
     public double KijOverrideDb { get; set; }
+    public string DetayReferansi { get; set; } = "";
+    public string UygulamaNotu { get; set; } = "";
 
     public double KijDb => KijOverrideDb > 0 ? KijOverrideDb : BaglantiKij.GetKij(BaglantiTipi);
 }

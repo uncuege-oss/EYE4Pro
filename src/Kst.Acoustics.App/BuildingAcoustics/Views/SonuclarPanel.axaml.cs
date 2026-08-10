@@ -6,8 +6,11 @@ using Avalonia.Platform.Storage;
 using Kst.Acoustics.App.BuildingAcoustics.ViewModels;
 using Kst.Acoustics.Core.BuildingAcoustics.Reports;
 using Kst.Acoustics.Core.BuildingAcoustics.Calculation;
+using Kst.Acoustics.Core.BuildingAcoustics.Models;
+using Kst.Acoustics.Core.BuildingAcoustics.Workflow;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -97,18 +100,41 @@ public partial class SonuclarPanel : UserControl
         var owner = TopLevel.GetTopLevel(this) as Window;
         if (owner == null) return;
 
+        var haricTutulanlar = vm.RaporHaricTutulanBolmeIdleri;
+        var onKontrol = M08RaporUygulanabilirlikServisi.Degerlendir(vm.Proje, haricTutulanlar);
+        if (vm.Proje.RaporAyarlari.YayinDurumu is M08RaporYayinDurumu.OnayaHazir or M08RaporYayinDurumu.Imzali &&
+            onKontrol.YayinaEngelVar)
+        {
+            var engeller = string.Join("\n• ", onKontrol.Bulgular
+                .Where(x => x.Seviye == RaporOnKontrolSeviyesi.Engel)
+                .Select(x => x.Mesaj));
+            var dialog = new OnayDiyaloguWindow(
+                "Rapor Ön Kontrolü",
+                $"Bu yayın durumunda rapor üretilemez:\n\n• {engeller}\n\nEksikleri tamamlayın veya yayın durumunu Taslak yapın.",
+                tamamYazi: "Kapat", iptalYazi: "Kapat");
+            await dialog.ShowDialog<OnaySonucu>(owner);
+            return;
+        }
+
+        var belgeAdi = M08RaporUygulanabilirlikServisi.BelgeTuruAdi(vm.Proje.RaporAyarlari.BelgeTuru);
+        var dosyaEtiketi = vm.Proje.RaporAyarlari.BelgeTuru switch
+        {
+            M08RaporBelgeTuru.AkustikProjeRaporPaketi => "akustik-proje-rapor-paketi",
+            M08RaporBelgeTuru.SahaOlcumRaporu => "saha-olcum-raporu",
+            M08RaporBelgeTuru.AkustikPerformansBelgesi => "akustik-performans-belgesi",
+            _ => "mimari-akustik-raporu",
+        };
+
         var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Mimari Akustik Raporu Kaydet",
-            SuggestedFileName = $"{SanitizeFileName(vm.Proje.ProjeAdi)}-mimari-akustik-raporu.html",
+            Title = $"{belgeAdi} Kaydet",
+            SuggestedFileName = $"{SanitizeFileName(vm.Proje.ProjeAdi)}-{dosyaEtiketi}.html",
             FileTypeChoices = [ new FilePickerFileType("HTML Raporu") { Patterns = ["*.html"] } ]
         });
         if (file == null) return;
 
         var projeAnlik = vm.DisaAktarmaAnlikGoruntusuAl();
-        var haricTutulanlar = vm.RaporHaricTutulanBolmeIdleri;
-
-        await DisaAktar("Mimari akustik raporu hazırlanıyor…", async () =>
+        await DisaAktar($"{belgeAdi} hazırlanıyor…", async () =>
         {
             var html = await Task.Run(() =>
                 new MimariAkustikRaporServisi().HtmlOlustur(projeAnlik, haricTutulanlar));

@@ -62,6 +62,12 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="220"/>
                             <DataGridTextColumn Header="Tip" Binding="{Binding Tip}" Width="80"/>
+                            <DataGridTextColumn Header="Üretici" Binding="{Binding Uretici}" Width="130"/>
+                            <DataGridTextColumn Header="Ürün Kodu" Binding="{Binding UrunKodu}" Width="100"/>
+                            <DataGridTextColumn Header="Poz No" Binding="{Binding PozNo}" Width="90"/>
+                            <DataGridTextColumn Header="Birim Fiyat" Binding="{Binding BirimFiyat}" Width="86"/>
+                            <DataGridTextColumn Header="Para" Binding="{Binding ParaBirimi}" Width="58"/>
+                            <DataGridTextColumn Header="Fire %" Binding="{Binding FireYuzdesi}" Width="62"/>
                             <DataGridTextColumn Header="Sınıf" Binding="{Binding Hafiflik}" Width="74"/>
                             <DataGridTextColumn Header="Ts (s)" Binding="{Binding YapisalRtSn}" Width="60"/>
                             <DataGridTextColumn Header="Rw" Binding="{Binding Rw}" Width="58"/>
@@ -200,6 +206,43 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Ürün Belgeleri">
+                <Grid RowDefinitions="Auto,Auto,*" Margin="4">
+                    <Border Grid.Row="0" Background="#172432" BorderBrush="#294052" BorderThickness="1"
+                            CornerRadius="4" Padding="10,7" Margin="0,0,0,8">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="{Binding SeciliKutuphaneElemani.Ad, FallbackValue='Önce bir yapı elemanı seçin'}"
+                                       Foreground="#20C3D8" FontWeight="Bold"/>
+                            <TextBlock Text="Akustik test raporu, teknik föy, uygunluk belgesi, EPD ve montaj talimatlarını ürünle ilişkilendirin."
+                                       Foreground="#9AB7CC" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,8" IsEnabled="{Binding DuzenlemeEtkin}">
+                        <Button Content="Belge Ekle" Click="UrunBelgesiEkle_OnClick"
+                                Background="#163A2A" Foreground="#A8FFD0" Padding="12,6" Margin="0,0,6,0"/>
+                        <Button Content="Seçili Belgeyi Aç" Click="UrunBelgesiAc_OnClick"
+                                Background="#16304A" Foreground="#B8E4FF" Padding="12,6" Margin="0,0,6,0"/>
+                        <Button Content="Seçili Belgeyi Kaldır" Click="UrunBelgesiSil_OnClick"
+                                Background="#3A1A1A" Foreground="#FFB0B0" Padding="12,6" Margin="0,0,6,0"/>
+                    </WrapPanel>
+                    <DataGrid x:Name="UrunBelgesiGrid" Grid.Row="2"
+                              ItemsSource="{Binding SeciliKutuphaneElemani.Belgeler}"
+                              AutoGenerateColumns="False" IsReadOnly="{Binding ProjeKilitli}"
+                              CellEditEnded="KutuphaneGrid_OnCellEditEnded"
+                              Background="#101820" BorderBrush="#2B4054" BorderThickness="1">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Belge" Binding="{Binding Ad}" Width="220"/>
+                            <DataGridTextColumn Header="Tür" Binding="{Binding Tur}" Width="135"/>
+                            <DataGridTextColumn Header="Belge No" Binding="{Binding BelgeNo}" Width="110"/>
+                            <DataGridTextColumn Header="Veren Kuruluş" Binding="{Binding VerenKurulus}" Width="160"/>
+                            <DataGridTextColumn Header="Dosya / URL" Binding="{Binding DosyaYolu}" Width="*"/>
+                            <DataGridTextColumn Header="SHA-256" Binding="{Binding Sha256}" Width="160" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Geçerlilik" Binding="{Binding GecerlilikTarihi, StringFormat='dd.MM.yyyy'}" Width="90"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

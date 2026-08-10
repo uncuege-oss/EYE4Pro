@@ -49,6 +49,8 @@ public sealed class SalonCizimCanvas : Control
     private static readonly SolidColorBrush DefaultEntityBrush = new(Color.Parse("#C0CCD6"));
     private static readonly SolidColorBrush OlcuBack = new(Color.Parse("#0A1622"), 0.92);
     private static readonly SolidColorBrush OlcuText = new(Color.Parse("#FFE08A"));
+    private static readonly Pen KaliciOlcuPen = new(new SolidColorBrush(Color.Parse("#FFE08A")), 1.0)
+        { DashStyle = new DashStyle([4, 2], 0) };
     private static readonly SolidColorBrush SahneFill = new(Color.Parse("#C08A3E"), 0.18);
     private static readonly SolidColorBrush SahneText = new(Color.Parse("#E6B870"));
     private static readonly Pen SahnePen = new(new SolidColorBrush(Color.Parse("#E0A848")), 1.7)
@@ -64,6 +66,7 @@ public sealed class SalonCizimCanvas : Control
     private static readonly SolidColorBrush BalkonText = new(Color.Parse("#D49AC2"));
     private static readonly Pen BalkonPen = new(new SolidColorBrush(Color.Parse("#C078A8")), 1.5)
         { DashStyle = new DashStyle([3, 2], 0) };
+    private static readonly Color AltlikRengi = Color.Parse("#6B8FA6");
 
     private const double MinZoom = 0.1;
     private const double MaxZoom = 40.0;
@@ -85,7 +88,16 @@ public sealed class SalonCizimCanvas : Control
     public SalonGeometri? Salon
     {
         get => _salon;
-        set { _salon = value; _secim.Clear(); _sonVertex = -1; InvalidateVisual(); }
+        set
+        {
+            if (ReferenceEquals(_salon, value)) return;
+            KomutuSifirla();
+            _salon = value;
+            _secim.Clear();
+            _sonVertex = -1;
+            OnSecimDegisti?.Invoke(_secim);
+            InvalidateVisual();
+        }
     }
 
     /// Yeni çizilen öğelere atanacak aktif katman.
@@ -119,7 +131,31 @@ public sealed class SalonCizimCanvas : Control
     private bool _snapAcik = true;
     private bool _gridSnap;
     private bool _polar;
-    private const double GridAdimM = 0.5;
+    private double _gridAdimM = 0.5;
+    private double _polarAciDerece = 15;
+
+    public void AyarlariUygula(SalonEditorAyarlari ayar)
+    {
+        ArgumentNullException.ThrowIfNull(ayar);
+        _snapAcik = ayar.SnapAcik;
+        _gridSnap = ayar.GridAcik;
+        _ortho = ayar.OrtoAcik;
+        _polar = ayar.PolarAcik && !_ortho;
+        _gridAdimM = Math.Clamp(ayar.GridAraligiM, 0.01, 100);
+        _polarAciDerece = Math.Clamp(ayar.PolarAciDerece, 1, 90);
+        InvalidateVisual();
+    }
+
+    public void AyarlariOku(SalonEditorAyarlari ayar)
+    {
+        ArgumentNullException.ThrowIfNull(ayar);
+        ayar.SnapAcik = _snapAcik;
+        ayar.GridAcik = _gridSnap;
+        ayar.OrtoAcik = _ortho;
+        ayar.PolarAcik = _polar;
+        ayar.GridAraligiM = _gridAdimM;
+        ayar.PolarAciDerece = _polarAciDerece;
+    }
 
     public bool SnapToggle()
     {
@@ -132,7 +168,7 @@ public sealed class SalonCizimCanvas : Control
     public bool GridToggle()
     {
         _gridSnap = !_gridSnap;
-        BildirDurum(_gridSnap ? $"Grid snap açık — {GridAdimM:0.##} m ızgara (F9)." : "Grid snap kapalı (F9).");
+        BildirDurum(_gridSnap ? $"Grid snap açık — {_gridAdimM:0.##} m ızgara (F9)." : "Grid snap kapalı (F9).");
         InvalidateVisual();
         return _gridSnap;
     }
@@ -140,7 +176,7 @@ public sealed class SalonCizimCanvas : Control
     public bool PolarToggle()
     {
         _polar = !_polar;
-        BildirDurum(_polar ? "Polar kilit açık — 15° adımlar (F10)." : "Polar kilit kapalı (F10).");
+        BildirDurum(_polar ? $"Polar kilit açık — {_polarAciDerece:0.#}° adımlar (F10)." : "Polar kilit kapalı (F10).");
         InvalidateVisual();
         return _polar;
     }
@@ -156,6 +192,7 @@ public sealed class SalonCizimCanvas : Control
     private readonly List<SalonCizimOgesi> _secim = new();
     private SalonCizimOgesi? Birincil => _secim.Count > 0 ? _secim[^1] : null;
     private int _dragVertex = -1;   // sürüklenen vertex (Birincil üzerinde)
+    private bool _dragDegisti;      // ilk gerçek harekette tek undo snapshot'ı alınır
     private int _sonVertex = -1;    // son tıklanan/sürüklenen vertex (Delete ile silinebilir)
     private Point? _bandBaslangic;  // pencere seçimi başlangıcı (ekran)
     private Point _bandSon;
@@ -166,6 +203,7 @@ public sealed class SalonCizimCanvas : Control
 
     // ── Callbacks ────────────────────────────────────────────────────────────
     public Action<string>? OnDurum { get; set; }
+    public Action<string>? OnKoordinat { get; set; }
     public Action<IReadOnlyList<SalonCizimOgesi>>? OnSecimDegisti { get; set; }
     public Action? OnDegisti { get; set; }
     /// Model değişmeden HEMEN ÖNCE çağrılır — pencere undo anlık görüntüsü alır.
@@ -230,6 +268,9 @@ public sealed class SalonCizimCanvas : Control
             foreach (var p in SalonBalkonServisi.Footprint(bl)) Genislet(p);
         if (_salon.OrkestraCukuru is { } ck)
             foreach (var p in ck.Footprint()) Genislet(p);
+        foreach (var altlik in _salon.ReferansAltliklar.Where(x => x.Gorunur))
+            foreach (var (a, bb, _) in SalonAltlikServisi.DonusmusSegmentler(altlik))
+            { Genislet(a); Genislet(bb); }
 
         if (!double.IsFinite(minX)) { GorunumuSifirla(); return; }
 
@@ -250,6 +291,18 @@ public sealed class SalonCizimCanvas : Control
         _sayiGiris = "";
         _fareWorld = null;
         InvalidateVisual();
+    }
+
+    /// Belge değişimi / undo sırasında eski modele ait hiçbir geçici komut durumu kalmasın.
+    public void KomutuSifirla()
+    {
+        CizimiIptal();
+        _dragVertex = -1;
+        _dragDegisti = false;
+        _bandBaslangic = null;
+        _isPanning = false;
+        _snapNokta = null;
+        _snapTipi = SnapTip.Yok;
     }
 
     public void PolylineBitir()
@@ -419,6 +472,11 @@ public sealed class SalonCizimCanvas : Control
 
         if (_dragVertex >= 0 && Birincil is { } bo)
         {
+            if (!_dragDegisti)
+            {
+                OnDegisecek?.Invoke(); // yalnız ilk gerçek harekette tek undo adımı
+                _dragDegisti = true;
+            }
             bo.Noktalar[_dragVertex] = w;
             OnDegisti?.Invoke();
         }
@@ -431,7 +489,13 @@ public sealed class SalonCizimCanvas : Control
     {
         base.OnPointerReleased(e);
         if (_isPanning) { _isPanning = false; e.Pointer.Capture(null); }
-        if (_dragVertex >= 0) { _sonVertex = _dragVertex; _dragVertex = -1; }
+        if (_dragVertex >= 0)
+        {
+            _sonVertex = _dragVertex;
+            _dragVertex = -1;
+            _dragDegisti = false;
+            e.Pointer.Capture(null);
+        }
         if (_bandBaslangic is { } bandBas)
         {
             _bandBaslangic = null;
@@ -475,7 +539,9 @@ public sealed class SalonCizimCanvas : Control
                 int ayrac = _sayiGiris.IndexOf('<');
                 string parca = ayrac >= 0 ? _sayiGiris[(ayrac + 1)..] : _sayiGiris;
                 bool tekrar = (c == '.' && parca.Contains('.'))
-                              || (c == '<' && (_sayiGiris.Length == 0 || ayrac >= 0));
+                              || (c == '<' && (_sayiGiris.Length == 0 || ayrac >= 0))
+                              || (c == '-' && (parca.Length > 0
+                                  || (_arac != SalonAraci.Dondur && ayrac < 0)));
                 if (!tekrar)
                 {
                     _sayiGiris += c;
@@ -493,7 +559,9 @@ public sealed class SalonCizimCanvas : Control
             }
             if ((e.Key == Key.Return || e.Key == Key.Enter) && _sayiGiris.Length > 0)
             {
-                SayiyiUygula();
+                bool kopya = e.KeyModifiers.HasFlag(KeyModifiers.Control)
+                             || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+                SayiyiUygula(kopya);
                 e.Handled = true;
                 return;
             }
@@ -514,6 +582,7 @@ public sealed class SalonCizimCanvas : Control
         >= Key.NumPad0 and <= Key.NumPad9 => (char)('0' + (k - Key.NumPad0)),
         Key.OemPeriod or Key.Decimal   => '.',
         Key.OemComma                   => '.',
+        Key.OemMinus or Key.Subtract   => '-',
         _ => null
     };
 
@@ -537,13 +606,14 @@ public sealed class SalonCizimCanvas : Control
     /// Girilen uzunluğu/yarıçapı/açıyı aktif araca uygular.
     /// Çizgi/Polyline/Taşı: `L` imleç yönünde, `L&lt;A` mutlak A° yönünde.
     /// Daire: yarıçap. Döndür: derece. Offset: mesafe (taraf = imleç).
-    private void SayiyiUygula()
+    private void SayiyiUygula(bool kopya)
     {
         if (!GirisiAyristir(_sayiGiris, out double L, out double? aciDeg)
             || (L <= 0 && _arac != SalonAraci.Dondur))
         {
             _sayiGiris = "";
             BildirDurum("Geçersiz giriş — uzunluk veya uzunluk<açı yazın (ör. 5 veya 5<30).");
+            InvalidateVisual();
             return;
         }
 
@@ -572,6 +642,7 @@ public sealed class SalonCizimCanvas : Control
             {
                 _sayiGiris = "";
                 BildirDurum("Yön için fareyi hedef tarafa oynatın veya uzunluk<açı yazın.");
+                InvalidateVisual();
                 return;
             }
             var np = new Point2D(last.X + L * dir.Value.X, last.Y + L * dir.Value.Y);
@@ -581,13 +652,13 @@ public sealed class SalonCizimCanvas : Control
         else if (_arac == SalonAraci.Tasi && _cizimNoktalar.Count == 1)
         {
             var dir = Yon(_cizimNoktalar[0]);
-            if (dir is null) { _sayiGiris = ""; BildirDurum("Yön için fareyi hedef tarafa oynatın."); return; }
-            TasiUygula(L * dir.Value.X, L * dir.Value.Y, kopya: false);
+            if (dir is null) { _sayiGiris = ""; BildirDurum("Yön için fareyi hedef tarafa oynatın."); InvalidateVisual(); return; }
+            TasiUygula(L * dir.Value.X, L * dir.Value.Y, kopya);
             _cizimNoktalar.Clear();
         }
         else if (_arac == SalonAraci.Dondur && _cizimNoktalar.Count >= 1)
         {
-            DondurUygula(L, kopya: false); // L burada derece
+            DondurUygula(L, kopya); // L burada derece
             _cizimNoktalar.Clear();
         }
         else if (_arac == SalonAraci.Offset && _offsetHedef is not null && _fareWorld is { } fare)
@@ -616,6 +687,13 @@ public sealed class SalonCizimCanvas : Control
         _cizimNoktalar.Add(w);
         if (_cizimNoktalar.Count == 2)
         {
+            if (Mesafe(_cizimNoktalar[0], _cizimNoktalar[1]) <= 1e-6)
+            {
+                _cizimNoktalar.Clear();
+                BildirDurum("Çizgi uzunluğu sıfır olamaz; iki farklı nokta seçin.");
+                InvalidateVisual();
+                return;
+            }
             OgeEkle(new SalonCizimOgesi
             {
                 Tip = SalonCizimTipi.Cizgi,
@@ -639,6 +717,11 @@ public sealed class SalonCizimCanvas : Control
             _cizimNoktalar.Clear();
             return;
         }
+        if (_cizimNoktalar.Count > 0 && Mesafe(w, _cizimNoktalar[^1]) <= 1e-6)
+        {
+            BildirDurum("Polyline'da ardışık noktalar aynı olamaz.");
+            return;
+        }
         _cizimNoktalar.Add(w);
         BildirDurum("Polyline: tıkla = nokta · ilk noktaya tıkla = kapat · çift tık/Enter = bitir · Esc = iptal");
     }
@@ -650,6 +733,13 @@ public sealed class SalonCizimCanvas : Control
         {
             var a = _cizimNoktalar[0];
             var b = _cizimNoktalar[1];
+            if (Math.Abs(a.X - b.X) <= 1e-6 || Math.Abs(a.Y - b.Y) <= 1e-6)
+            {
+                _cizimNoktalar.Clear();
+                BildirDurum("Dikdörtgenin genişliği ve yüksekliği sıfırdan büyük olmalı.");
+                InvalidateVisual();
+                return;
+            }
             OgeEkle(new SalonCizimOgesi
             {
                 Tip = SalonCizimTipi.Dikdortgen,
@@ -675,7 +765,10 @@ public sealed class SalonCizimCanvas : Control
                     YariCapM = r,
                     Noktalar = new() { m }
                 });
+            else
+                BildirDurum("Daire yarıçapı sıfırdan büyük olmalı.");
             _cizimNoktalar.Clear();
+            InvalidateVisual();
         }
     }
 
@@ -689,9 +782,10 @@ public sealed class SalonCizimCanvas : Control
                 var sp = W2S(birincil.Noktalar[i]);
                 if (Math.Abs(sp.X - pos.X) <= VertexHitPx && Math.Abs(sp.Y - pos.Y) <= VertexHitPx)
                 {
-                    OnDegisecek?.Invoke(); // sürükleme başlangıcı = tek undo adımı
                     _dragVertex = i;
+                    _dragDegisti = false;
                     _sonVertex = i;
+                    e.Pointer.Capture(this);
                     return;
                 }
             }
@@ -1174,7 +1268,7 @@ public sealed class SalonCizimCanvas : Control
                     {
                         Tip = SalonCizimTipi.Polyline,
                         Kapali = true,
-                        KatmanId = AktifKatman?.Id ?? hedef.KatmanId,
+                        KatmanId = AktifKatman is { Gorunur: true } ak ? ak.Id : hedef.KatmanId,
                         Noktalar = h
                     });
                 OnDegisti?.Invoke();
@@ -1200,7 +1294,7 @@ public sealed class SalonCizimCanvas : Control
 
         if (yeni is null) return;
         OnDegisecek?.Invoke();
-        yeni.KatmanId = AktifKatman?.Id ?? hedef.KatmanId;
+        yeni.KatmanId = AktifKatman is { Gorunur: true } aktif ? aktif.Id : hedef.KatmanId;
         _salon.CizimOgeleri.Add(yeni);
         OnDegisti?.Invoke();
         BildirDurum("Offset uygulandı.");
@@ -1345,14 +1439,19 @@ public sealed class SalonCizimCanvas : Control
     private void OgeEkle(SalonCizimOgesi oge)
     {
         if (_salon is null) return;
+        if (AktifKatman is not { Gorunur: true } aktifKatman)
+        {
+            BildirDurum("Çizim için görünür bir aktif katman seçin.");
+            return;
+        }
         OnDegisecek?.Invoke();
-        oge.KatmanId = AktifKatman?.Id ?? "";
+        oge.KatmanId = aktifKatman.Id;
         _salon.CizimOgeleri.Add(oge);
         OnDegisti?.Invoke();
         BildirDurum($"{AracAd(oge.Tip)} eklendi.");
     }
 
-    private void SecimiTemizle()
+    public void SecimiTemizle()
     {
         if (_secim.Count == 0) return;
         _secim.Clear();
@@ -1475,8 +1574,8 @@ public sealed class SalonCizimCanvas : Control
     {
         if (_gridSnap)
             w = new Point2D(
-                Math.Round(w.X / GridAdimM) * GridAdimM,
-                Math.Round(w.Y / GridAdimM) * GridAdimM);
+                Math.Round(w.X / _gridAdimM) * _gridAdimM,
+                Math.Round(w.Y / _gridAdimM) * _gridAdimM);
         return ApplyOrtho(w);
     }
 
@@ -1498,7 +1597,7 @@ public sealed class SalonCizimCanvas : Control
             double L = Math.Sqrt(dx * dx + dy * dy);
             if (L < 1e-9) return w;
             double aci = Math.Atan2(dy, dx) * 180.0 / Math.PI;
-            double hedef = Math.Round(aci / 15.0) * 15.0;
+            double hedef = Math.Round(aci / _polarAciDerece) * _polarAciDerece;
             if (Math.Abs(aci - hedef) <= 4.0) // yumuşak kilit: yalnız yakınken
             {
                 double rad = hedef * Math.PI / 180.0;
@@ -1587,7 +1686,7 @@ public sealed class SalonCizimCanvas : Control
     }
 
     private void BildirKoordinat(Point2D w)
-        => OnDurum?.Invoke($"x: {w.X:F2} m   y: {w.Y:F2} m   ·   ölçek 1m = {Scale:F0}px   ·   {AracEtiket(_arac)}");
+        => OnKoordinat?.Invoke($"x: {w.X:F2} m   y: {w.Y:F2} m   ·   1m = {Scale:F0}px   ·   {AracEtiket(_arac)}");
 
     private static string AracEtiket(SalonAraci a) => a switch
     {
@@ -1622,6 +1721,7 @@ public sealed class SalonCizimCanvas : Control
 
         if (_salon is not null)
         {
+            DrawAltliklar(ctx);
             foreach (var o in _salon.CizimOgeleri)
             {
                 if (!KatmanGorunur(o)) continue;
@@ -1633,6 +1733,7 @@ public sealed class SalonCizimCanvas : Control
             DrawBalkon(ctx);
             DrawAcikliklar(ctx);
             DrawTavanProfili(ctx);
+            DrawKaliciOlculer(ctx);
         }
 
         DrawOnizleme(ctx);
@@ -1640,6 +1741,50 @@ public sealed class SalonCizimCanvas : Control
         DrawVertexHandles(ctx);
         DrawSecimBandi(ctx);
         DrawOlcuEtiketi(ctx);
+    }
+
+    private void DrawAltliklar(DrawingContext ctx)
+    {
+        if (_salon is null) return;
+        foreach (var altlik in _salon.ReferansAltliklar.Where(x => x.Gorunur && x.Tip == SalonAltlikTipi.Dxf))
+        {
+            double alfa = Math.Clamp(1.0 - altlik.Saydamlik, 0.08, 1.0);
+            var pen = new Pen(new SolidColorBrush(AltlikRengi, alfa), 1.0)
+            {
+                DashStyle = new DashStyle([5, 3], 0)
+            };
+            foreach (var (a, b, _) in SalonAltlikServisi.DonusmusSegmentler(altlik))
+                ctx.DrawLine(pen, W2S(a), W2S(b));
+        }
+    }
+
+    private void DrawKaliciOlculer(DrawingContext ctx)
+    {
+        if (_salon is null) return;
+        foreach (var olcu in _salon.Olculendirmeler.Where(x => x.Gorunur))
+        {
+            try
+            {
+                var d = SalonOlculendirmeServisi.Hesapla(_salon, olcu);
+                double dx = d.Bitis.X - d.Baslangic.X, dy = d.Bitis.Y - d.Baslangic.Y;
+                double l = Math.Sqrt(dx * dx + dy * dy);
+                if (l < 1e-9) continue;
+                double ofset = double.IsFinite(olcu.OfsetM) ? olcu.OfsetM : 0.35;
+                var n = new Point2D(-dy / l * ofset, dx / l * ofset);
+                var a = new Point2D(d.Baslangic.X + n.X, d.Baslangic.Y + n.Y);
+                var b = new Point2D(d.Bitis.X + n.X, d.Bitis.Y + n.Y);
+                ctx.DrawLine(KaliciOlcuPen, W2S(d.Baslangic), W2S(a));
+                ctx.DrawLine(KaliciOlcuPen, W2S(d.Bitis), W2S(b));
+                ctx.DrawLine(KaliciOlcuPen, W2S(a), W2S(b));
+                var m = W2S(new Point2D((a.X + b.X) / 2, (a.Y + b.Y) / 2));
+                var ft = new FormattedText(d.Metin, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                    Typeface.Default, 11, OlcuText);
+                var rect = new Rect(m.X - ft.Width / 2 - 4, m.Y - ft.Height / 2 - 2, ft.Width + 8, ft.Height + 4);
+                ctx.FillRectangle(OlcuBack, rect);
+                ctx.DrawText(ft, new Point(rect.X + 4, rect.Y + 2));
+            }
+            catch (InvalidOperationException) { /* bozuk eski ölçü geometriyi çizmeyi engellemesin */ }
+        }
     }
 
     private void DrawSahne(DrawingContext ctx)

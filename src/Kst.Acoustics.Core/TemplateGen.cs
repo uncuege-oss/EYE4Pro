@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Kst.Acoustics.Core.Exporting;
+using Kst.Acoustics.Core.Importing;
 using Kst.Acoustics.Core.Projects;
 using Kst.Acoustics.Core.Geometry;
 
@@ -28,7 +29,7 @@ class Program
 
         surfaces.Add(new ProjectSurface(1, "Panel Frame", "PANEL", vertices));
 
-        exporter.Export(outputPath, surfaces);
+        exporter.Export(outputPath, surfaces, SurfaceImportUnit.Millimeters);
         Console.WriteLine($"Template generated successfully: {outputPath}");
     }
 }

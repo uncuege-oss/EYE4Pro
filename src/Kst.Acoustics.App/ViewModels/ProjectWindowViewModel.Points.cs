@@ -319,6 +319,8 @@ public sealed partial class ProjectWindowViewModel
         {
             SourcePoints = sourcePoints.Select(p => p!).ToArray();
             ReceiverPoints = receiverPoints.Select(p => p!).ToArray();
+            OnPropertyChanged(nameof(ViewportSourcePoints));
+            OnPropertyChanged(nameof(ViewportReceiverPoints));
         }
 
         if (SelectedLightSource is not null && SourcePoints.All(s => s.Id != SelectedLightSource.Id))
@@ -329,8 +331,8 @@ public sealed partial class ProjectWindowViewModel
 
         if (markDirty)
         {
-            MarkDirty();
             InvalidateSimulationResult("Kaynak veya alıcı noktaları değiştirildi.");
+            MarkDirty("Kaynak veya alıcı noktaları değiştirildi");
         }
     }
 

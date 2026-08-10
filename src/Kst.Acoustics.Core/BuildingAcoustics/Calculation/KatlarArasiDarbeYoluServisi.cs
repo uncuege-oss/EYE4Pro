@@ -30,10 +30,36 @@ public sealed class KatlarArasiDarbeYoluServisi
             kaynakMekan.ZeminYapiElemani?.Tip != YapiElemaniTipi.Doseme || kaynakMekan.Poligon.Count < 3)
             return Array.Empty<KatlarArasiDarbeYolu>();
 
-        var aliciKat = katlar
-            .Where(k => k.KatNo < kaynakKat.KatNo)
-            .OrderByDescending(k => k.KatNo)
-            .FirstOrDefault();
+        Kat? aliciKat;
+        if (!string.IsNullOrWhiteSpace(kaynakKat.BinaGeometriKatId))
+        {
+            // M50/M08 adapteri katları üstten alta aynı koleksiyon sırasında tutar;
+            // üstteki kaynak döşemesinin alıcısı listedeki bir sonraki (alt) kattır.
+            var guncelM50Katlari = katlar
+                .Where(k => !string.IsNullOrWhiteSpace(k.BinaGeometriKatId))
+                .ToList();
+            int kaynakIndex = -1;
+            for (int i = 0; i < guncelM50Katlari.Count; i++)
+            {
+                if (!ReferenceEquals(guncelM50Katlari[i], kaynakKat) &&
+                    !string.Equals(guncelM50Katlari[i].BinaGeometriKatId, kaynakKat.BinaGeometriKatId,
+                        StringComparison.Ordinal)) continue;
+                kaynakIndex = i;
+                break;
+            }
+            aliciKat = kaynakIndex >= 0 && kaynakIndex + 1 < guncelM50Katlari.Count
+                ? guncelM50Katlari[kaynakIndex + 1]
+                : null;
+        }
+        else
+        {
+            // Bağlantısız eski M08 projelerinde tarihsel konvansiyon: alt katın
+            // KatNo değeri daha küçüktür.
+            aliciKat = katlar
+                .Where(k => k.KatNo < kaynakKat.KatNo)
+                .OrderByDescending(k => k.KatNo)
+                .FirstOrDefault();
+        }
 
         if (aliciKat == null)
             return Array.Empty<KatlarArasiDarbeYolu>();

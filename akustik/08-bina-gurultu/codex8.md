@@ -571,3 +571,113 @@ Son bilinen genel hedef:
 5. UI değişikliği için ilgili `BuildingAcoustics/Views` ve `BinaProjesiViewModel` alanlarını incele.
 6. Formülasyon veya regresyon riski varsa test ekle veya mevcut M08 testlerini çalıştır.
 7. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 15. 2026-08-07 — M50 sidecar karar/uygulama notu
+
+- M08'in bina geometri kaynağı M50 `.e4bina.json` dosyasıdır; M08 akustik sınıf, malzeme,
+  tesisat ve hesap verisini sahiplenir. Bağlantı `BinaGeometriYolu` + revizyon damgası +
+  gömülü kopya olarak tutulur.
+- Kaydedilmiş projede sidecar yolu `.e4p08` dizinine göre **göreli** yazılır ve açılışta aynı
+  dizine göre çözülür; Farklı Kaydet de yolu yeni proje konumuna göre yeniden göreli yapar.
+- Durum rozeti revizyonları gerçekten karşılaştırır: eşitse `Güncel`, sidecar yeniyse `Bayat`,
+  yol/dosya yoksa `Dosya Yok`, sidecar gömülü/proje revizyonundan eskiyse `Dosya geri
+  revizyonda`, JSON açılamazsa `Dosya okunamıyor` gösterilir. Son iki durumda varsa gömülü
+  kopya daha güvenli başvuru kabul edilir.
+- `M50'de Düzenle` bağlı dosyayı M50'de açar; M08 açık kalır. M50 penceresi kapanınca durum
+  yenilenir ve revizyon açılıştakinden farklıysa sidecar otomatik yeniden yüklenir. Bağlı
+  dosya yoksa kullanıcı M50'de kaydedip M08'de `Bina Geometrisi Yükle` ile bağlar.
+- `Gömülü Kurtar`, gömülü kopyayı kullanıcının seçtiği yeni `.e4bina.json` dosyasına yazar ve
+  bu dosyayı yeniden yükleyerek bağlantıyı onarır. Eski bağlantısız projelerin migrasyonu da
+  proje yanına sidecar üretir; aynı adlı dosya yalnız kaynak kimliği/geometri doğrulanırsa
+  bağlanır, yabancı veya okunamayan dosyanın üzerine yazmak yerine benzersiz güvenli dosya
+  oluşturulur. Migrasyonun proje içine kalıcılaşması için normal Kaydet gerekir.
+- M08 içe aktarımı derin aday kopyada tamamlanıp başarıdan sonra canlı projeye geçirilir;
+  yeni M50 geometrisinin sileceği mekanlarda akustik veri varsa kullanıcıdan ayrıca onay
+  alınır. İptal veya hata mevcut M08 verisini değiştirmez.
+
+## 16. 2026-08-10 — Profesyonel üretim ve saha paketi
+
+Ana M08 penceresindeki `Profesyonel Araçlar` çalışma alanı aşağıdaki uçtan uca akışları
+tek yerde toplar:
+
+- **İş listesi:** geometri, sınıflandırma, atama, ürün belgesi, ölçüm ve uygunsuz sonuçlardan
+  otomatik görev üretimi; kararlı görev anahtarıyla durum, sorumlu, son tarih ve not saklama.
+- **Revizyon ve senaryo:** M50 revizyonunun önceden fark analizi; geometriyi değiştirmeden
+  akustik atama senaryosu kaydetme/uygulama/silme ve sonuç anlık görüntüsü.
+- **Karar desteği:** başarısızlık neden ağacı, 100–3150 Hz enerji-yol katkıları, gerçek katalog
+  elemanlarıyla maliyet/kalınlık kısıtlı çözüm optimizasyonu, merkezî fark duyarlılığı ve
+  tekrarlanabilir Monte Carlo uygunluk olasılığı.
+- **Veri ve ölçüm:** CSV/JSON/M07 saha ölçümü içe aktarımı, ölçüm-model fark tablosu, kararlı
+  kimlikli ve tüm satırları doğrulanmadan hiçbir değişiklik yapmayan toplu CSV; `.e4t08.json`
+  proje şablonu; akustik metraj ve yaklaşık maliyet Excel'i.
+- **Toplu düzenleme:** mekan ve bölme tablosunda arama, çoklu seçim ve toplu malzeme/sınıf
+  ataması; işlemler undo, kilit, IsDirty ve denetim izi hattındadır.
+- **BIM ve portföy:** IFC4 `Pset_EYE4PRO_Acoustic`, cephe sonuç SVG/CSV haritası ve bozuk
+  dosyayı diğer projelerden yalıtan klasör bazlı `.e4p08` portföy özeti.
+- **Rapor ve saha:** kanonik hesap kopyasından HTML önizleme, ön kontrol, SHA-256 manifestli
+  `.e4r08` dondurma/doğrulama, kullanıcı/kuruluş/parmak izi bağlı onay, çevrimdışı HTML saha
+  paketi ve hesap alanlarını ezmeyen kimlikli saha dönüş birleştirmesi.
+- **Ürün izlenebilirliği:** üretici, ürün kodu, laboratuvar/standart/kaynak alanları; SHA-256
+  doğrulamalı test raporu ve teknik föy arşivi. Rapor, IFC, harita, CSV, şablon, metraj ve saha
+  dışa aktarımları proje denetim izine kaydedilir.
+
+Veri şeması `SemaSurum = 3` olarak normalize edilir. Yeni koleksiyonlar eski projelerde boş
+liste/varsayılan ayarla açılır; M08 hesapları senaryo, optimizasyon, belirsizlik, rapor, IFC,
+harita ve portföy yollarının tamamında canlı projeyi değiştirmeyen
+`BinaAkustikDegerlendirmeServisi` kanonik kopyasını kullanır.
+
+Doğrulama (2026-08-10):
+
+- `dotnet build src/Kst.Acoustics.App/Kst.Acoustics.App.csproj --no-restore`: 0 hata, 0 uyarı
+- `dotnet test src/Kst.Acoustics.Tests/Kst.Acoustics.Tests.csproj --no-restore --filter
+  "FullyQualifiedName~M08"`: 17/17 başarılı
+
+## 17. 2026-08-10 — Yönetmelik rapor profilleri ve çıktı formatı
+
+Gömülü `Yonetmelik/GeneratePdf.pdf` ana metni ile `7.5.23616-Ek.docx` EK-1…EK-10
+yeniden incelenerek M08'in resmî rapor akışı belge türlerine ayrıldı:
+
+- `M08RaporBelgeTuru`: Mimari Akustik Raporu, Akustik Proje Rapor Paketi, Saha Ölçüm
+  Raporu ve Akustik Performans Belgesi. Varsayılan hesap tabanlı Mimari Akustik Raporu'dur.
+- `M08RaporAyarlari`: rapor no/revizyon/yayın ve geçerlilik tarihi, yapı durumu,
+  ada-parsel-ruhsat, EK-10 bina fotoğrafı, kullanılan standart sürümleri,
+  Madde 5/6 kat+alan eşikleri, karma işlev/özel tasarım, hazırlayan-kontrol-onay/yetki,
+  proje revizyonları ve dış gürültü kanıt alanlarını saklar. Rapor kimliği değişikliği
+  sonuçları bayatlatmaz; yalnız proje belgesini kirli işaretler.
+- Kuruluş/rapor numarası ile hazırlayan-kontrol-onay kimlikleri proje bazında elle girilir.
+  Standart sürümleri ise yayımlanmış ISO kataloğunun 10.08.2026 tarihli güncel baskılarıyla
+  varsayılan gelir: 12354-1/-2/-3:2017; 717-1/-2:2020; 16283-1:2014+A1:2017,
+  16283-2:2020, 16283-3:2016; 10052:2021; 16032:2024; 12999-1:2020. Taslak
+  revizyonlar kullanılmaz; sürüm metni proje içine kaydedilerek tarihsel raporda sabitlenir.
+- `M08RaporUygulanabilirlikServisi`: konutta >7 kat, konut dışında >2.000 m² + >2 kat,
+  karma işlev, özel tasarım ve A/B hedefi için akustik proje yolunu belirler. Eşik verisi
+  eksikse tahmin yürütmez; raporda uyarı üretir. Onaya Hazır/İmzalı belgede engel varsa
+  HTML üretimi durur.
+- Akustik Performans Belgesi yalnız doğrulanmış + raporlamaya onaylı ölçümleri kullanır.
+  EK-10 için akustik proje varsa %5, yoksa %10 örnekleme; özellik başına genel en az 3,
+  tek bağımsız birimde en az 2 örnek kapısı uygulanır. İç ortam, servis, cephe, bölme,
+  darbe ve reverberasyon ayrı özelliklerdir; eksikte `performans belirlenemedi` yazılır.
+  Sınır değeri olumsuz yönde 2 dB'den fazla aşan ölçüm resmî yayına engeldir. Belge
+  geçerlilik sonu varsayılan olarak yayın tarihinden on yıl sonradır; performansı etkileyen
+  yapı/tesisat değişiklikleri yeniden değerlendirme gerektirir.
+- `OlcumPerformansSiniflandirmaServisi`, ölçüm değerlerini A→F sınırlarına tarar ve en-alt-
+  sınıf kuralını yalnız ölçüm tabanında uygular. Hesap tabanlı raporun sınıfı açıkça “ön
+  değerlendirme” kalır.
+- Rapor çıktısı belge kontrol/uygulanabilirlik sayfası, kapsam matrisi, ortak sonuç şeması,
+  dış gürültü kanıt zinciri, ayrıntılı ürün ve junction çizelgesi, yalnız onaylı ölçümler,
+  kapsam dışı gerekçeleri, teknik metrajı mevzuat dışı karar destek eki olarak ayırma,
+  standart sürüm doğrulama notu ve A4 dikey/yatay baskı üstbilgi-altbilgisi içerir.
+- Rapordan çıkarılan sonuçlar `M08RaporKapsamDisiKaydi` ile gerekçe/kullanıcı/tarih olarak
+  projede kalıcıdır; rapor seçim panelinde gerekçe sütunu vardır.
+- `.e4r08` manifest/snapshot sürümü 2'dir. Paket HTML+snapshot yanında rapor ayarları,
+  kapsam dışı kayıtlar, onaylı ölçümler, ürünler, junctionlar ve ek indeksini taşır;
+  mevcut ürün/ölçüm kaynak dosyaları ile bina fotoğrafını SHA-256 denetimiyle
+  `attachments/` altına ekler.
+  Sürüm 1 paketleri doğrulama için geriye uyumlu okunur.
+
+Doğrulama hedefi:
+
+- App build: 0 hata / 0 uyarı
+- M08 xUnit: 19/19
+- Tam xUnit: 117/117
+- Uygulama regresyon koşusu: 791/791

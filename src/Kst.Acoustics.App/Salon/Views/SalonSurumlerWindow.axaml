@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Salon.Views.SalonSurumlerWindow" x:CompileBindings="False"
+        Width="760" Height="480" WindowStartupLocation="CenterOwner" Background="#0B1118"
+        Title="Salon Sürüm Geçmişi">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="18" RowSpacing="12">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+      <StackPanel><TextBlock Text="Sürüm geçmişi ve kurtarma" FontSize="19" FontWeight="SemiBold" Foreground="#E6EEF6"/>
+        <TextBlock Text="Otomatik kayıtlar ana dosyanın yolunu ve revizyonunu değiştirmez." Foreground="#8199AC"/></StackPanel>
+      <Button Grid.Column="1" Content="Şimdi Sürüm Al" Click="SurumAl_OnClick" Padding="14,8"/>
+    </Grid>
+    <ListBox x:Name="SurumList" Grid.Row="1">
+      <ListBox.ItemTemplate><DataTemplate>
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="8,6">
+          <TextBlock Text="{Binding KayitZamaniUtc}" Foreground="#7FB7D8"/>
+          <StackPanel Grid.Column="1"><TextBlock Text="{Binding SalonAdi}" Foreground="#E6EEF6" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding IcerikOzeti}" Foreground="#71899D" FontSize="11"/></StackPanel>
+          <TextBlock Grid.Column="2" Text="Rev. {Binding GeometriRevizyon}" Foreground="#9AB0C0"/>
+        </Grid>
+      </DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <TextBlock x:Name="DurumText" Foreground="#6FB7DE" VerticalAlignment="Center" TextWrapping="Wrap"/>
+      <Button Grid.Column="1" Content="Seçileni Geri Yükle" Click="GeriYukle_OnClick" Padding="14,8"/>
+      <Button Grid.Column="2" Content="Kapat" Click="Kapat_OnClick" Padding="14,8"/>
+    </Grid>
+  </Grid>
+</Window>

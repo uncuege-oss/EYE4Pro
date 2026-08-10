@@ -31,9 +31,7 @@ public sealed class DuseyMekanBirlesimServisi
 
     private DuseyBirlesimSonucu PatlatIcsel(BinaProje proje, Kat seciliKat, Mekan seciliMekan, bool asagiBak)
     {
-        var hedefKat = proje.Katlar
-            .OrderBy(k => k.KatNo)
-            .FirstOrDefault(k => asagiBak ? k.KatNo == seciliKat.KatNo - 1 : k.KatNo == seciliKat.KatNo + 1);
+        var hedefKat = KomsuKatBul(proje, seciliKat, asagiBak);
         if (hedefKat == null)
         {
             var yon = asagiBak ? "alt" : "üst";
@@ -59,11 +57,11 @@ public sealed class DuseyMekanBirlesimServisi
         birlesim ??= new DuseyMekanBirlesimi();
 
         // Seçili mekan: tavan/döşeme açıkla (yönüne göre)
-        AddOrUpdateMember(birlesim, seciliKat.KatNo, seciliMekan.Id,
+        AddOrUpdateMember(birlesim, seciliKat.BinaGeometriKatId, seciliKat.KatNo, seciliMekan.Id,
             tavanAcik: !asagiBak ? true : (bool?)null,
             dosemeAcik: asagiBak ? true : (bool?)null);
         // Hedef mekan: ters yön
-        AddOrUpdateMember(birlesim, hedefKat.KatNo, hedefMekan.Id,
+        AddOrUpdateMember(birlesim, hedefKat.BinaGeometriKatId, hedefKat.KatNo, hedefMekan.Id,
             tavanAcik: asagiBak ? true : (bool?)null,
             dosemeAcik: !asagiBak ? true : (bool?)null);
 
@@ -76,14 +74,40 @@ public sealed class DuseyMekanBirlesimServisi
             birlesim);
     }
 
-    private static void AddOrUpdateMember(DuseyMekanBirlesimi birlesim, int katNo, Guid mekanId,
+    private static Kat? KomsuKatBul(BinaProje proje, Kat seciliKat, bool asagiBak)
+    {
+        // M50 bağlantılı projelerde koleksiyon fiziksel olarak üstten alta sıralıdır;
+        // KatNo da bu görsel sırayı izler (üst=1). Yönü KatNo aritmetiğiyle tersine
+        // çevirmek yerine kararlı M50 sırasından bul. Bağlantısız eski M08 projelerinde
+        // tarihsel alt=küçük / üst=büyük KatNo kuralı geriye uyum için korunur.
+        if (!string.IsNullOrWhiteSpace(seciliKat.BinaGeometriKatId))
+        {
+            var guncelM50Katlari = proje.Katlar
+                .Where(k => !string.IsNullOrWhiteSpace(k.BinaGeometriKatId))
+                .ToList();
+            int index = guncelM50Katlari.IndexOf(seciliKat);
+            int hedefIndex = asagiBak ? index + 1 : index - 1;
+            return index >= 0 && hedefIndex >= 0 && hedefIndex < guncelM50Katlari.Count
+                ? guncelM50Katlari[hedefIndex]
+                : null;
+        }
+
+        return proje.Katlar.FirstOrDefault(k =>
+            asagiBak ? k.KatNo == seciliKat.KatNo - 1 : k.KatNo == seciliKat.KatNo + 1);
+    }
+
+    private static void AddOrUpdateMember(DuseyMekanBirlesimi birlesim, string katId, int katNo, Guid mekanId,
         bool? tavanAcik = null, bool? dosemeAcik = null)
     {
-        var uye = birlesim.Uyeler.FirstOrDefault(u => u.KatNo == katNo && u.MekanId == mekanId);
+        var uye = birlesim.Uyeler.FirstOrDefault(u =>
+            (!string.IsNullOrWhiteSpace(katId) && !string.IsNullOrWhiteSpace(u.KatId)
+                ? string.Equals(u.KatId, katId, StringComparison.Ordinal)
+                : u.KatNo == katNo) && u.MekanId == mekanId);
         if (uye == null)
         {
             uye = new DuseyMekanBirlesimUyesi
             {
+                KatId = katId,
                 KatNo = katNo,
                 MekanId = mekanId,
                 TavanAcik = tavanAcik ?? false,
@@ -92,6 +116,8 @@ public sealed class DuseyMekanBirlesimServisi
             birlesim.Uyeler.Add(uye);
             return;
         }
+        if (!string.IsNullOrWhiteSpace(katId)) uye.KatId = katId;
+        uye.KatNo = katNo;
         if (tavanAcik.HasValue) uye.TavanAcik = uye.TavanAcik || tavanAcik.Value;
         if (dosemeAcik.HasValue) uye.DosemeAcik = uye.DosemeAcik || dosemeAcik.Value;
     }
@@ -172,11 +198,20 @@ public sealed class DuseyMekanBirlesimServisi
     /// İki oda birbirine bir aktif birleşim içinden bağlı mı (acoustic suppression için).
     public static bool AyniBirlesimdeAcik(BinaProje proje, int altKatNo, Guid altMekanId, int ustKatNo, Guid ustMekanId)
     {
+        var altKatId = proje.Katlar.FirstOrDefault(k => k.KatNo == altKatNo)?.BinaGeometriKatId;
+        var ustKatId = proje.Katlar.FirstOrDefault(k => k.KatNo == ustKatNo)?.BinaGeometriKatId;
         return proje.DuseyMekanBirlesimleri.Any(b =>
             b.AktifMi &&
-            b.Uyeler.Any(u => u.KatNo == altKatNo && u.MekanId == altMekanId) &&
-            b.Uyeler.Any(u => u.KatNo == ustKatNo && u.MekanId == ustMekanId));
+            b.Uyeler.Any(u => KatEslesir(u, altKatId, altKatNo) &&
+                              u.MekanId == altMekanId && u.TavanAcik) &&
+            b.Uyeler.Any(u => KatEslesir(u, ustKatId, ustKatNo) &&
+                              u.MekanId == ustMekanId && u.DosemeAcik));
     }
+
+    private static bool KatEslesir(DuseyMekanBirlesimUyesi uye, string? katId, int katNo) =>
+        !string.IsNullOrWhiteSpace(uye.KatId) && !string.IsNullOrWhiteSpace(katId)
+            ? string.Equals(uye.KatId, katId, StringComparison.Ordinal)
+            : uye.KatNo == katNo;
 
     public static DuseyMekanBirlesimi? BirlesimBul(BinaProje proje, Guid mekanId) =>
         proje.DuseyMekanBirlesimleri.FirstOrDefault(b => b.AktifMi && b.Uyeler.Any(u => u.MekanId == mekanId));

@@ -19,7 +19,9 @@ public sealed record AcousticsProject(
     IReadOnlyDictionary<string, string>? SurfaceMaterials = null,
     RoomVolumeOrigin? VolumeOrigin = null,
     IReadOnlyList<string>? ImportWarnings = null,
-    Kst.Acoustics.Core.Simulation.SimulationParameters? SimulationSettings = null)
+    Kst.Acoustics.Core.Simulation.SimulationParameters? SimulationSettings = null,
+    IReadOnlyList<AcousticScenario>? Scenarios = null,
+    Guid? ActiveScenarioId = null)
 {
     /// <summary>Proje dosyasının şema sürümü (migrasyon için kullanılır).</summary>
     public int SemaSurum { get; init; } = 1;
@@ -69,4 +71,8 @@ public sealed record AcousticsProject(
         SurfaceMaterials is null
             ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             : new Dictionary<string, string>(SurfaceMaterials, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Baseline'dan bağımsız, güvenli çalışma snapshot'ları.</summary>
+    public IReadOnlyList<AcousticScenario> Scenarios { get; init; } =
+        Scenarios?.ToArray() ?? [];
 }

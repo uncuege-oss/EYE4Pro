@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Kst.Acoustics.App.Bina.ViewModels;
 using Kst.Acoustics.App.Views;
 using Kst.Acoustics.Core.Bina.Models;
@@ -21,23 +25,112 @@ public partial class BinaGeometriWindow : Window
 {
     private readonly BinaGeometriViewModel _vm = new();
     private bool _kapanisOnaylandi;
+    private bool _isBusy;
+    private bool _kurtarmaYaziliyor;
+    private bool _kurtarmaIsleriKapandi;
+    private CancellationTokenSource? _islemCts;
+    private BinaAciklikTipi _aktifAciklikTipi = BinaAciklikTipi.Kapi;
+    private readonly DispatcherTimer _otomatikKurtarmaTimer = new() { Interval = TimeSpan.FromSeconds(45) };
+    private readonly List<string> _sonDosyalar = new();
+    private sealed record SonDosyaOgesi(string DosyaYolu)
+    {
+        public string Ad => Path.GetFileName(DosyaYolu);
+    }
+
+    private static readonly JsonSerializerOptions KurtarmaJsonAyar = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
+    private static readonly object KurtarmaYayinKilidi = new();
+    private static long s_kurtarmaYayinNesli;
+
+    private static string UygulamaVeriKlasoru => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Eye4Pro", "M50");
+    private static string KurtarmaDosyasi => Path.Combine(UygulamaVeriKlasoru, "otomatik-kurtarma.e4bina.json");
+    private static string SonDosyalarDosyasi => Path.Combine(UygulamaVeriKlasoru, "son-dosyalar.txt");
+
+    private static string YeniKurtarmaGeciciDosyasi()
+        => $"{KurtarmaDosyasi}.{Guid.NewGuid():N}.tmp";
+
+    private static bool KurtarmaYayiniGecerliMi(
+        bool isDirty,
+        bool pencereKapandi,
+        long beklenenNesil,
+        long guncelNesil,
+        string yazilanDurum,
+        string guncelDurum)
+        => isDirty &&
+           !pencereKapandi &&
+           beklenenNesil == guncelNesil &&
+           string.Equals(yazilanDurum, guncelDurum, StringComparison.Ordinal);
+
+    private static void KurtarmaYayinlariniGecersizKil()
+    {
+        lock (KurtarmaYayinKilidi)
+            Interlocked.Increment(ref s_kurtarmaYayinNesli);
+    }
+
+    private void KurtarmaIsleriniKapat()
+    {
+        if (_kurtarmaIsleriKapandi) return;
+        _kurtarmaIsleriKapandi = true;
+        KurtarmaYayinlariniGecersizKil();
+    }
 
     // Geri butonunun döneceği pencere fabrikası — her launcher kendi tipini iletir.
     private readonly Func<Window>? _geriPencere;
+    private readonly bool _yardimciMod;
 
     // Parameterless ctor: Avalonia AXAML loader için zorunlu.
     public BinaGeometriWindow() : this(null) { }
 
-    public BinaGeometriWindow(Func<Window>? geriPencere)
+    public BinaGeometriWindow(Func<Window>? geriPencere, bool yardimciMod = false)
     {
         InitializeComponent();
         DataContext = _vm;
         _geriPencere = geriPencere;
+        _yardimciMod = yardimciMod;
         Opened += OnOpened;
         Closing += OnWindowClosing;
+        Closed += OnWindowClosed;
+        _otomatikKurtarmaTimer.Tick += OtomatikKurtarma_Tick;
     }
 
     private BinaKat? _izlenenKat; // DxfGoster/BloklariGoster PropertyChanged aboneliği için
+
+    private void ModGoster(string mod)
+    {
+        if (ModDurumuText is { } t) t.Text = $"MOD: {mod}";
+    }
+
+    private void BusyAyarla(bool busy, string mesaj = "")
+    {
+        _isBusy = busy;
+        if (IslemOverlay is { } o) o.IsVisible = busy;
+        if (IslemMesajText is { } t) t.Text = string.IsNullOrWhiteSpace(mesaj) ? "İşlem sürüyor…" : mesaj;
+        if (IslemIptalBtn is { } b) b.IsEnabled = busy;
+    }
+
+    private void EtkilesimleriIptalEt()
+    {
+        PlanCanvas?.EtkilesimleriIptalEt();
+        ModGoster("SEÇİM");
+    }
+
+    private bool AktifEditoruUygula(object? aktifEditor = null)
+    {
+        aktifEditor ??= FocusManager?.GetFocusedElement();
+        return BinaEditorCommitYardimci.Uygula(aktifEditor,
+            (BinaAdText, (Action)UygulaBinaAdi),
+            (KatAdText, (Action)UygulaKatAdi),
+            (OdaAdText, (Action)UygulaOdaAdi),
+            (KatYukseklikText, (Action)UygulaKatYukseklik),
+            (OfsetXText, (Action)UygulaOfsetX),
+            (OfsetYText, (Action)UygulaOfsetY),
+            (AciklikYukseklikText, (Action)UygulaAciklikYukseklik),
+            (AciklikEsikText, (Action)UygulaAciklikEsik));
+    }
 
     private void OnOpened(object? sender, EventArgs e)
     {
@@ -54,6 +147,8 @@ public partial class BinaGeometriWindow : Window
             c.OnOdaCizimTamam     = noktalar => { _vm.OdaEkle(noktalar); PlanCanvas?.InvalidateVisual(); };
             c.OnVertexTasimaBasladi = () => _vm.UndoSnapshotAl(); // lazy-Snap: sürükleme başına tek snapshot
             c.OnVertexTasindi     = (idx, x, y) => _vm.VertexGuncelle(idx, x, y);
+            c.OnKenarTasindi      = (idx, x0, y0, x1, y1) => _vm.KenarGuncelle(idx, x0, y0, x1, y1);
+            c.OnVertexTasimaBitti = () => _vm.OdaGeometriDuzenlemeBitti();
             c.OnVertexSilIstegi   = idx => _vm.VertexSil(idx);
             c.OnKenarCiftTiklandi = (idx, x, y) => _vm.VertexEkleSonra(idx, x, y);
             c.OnCizimModuDegisti  = aktif =>
@@ -67,6 +162,7 @@ public partial class BinaGeometriWindow : Window
                         : "Köşe sürükle · kenar sürükle = duvarı taşı · kenara çift tık = köşe ekle · köşeye sağ tık = köşe sil";
                 if (aktif)
                     _vm.DurumMesaji = "Oda çizim modu: plana tıklayarak köşeleri yerleştirin (en az 3 nokta).";
+                ModGoster(aktif ? "ODA ÇİZ" : "SEÇİM");
             };
 
             // Açıklık callback'leri
@@ -91,6 +187,8 @@ public partial class BinaGeometriWindow : Window
                 if (KapiEkleBtn         is { } b1) b1.IsVisible = !aktif;
                 if (PencereEkleBtn      is { } b2) b2.IsVisible = !aktif;
                 if (AciklikEkleIptalBtn is { } b3) b3.IsVisible = aktif;
+                if (aktif) ModGoster(_aktifAciklikTipi == BinaAciklikTipi.Kapi ? "KAPI EKLE" : "PENCERE EKLE");
+                else if (PlanCanvas?.OdaCizimModu != true) ModGoster("SEÇİM");
             };
 
             // Düşey birleşim işaretleri (⬆/⬇ etiketleri)
@@ -99,18 +197,45 @@ public partial class BinaGeometriWindow : Window
                 BinaDuseyBirlesimServisi.DosemeAcikMi(_vm.Geo, odaId));
         }
         _vm.PropertyChanged += OnVmPropertyChanged;
+        SyncEditPanelFromVm();
+        SyncIzlenenOda();
+        SyncAciklikPanel();
+        ModGoster("SEÇİM");
+        SonDosyalariYukle();
+        if (KurtarmaAcBtn is { } kb) kb.IsVisible = File.Exists(KurtarmaDosyasi);
+        _otomatikKurtarmaTimer.Start();
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        KurtarmaIsleriniKapat();
+        _otomatikKurtarmaTimer.Stop();
+        _otomatikKurtarmaTimer.Tick -= OtomatikKurtarma_Tick;
+        _vm.PropertyChanged -= OnVmPropertyChanged;
+        if (_izlenenKat is not null) _izlenenKat.PropertyChanged -= OnKatPropertyChanged;
+        if (_izlenenOda is not null) _izlenenOda.PropertyChanged -= OnOdaPropertyChanged;
+        _islemCts?.Cancel();
+        _islemCts?.Dispose();
+        _islemCts = null;
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(BinaGeometriViewModel.SeciliKat))
+        if (e.PropertyName == nameof(BinaGeometriViewModel.SeciliKat) ||
+            e.PropertyName == nameof(BinaGeometriViewModel.Geo))
+        {
             SyncEditPanelFromVm();
+            SyncIzlenenOda();
+            SyncAciklikPanel();
+        }
         else if (e.PropertyName == nameof(BinaGeometriViewModel.KatOfsetX))
             SyncOfsetXText();
         else if (e.PropertyName == nameof(BinaGeometriViewModel.KatOfsetY))
             SyncOfsetYText();
         else if (e.PropertyName == nameof(BinaGeometriViewModel.SeciliOdaId))
             SyncIzlenenOda();
+        else if (e.PropertyName == nameof(BinaGeometriViewModel.SeciliAciklikId))
+            SyncAciklikPanel();
     }
 
     private BinaOda? _izlenenOda; // oda adı düzenlemesini dirty + repaint için izle
@@ -122,13 +247,14 @@ public partial class BinaGeometriWindow : Window
         _izlenenOda = _vm.SeciliOda;
         if (_izlenenOda is not null)
             _izlenenOda.PropertyChanged += OnOdaPropertyChanged;
+        if (OdaAdText is { } odaAd)
+            odaAd.Text = _izlenenOda?.Ad ?? "";
     }
 
     private void OnOdaPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(BinaOda.Ad))
         {
-            _vm.Kirlet();
             PlanCanvas?.InvalidateVisual(); // canvas oda etiketini tazele
         }
     }
@@ -147,6 +273,14 @@ public partial class BinaGeometriWindow : Window
         // Yükseklik textbox
         if (KatYukseklikText is { } yt)
             yt.Text = kat?.KatYuksekligiM.ToString("F2") ?? "";
+        if (KatAdText is { } katAd)
+            katAd.Text = kat?.Ad ?? "";
+        if (BinaAdText is { } binaAd)
+            binaAd.Text = _vm.Geo.BinaAdi;
+        if (DxfGosterCheck is { } dxfCheck)
+            dxfCheck.IsChecked = kat?.DxfGoster ?? false;
+        if (BloklariGosterCheck is { } blokCheck)
+            blokCheck.IsChecked = kat?.BloklariGoster ?? false;
 
         SyncOfsetXText();
         SyncOfsetYText();
@@ -164,12 +298,7 @@ public partial class BinaGeometriWindow : Window
         {
             case nameof(BinaKat.DxfGoster):
             case nameof(BinaKat.BloklariGoster):
-                _vm.Kirlet();
                 PlanCanvas?.InvalidateVisual();
-                break;
-            case nameof(BinaKat.Ad):
-            case nameof(BinaKat.KatYuksekligiM):
-                _vm.Kirlet();
                 break;
         }
     }
@@ -190,7 +319,19 @@ public partial class BinaGeometriWindow : Window
 
     private async void Geri_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        AktifEditoruUygula();
         if (!await KapanisOnayiAl()) return;
+
+        if (_yardimciMod)
+        {
+            var owner = Owner;
+            _kapanisOnaylandi = true;
+            KurtarmaIsleriniKapat();
+            Close();
+            owner?.Activate();
+            owner?.Focus();
+            return;
+        }
 
         var hedef = _geriPencere?.Invoke() ?? new EngineeringHomeWindow();
         OpenWindowOnSameScreen(hedef);
@@ -218,6 +359,7 @@ public partial class BinaGeometriWindow : Window
             desktop.MainWindow = win;
         win.Show();
         _kapanisOnaylandi = true;
+        KurtarmaIsleriniKapat();
         Close();
     }
 
@@ -225,10 +367,14 @@ public partial class BinaGeometriWindow : Window
     {
         if (_kapanisOnaylandi) return;
 
+        if (_isBusy) _islemCts?.Cancel();
+        AktifEditoruUygula();
+
         e.Cancel = true;
         if (!await KapanisOnayiAl()) return;
 
         _kapanisOnaylandi = true;
+        KurtarmaIsleriniKapat();
         Close();
     }
 
@@ -236,9 +382,12 @@ public partial class BinaGeometriWindow : Window
 
     private async void Yeni_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        AktifEditoruUygula();
         if (!await KaydedilmemisDegisiklikOnayiAl("Kaydedilmemiş değişiklikler var. Yeni bina geometrisi oluşturmak istiyor musunuz?"))
             return;
 
+        EtkilesimleriIptalEt();
+        KurtarmaYayinlariniGecersizKil();
         _vm.Geo = BinaGeometriServisi.YeniOlustur();
         _vm.SeciliKat = null;
         _vm.UndoYiginlariniTemizle();
@@ -247,6 +396,7 @@ public partial class BinaGeometriWindow : Window
 
     private async void Ac_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        AktifEditoruUygula();
         if (!await KaydedilmemisDegisiklikOnayiAl("Kaydedilmemiş değişiklikler var. Başka bir dosya açmak istiyor musunuz?"))
             return;
 
@@ -260,6 +410,7 @@ public partial class BinaGeometriWindow : Window
         var path = files.Count > 0 ? files[0].Path.LocalPath : null;
         if (string.IsNullOrWhiteSpace(path)) return;
 
+        EtkilesimleriIptalEt();
         DosyaAc(path);
     }
 
@@ -267,15 +418,213 @@ public partial class BinaGeometriWindow : Window
     {
         try
         {
-            _vm.Geo = BinaGeometriServisi.Ac(path);
+            EtkilesimleriIptalEt();
+            var acilan = BinaGeometriServisi.Ac(path);
+            KurtarmaYayinlariniGecersizKil();
+            _vm.Geo = acilan;
             _vm.SeciliKat = _vm.Geo.Katlar.Count > 0 ? _vm.Geo.Katlar[0] : null;
             _vm.UndoYiginlariniTemizle();
+            if (!string.Equals(path, KurtarmaDosyasi, StringComparison.OrdinalIgnoreCase))
+                SonDosyayaEkle(path);
             _vm.DurumMesaji = $"Açıldı: {Path.GetFileName(path)}  (Rev. {_vm.Geo.GeometriRevizyon})";
         }
         catch (Exception ex)
         {
             _vm.DurumMesaji = $"Açılamadı: {ex.Message}";
         }
+    }
+
+    private void SonDosyalariYukle()
+    {
+        _sonDosyalar.Clear();
+        try
+        {
+            if (File.Exists(SonDosyalarDosyasi))
+                _sonDosyalar.AddRange(File.ReadAllLines(SonDosyalarDosyasi)
+                    .Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(8));
+        }
+        catch
+        {
+            // Son dosyalar kolaylık özelliğidir; bozuk/erişilemez liste ana akışı engellemez.
+        }
+        if (SonDosyalarCombo is { } combo)
+            combo.ItemsSource = _sonDosyalar.Select(p => new SonDosyaOgesi(p)).ToList();
+    }
+
+    private void SonDosyayaEkle(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        string tamYol;
+        try { tamYol = Path.GetFullPath(path); }
+        catch { return; }
+
+        _sonDosyalar.RemoveAll(p => string.Equals(p, tamYol, StringComparison.OrdinalIgnoreCase));
+        _sonDosyalar.Insert(0, tamYol);
+        if (_sonDosyalar.Count > 8) _sonDosyalar.RemoveRange(8, _sonDosyalar.Count - 8);
+        try
+        {
+            Directory.CreateDirectory(UygulamaVeriKlasoru);
+            File.WriteAllLines(SonDosyalarDosyasi, _sonDosyalar);
+        }
+        catch
+        {
+            // Salt-okunur profilde dosya açma/kaydetme yine çalışmaya devam eder.
+        }
+        if (SonDosyalarCombo is { } combo)
+            combo.ItemsSource = _sonDosyalar.Select(p => new SonDosyaOgesi(p)).ToList();
+    }
+
+    private async void SonDosyalar_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (SonDosyalarCombo is not { SelectedItem: SonDosyaOgesi oge } combo) return;
+        string path = oge.DosyaYolu;
+        combo.SelectedIndex = -1;
+        if (!File.Exists(path))
+        {
+            _vm.DurumMesaji = $"Son dosya artık bulunamıyor: {path}";
+            SonDosyalariYukle();
+            return;
+        }
+        if (!await KaydedilmemisDegisiklikOnayiAl("Kaydedilmemiş değişiklikler var. Son kullanılan dosya açılsın mı?"))
+            return;
+        DosyaAc(path);
+    }
+
+    private async void OtomatikKurtarma_Tick(object? sender, EventArgs e)
+    {
+        if (!_vm.IsDirty || _isBusy || _kurtarmaYaziliyor || _kurtarmaIsleriKapandi) return;
+        _kurtarmaYaziliyor = true;
+        string gecici = YeniKurtarmaGeciciDosyasi();
+        long beklenenNesil = Interlocked.Read(ref s_kurtarmaYayinNesli);
+        try
+        {
+            var kopya = _vm.KurtarmaKopyasiOlustur();
+            string yazilanDurum = await Task.Run(() =>
+            {
+                Directory.CreateDirectory(UygulamaVeriKlasoru);
+                string json = JsonSerializer.Serialize(kopya, KurtarmaJsonAyar);
+                File.WriteAllText(gecici, json);
+                return json;
+            });
+
+            if (_kurtarmaIsleriKapandi || !_vm.IsDirty) return;
+            string guncelDurum = JsonSerializer.Serialize(
+                _vm.KurtarmaKopyasiOlustur(), KurtarmaJsonAyar);
+
+            lock (KurtarmaYayinKilidi)
+            {
+                long guncelNesil = Interlocked.Read(ref s_kurtarmaYayinNesli);
+                if (!KurtarmaYayiniGecerliMi(
+                        _vm.IsDirty,
+                        _kurtarmaIsleriKapandi,
+                        beklenenNesil,
+                        guncelNesil,
+                        yazilanDurum,
+                        guncelDurum))
+                    return;
+
+                File.Move(gecici, KurtarmaDosyasi, overwrite: true);
+                Interlocked.Increment(ref s_kurtarmaYayinNesli);
+            }
+            if (KurtarmaAcBtn is { } btn) btn.IsVisible = true;
+        }
+        catch (Exception ex)
+        {
+            if (!_kurtarmaIsleriKapandi)
+                _vm.DurumMesaji = $"Otomatik kurtarma yazılamadı: {ex.Message}";
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(gecici)) File.Delete(gecici);
+            }
+            catch
+            {
+                // Geçici dosya temizliği bir sonraki otomatik kurtarmayı engellemez.
+            }
+            _kurtarmaYaziliyor = false;
+        }
+    }
+
+    private void KurtarmaDosyasiniTemizle()
+    {
+        lock (KurtarmaYayinKilidi)
+        {
+            Interlocked.Increment(ref s_kurtarmaYayinNesli);
+            try
+            {
+                if (File.Exists(KurtarmaDosyasi)) File.Delete(KurtarmaDosyasi);
+                if (File.Exists(KurtarmaDosyasi + ".tmp")) File.Delete(KurtarmaDosyasi + ".tmp");
+            }
+            catch
+            {
+                // Başarılı asıl kaydı kurtarma temizliği hatasıyla gölgelemeyiz.
+            }
+        }
+        if (KurtarmaAcBtn is { } btn) btn.IsVisible = false;
+    }
+
+    private async void KurtarmaAc_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (!File.Exists(KurtarmaDosyasi))
+        {
+            if (KurtarmaAcBtn is { } btn) btn.IsVisible = false;
+            return;
+        }
+        if (!await KaydedilmemisDegisiklikOnayiAl("Mevcut kaydedilmemiş değişikliklerin yerine otomatik kurtarma kopyası açılsın mı?"))
+            return;
+        try
+        {
+            var kurtarilan = BinaGeometriServisi.Ac(KurtarmaDosyasi);
+            // Kurtarma kopyası özgün dosyayı sessizce ezmemeli; ilk normal kayıt Save As ister.
+            kurtarilan.DosyaYolu = null;
+            KurtarmaYayinlariniGecersizKil();
+            _vm.Geo = kurtarilan;
+            _vm.Kirlet();
+            _vm.DurumMesaji = "Otomatik kurtarma kopyası açıldı. Güvenli bir konuma kaydedin.";
+        }
+        catch (Exception ex)
+        {
+            _vm.DurumMesaji = $"Kurtarma kopyası açılamadı: {ex.Message}";
+        }
+    }
+
+    private void Window_DragOver(object? sender, DragEventArgs e)
+    {
+        var dosyalar = e.DataTransfer.TryGetFiles();
+        bool uygun = !_isBusy && dosyalar is not null && dosyalar.Any(f =>
+        {
+            string p = f.Path.LocalPath;
+            return p.EndsWith(".dxf", StringComparison.OrdinalIgnoreCase) ||
+                   p.EndsWith(".e4bina.json", StringComparison.OrdinalIgnoreCase);
+        });
+        e.DragEffects = uygun ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private async void Window_Drop(object? sender, DragEventArgs e)
+    {
+        if (_isBusy) return;
+        string? path = e.DataTransfer.TryGetFiles()?.FirstOrDefault()?.Path.LocalPath;
+        if (string.IsNullOrWhiteSpace(path)) return;
+        e.Handled = true;
+
+        if (path.EndsWith(".dxf", StringComparison.OrdinalIgnoreCase))
+        {
+            await DxfYoluIceAktar(path);
+            return;
+        }
+        if (!path.EndsWith(".e4bina.json", StringComparison.OrdinalIgnoreCase))
+        {
+            _vm.DurumMesaji = "Yalnız .dxf veya .e4bina.json dosyaları bırakılabilir.";
+            return;
+        }
+        if (!await KaydedilmemisDegisiklikOnayiAl("Kaydedilmemiş değişiklikler var. Bırakılan bina geometrisi açılsın mı?"))
+            return;
+        DosyaAc(path);
     }
 
     private async void Kaydet_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -288,6 +637,7 @@ public partial class BinaGeometriWindow : Window
 
     private async Task<bool> Kaydet()
     {
+        AktifEditoruUygula();
         if (string.IsNullOrWhiteSpace(_vm.Geo.DosyaYolu))
             return await FarkliKaydet();
 
@@ -296,6 +646,7 @@ public partial class BinaGeometriWindow : Window
 
     private async Task<bool> FarkliKaydet()
     {
+        AktifEditoruUygula();
         var ad = string.IsNullOrWhiteSpace(_vm.Geo.BinaAdi) ? "Bina" : _vm.Geo.BinaAdi;
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
@@ -316,6 +667,8 @@ public partial class BinaGeometriWindow : Window
         {
             BinaGeometriServisi.Kaydet(_vm.Geo, path);
             _vm.TemizIsaretle();
+            SonDosyayaEkle(path);
+            KurtarmaDosyasiniTemizle();
             _vm.DurumMesaji = $"Kaydedildi: {Path.GetFileName(path)}  (Rev. {_vm.Geo.GeometriRevizyon})";
             return true;
         }
@@ -352,22 +705,14 @@ public partial class BinaGeometriWindow : Window
 
     private void KatEkle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        int no = _vm.Geo.Katlar.Count + 1;
-        var kat = new BinaKat
-        {
-            Id = Guid.NewGuid().ToString(),
-            Ad = $"Kat {no}",
-            KatNo = no,
-            KatYuksekligiM = 3.0
-        };
-        _vm.Geo.Katlar.Add(kat);
-        _vm.SeciliKat = kat;
-        _vm.Kirlet();
-        _vm.DurumMesaji = $"'{kat.Ad}' eklendi.";
+        EtkilesimleriIptalEt();
+        _vm.KatEkle();
     }
 
     private async void DxfYukle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        if (_isBusy) return;
+        AktifEditoruUygula();
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "DXF Kat Planı Seç",
@@ -377,6 +722,16 @@ public partial class BinaGeometriWindow : Window
         var path = files.Count > 0 ? files[0].Path.LocalPath : null;
         if (string.IsNullOrWhiteSpace(path)) return;
 
+        await DxfYoluIceAktar(path);
+    }
+
+    private async Task DxfYoluIceAktar(string path)
+    {
+        EtkilesimleriIptalEt();
+        _islemCts?.Cancel();
+        using var cts = new CancellationTokenSource();
+        _islemCts = cts;
+        BusyAyarla(true, "DXF analiz ediliyor…");
         _vm.DurumMesaji = "DXF taranıyor…";
         try
         {
@@ -385,7 +740,8 @@ public partial class BinaGeometriWindow : Window
             // Tek dosyada yan yana birden fazla kat planı olup olmadığını önce
             // otomatik tespit et (codex50 §9). Çoklu plan bulunursa dağıtım
             // diyaloğu açılır; tek plansa mevcut tek-kat akışı aynen sürer.
-            var cokluSonuc = await Task.Run(() => yukleyici.CokluKatTespitEt(path));
+            var cokluSonuc = await Task.Run(() => yukleyici.CokluKatTespitEt(path), cts.Token);
+            cts.Token.ThrowIfCancellationRequested();
 
             if (cokluSonuc is not null)
             {
@@ -405,6 +761,7 @@ public partial class BinaGeometriWindow : Window
                 }
 
                 int baslangicNo = _vm.Geo.Katlar.Count;
+                BusyAyarla(true, "Kat planları üretiliyor…");
                 var yeniKatlar = await Task.Run(() =>
                 {
                     var liste = new List<BinaKat>();
@@ -414,11 +771,10 @@ public partial class BinaGeometriWindow : Window
                         liste.Add(yukleyici.CokluKatUret(satir.Aday, baslangicNo + i + 1, satir.Ad, satir.YukseklikM));
                     }
                     return liste;
-                });
+                }, cts.Token);
+                cts.Token.ThrowIfCancellationRequested();
 
-                foreach (var yeniKat in yeniKatlar) _vm.Geo.Katlar.Add(yeniKat);
-                _vm.SeciliKat = yeniKatlar[0];
-                _vm.Kirlet();
+                _vm.KatlarEkle(yeniKatlar);
                 PlanCanvas?.FitAll();
                 _vm.DurumMesaji = $"{yeniKatlar.Count} kat DXF'ten dağıtıldı: " +
                     string.Join(", ", yeniKatlar.Select(k => k.Ad));
@@ -428,19 +784,27 @@ public partial class BinaGeometriWindow : Window
             int no = _vm.Geo.Katlar.Count + 1;
             var katAd = $"Kat {no}";
 
-            var kat = await Task.Run(() => yukleyici.Yukle(path, no, katAd, 3.0));
+            var kat = await Task.Run(() => yukleyici.Yukle(path, no, katAd, 3.0), cts.Token);
+            cts.Token.ThrowIfCancellationRequested();
 
-            _vm.Geo.Katlar.Add(kat);
-            _vm.SeciliKat = kat;
-            _vm.Kirlet();
+            _vm.KatlarEkle([kat]);
             PlanCanvas?.FitAll();
 
             string uyari = kat.UnitWarning is { } w ? $"  ⚠ {w}" : "";
             _vm.DurumMesaji = $"DXF yüklendi: '{kat.Ad}'  · {kat.Odalar.Count} oda, {kat.Acikliklar.Count} açıklık{uyari}";
         }
+        catch (OperationCanceledException)
+        {
+            _vm.DurumMesaji = "DXF içe aktarma iptal edildi.";
+        }
         catch (Exception ex)
         {
             _vm.DurumMesaji = $"DXF yüklenemedi: {ex.Message}";
+        }
+        finally
+        {
+            if (ReferenceEquals(_islemCts, cts)) _islemCts = null;
+            BusyAyarla(false);
         }
     }
 
@@ -494,6 +858,16 @@ public partial class BinaGeometriWindow : Window
         var path = files.Count > 0 ? files[0].Path.LocalPath : null;
         if (string.IsNullOrWhiteSpace(path)) return;
 
+        if ((kat.Odalar.Count > 0 || kat.DxfSegmentler.Count > 0) &&
+            !await OnayCal($"'{kat.Ad}' katının mevcut DXF/oda geometrisi değiştirilecek. Devam edilsin mi?", "Kat DXF'ini Değiştir"))
+            return;
+
+        EtkilesimleriIptalEt();
+        var beklenenGeo = _vm.Geo;
+        _islemCts?.Cancel();
+        using var cts = new CancellationTokenSource();
+        _islemCts = cts;
+        BusyAyarla(true, $"'{kat.Ad}' için DXF yükleniyor…");
         _vm.DurumMesaji = $"'{kat.Ad}' için DXF yükleniyor…";
         try
         {
@@ -501,62 +875,87 @@ public partial class BinaGeometriWindow : Window
             {
                 var yukleyici = new BinaServices.DxfKatYukleyici();
                 return yukleyici.Yukle(path, kat.KatNo, kat.Ad, kat.KatYuksekligiM);
-            });
+            }, cts.Token);
+            cts.Token.ThrowIfCancellationRequested();
 
-            var eskiOdalar = kat.Odalar.ToList();
-            var eskiAcikliklar = kat.Acikliklar.ToList();
-
-            // Id kararlılığı (codex50 §3.5): yeni odalar eskilerle merkez-örtüşme
-            // üzerinden eşleştirilir; eşleşmeyen eski odalar "silinmiş" sayılır.
-            var silinenOdaIdler = BinaServices.OdaEslestirmeServisi.Eslestir(yeniKat.Odalar, eskiOdalar);
-
-            kat.DxfFilePath  = path;
-            kat.DxfSegmentler = yeniKat.DxfSegmentler;
-            kat.DxfArclar    = yeniKat.DxfArclar;
-            kat.UnitWarning  = yeniKat.UnitWarning;
-
-            // Flood-fill ile tespit edilen oda blokları kata aktarılır (Id'leri
-            // yukarıda eşleştirmeyle korunmuş olabilir).
-            kat.Odalar.Clear();
-            foreach (var oda in yeniKat.Odalar) kat.Odalar.Add(oda);
-
-            // Açıklıklar: manuel eklenen / iptal edilen kayıtlar eski listeden korunur,
-            // otomatik tespit edilenler yeni duvar geometrisine göre yenilenir.
-            var arclarTuple = kat.DxfArclar
-                .Select(a => (a.Merkez, a.R, a.BasAciDeg, a.BitAciDeg))
-                .ToList();
-            kat.Acikliklar = BinaServices.AciklikTespitServisi.Bul(
-                yeniKat.HamSegmentler, arclarTuple, eskiAcikliklar);
-            BinaServices.AciklikYardimci.DisindaKalanlariSil(kat);
-            BinaServices.AciklikYardimci.KomsuDuvarlariTamamla(kat);
-            kat.SayilariYenile();
-            kat.HamSegmentler = yeniKat.HamSegmentler;
-            kat.HamMetinler  = yeniKat.HamMetinler;
-
-            // Askıda birleşim bırakma: eşleşmeyen (silinmiş sayılan) eski odaların
-            // düşey birleşimleri kaldırılır (aksi halde hayalet açık tavan/döşeme kalır).
-            int kaldirilanBirlesim = 0;
-            foreach (var id in silinenOdaIdler)
-                kaldirilanBirlesim += BinaDuseyBirlesimServisi.OdaSilindi(_vm.Geo, id);
-
-            _vm.SeciliOdaId = null;
-            _vm.SeciliAciklikId = null;
-            _vm.Kirlet();
+            var sonuc = _vm.SeciliKataDxfUygula(beklenenGeo, kat, yeniKat, path);
+            _vm.DurumMesaji = sonuc.Mesaj;
+            if (!sonuc.Basarili) return;
 
             if (KatDxfDosyaText is { } dt) dt.Text = Path.GetFileName(path);
             PlanCanvas?.FitAll();
-
-            string uyariStr = yeniKat.UnitWarning is { } w ? $"  ⚠ {w}" : "";
-            string birlesimStr = kaldirilanBirlesim > 0 ? $", {kaldirilanBirlesim} düşey birleşim kaldırıldı" : "";
-            _vm.DurumMesaji = $"DXF güncellendi: '{kat.Ad}'  · {kat.Odalar.Count} oda, {kat.Acikliklar.Count} açıklık, {kat.DxfSegmentler.Count} segment{birlesimStr}{uyariStr}";
+        }
+        catch (OperationCanceledException)
+        {
+            _vm.DurumMesaji = "DXF yükleme iptal edildi.";
         }
         catch (Exception ex)
         {
             _vm.DurumMesaji = $"DXF yüklenemedi: {ex.Message}";
         }
+        finally
+        {
+            if (ReferenceEquals(_islemCts, cts)) _islemCts = null;
+            BusyAyarla(false);
+        }
     }
 
     // ── Kat yüksekliği TextBox ────────────────────────────────────────────────
+
+    private void BinaAdi_LostFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        => UygulaBinaAdi();
+
+    private void BinaAdi_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Return or Key.Enter) { UygulaBinaAdi(); e.Handled = true; }
+    }
+
+    private void UygulaBinaAdi()
+    {
+        _vm.BinaAdiGuncelle(BinaAdText?.Text);
+        if (BinaAdText is { } tb) tb.Text = _vm.Geo.BinaAdi;
+    }
+
+    private void KatAdi_LostFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        => UygulaKatAdi();
+
+    private void KatAdi_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Return or Key.Enter) { UygulaKatAdi(); e.Handled = true; }
+    }
+
+    private void UygulaKatAdi()
+    {
+        _vm.KatAdiGuncelle(KatAdText?.Text);
+        if (KatAdText is { } tb) tb.Text = _vm.SeciliKat?.Ad ?? "";
+    }
+
+    private void OdaAdi_LostFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        => UygulaOdaAdi();
+
+    private void OdaAdi_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Return or Key.Enter) { UygulaOdaAdi(); e.Handled = true; }
+    }
+
+    private void UygulaOdaAdi()
+    {
+        _vm.OdaAdiGuncelle(OdaAdText?.Text);
+        if (OdaAdText is { } tb) tb.Text = _vm.SeciliOda?.Ad ?? "";
+        PlanCanvas?.InvalidateVisual();
+    }
+
+    private void DxfGoster_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        _vm.KatGorunumuGuncelle(dxfGoster: DxfGosterCheck?.IsChecked == true);
+        PlanCanvas?.InvalidateVisual();
+    }
+
+    private void BloklariGoster_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        _vm.KatGorunumuGuncelle(bloklariGoster: BloklariGosterCheck?.IsChecked == true);
+        PlanCanvas?.InvalidateVisual();
+    }
 
     private void KatYukseklik_LostFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         => UygulaKatYukseklik();
@@ -572,9 +971,9 @@ public partial class BinaGeometriWindow : Window
         if (double.TryParse(KatYukseklikText?.Text?.Replace(',', '.'),
                 System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture,
-                out double v) && v > 0)
+                out double v))
         {
-            kat.KatYuksekligiM = v;
+            _vm.KatYuksekligiGuncelle(v);
         }
         // Geri senkronize et (geçersiz giriş eski değere döner)
         if (KatYukseklikText is { } tb) tb.Text = kat.KatYuksekligiM.ToString("F2");
@@ -682,12 +1081,56 @@ public partial class BinaGeometriWindow : Window
 
     private void Window_KeyDown(object? sender, KeyEventArgs e)
     {
-        // TextBox içinde yazarken kısayollar devreye girmesin
+        if (_isBusy)
+        {
+            if (e.Key == Key.Escape)
+            {
+                _islemCts?.Cancel();
+                e.Handled = true;
+            }
+            return;
+        }
+
+        bool cmdVeyaCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Meta)
+                        || e.KeyModifiers.HasFlag(KeyModifiers.Control);
+        // Belge kısayolları TextBox odaktayken de çalışır. Z/Delete gibi metin
+        // düzenleme komutlarıysa aşağıdaki erken dönüşten sonra ele alınır.
+        if (cmdVeyaCtrl && e.Key == Key.S)
+        {
+            AktifEditoruUygula(e.Source);
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                FarkliKaydet_OnClick(null, new Avalonia.Interactivity.RoutedEventArgs());
+            else
+                Kaydet_OnClick(null, new Avalonia.Interactivity.RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
+        if (cmdVeyaCtrl && e.Key == Key.I)
+        {
+            AktifEditoruUygula(e.Source);
+            DxfYukle_OnClick(null, new Avalonia.Interactivity.RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
+        if (cmdVeyaCtrl && e.Key == Key.O)
+        {
+            AktifEditoruUygula(e.Source);
+            Ac_OnClick(null, new Avalonia.Interactivity.RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
+        if (cmdVeyaCtrl && e.Key == Key.N)
+        {
+            AktifEditoruUygula(e.Source);
+            Yeni_OnClick(null, new Avalonia.Interactivity.RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
+
+        // TextBox içinde yazarken undo/delete uygulama geometrisine gitmesin.
         if (e.Source is TextBox) return;
 
         // Cmd/Ctrl+Z = geri al, Shift+Cmd/Ctrl+Z = yinele
-        bool cmdVeyaCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Meta)
-                        || e.KeyModifiers.HasFlag(KeyModifiers.Control);
         if (cmdVeyaCtrl && e.Key == Key.Z)
         {
             if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
@@ -697,7 +1140,6 @@ public partial class BinaGeometriWindow : Window
             e.Handled = true;
             return;
         }
-
         switch (e.Key)
         {
             case Key.Escape when PlanCanvas?.OdaCizimModu == true:
@@ -712,6 +1154,22 @@ public partial class BinaGeometriWindow : Window
                 break;
             case Key.Return or Key.Enter when PlanCanvas?.OdaCizimModu == true:
                 PlanCanvas.OdaCizimBitir();
+                e.Handled = true;
+                break;
+            case Key.F:
+                PlanCanvas?.FitAll();
+                e.Handled = true;
+                break;
+            case Key.D when _vm.KatVarMi:
+                PlanCanvas?.OdaCizimBaslat();
+                e.Handled = true;
+                break;
+            case Key.K when _vm.KatVarMi:
+                KapiEkle_OnClick(null, new Avalonia.Interactivity.RoutedEventArgs());
+                e.Handled = true;
+                break;
+            case Key.P when _vm.KatVarMi:
+                PencereEkle_OnClick(null, new Avalonia.Interactivity.RoutedEventArgs());
                 e.Handled = true;
                 break;
             case Key.Delete or Key.Back when _vm.AciklikSecili && PlanCanvas?.OdaCizimModu != true:
@@ -777,12 +1235,14 @@ public partial class BinaGeometriWindow : Window
 
     private void KapiEkle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        _aktifAciklikTipi = BinaAciklikTipi.Kapi;
         PlanCanvas?.AciklikEkleBaslat(BinaAciklikTipi.Kapi);
         _vm.DurumMesaji = "Kapı yerleştirme: duvar üzerinde başlangıç ve bitiş noktasına tıklayın.";
     }
 
     private void PencereEkle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        _aktifAciklikTipi = BinaAciklikTipi.Pencere;
         PlanCanvas?.AciklikEkleBaslat(BinaAciklikTipi.Pencere);
         _vm.DurumMesaji = "Pencere yerleştirme: duvar üzerinde başlangıç ve bitiş noktasına tıklayın.";
     }
@@ -791,6 +1251,14 @@ public partial class BinaGeometriWindow : Window
     {
         PlanCanvas?.AciklikEkleIptal();
         _vm.DurumMesaji = "Açıklık yerleştirme iptal edildi.";
+    }
+
+    private void IslemIptal_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (!_isBusy) return;
+        if (IslemIptalBtn is { } btn) btn.IsEnabled = false;
+        if (IslemMesajText is { } mesaj) mesaj.Text = "İptal ediliyor…";
+        _islemCts?.Cancel();
     }
 
     private async void AciklikSil_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -815,10 +1283,9 @@ public partial class BinaGeometriWindow : Window
     private void AciklikTip_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_aciklikTipSyncing) return;
-        var ac = _vm.SeciliAciklik;
-        if (ac is null || AciklikTipCombo is not { } combo) return;
-        ac.Tip = combo.SelectedIndex == 1 ? BinaAciklikTipi.Pencere : BinaAciklikTipi.Kapi;
-        _vm.Kirlet();
+        if (_vm.SeciliAciklik is null || AciklikTipCombo is not { } combo) return;
+        _vm.SeciliAciklikTipGuncelle(
+            combo.SelectedIndex == 1 ? BinaAciklikTipi.Pencere : BinaAciklikTipi.Kapi);
         PlanCanvas?.InvalidateVisual();
     }
 
@@ -856,10 +1323,9 @@ public partial class BinaGeometriWindow : Window
         if (double.TryParse(AciklikYukseklikText?.Text?.Replace(',', '.'),
                 System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture,
-                out double v) && v > 0)
+                out double v))
         {
-            if (System.Math.Abs(ac.YukseklikM - v) > 1e-9) _vm.Kirlet();
-            ac.YukseklikM = v;
+            _vm.SeciliAciklikYukseklikGuncelle(v);
         }
         if (AciklikYukseklikText is { } tb) tb.Text = ac.YukseklikM.ToString("F2");
     }
@@ -879,10 +1345,9 @@ public partial class BinaGeometriWindow : Window
         if (double.TryParse(AciklikEsikText?.Text?.Replace(',', '.'),
                 System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture,
-                out double v) && v >= 0)
+                out double v))
         {
-            if (System.Math.Abs(ac.EsikYuksekligiM - v) > 1e-9) _vm.Kirlet();
-            ac.EsikYuksekligiM = v;
+            _vm.SeciliAciklikEsikGuncelle(v);
         }
         if (AciklikEsikText is { } tb) tb.Text = ac.EtkinEsikYuksekligiM.ToString("F2");
     }

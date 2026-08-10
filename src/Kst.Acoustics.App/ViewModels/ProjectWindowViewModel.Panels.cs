@@ -587,8 +587,7 @@ public sealed partial class ProjectWindowViewModel
 
         RebuildCategoryNodes();
         RefreshLightTracingOptions();
-        MarkDirty();
-        NotifySurfacesChanged();
+        NotifySurfacesChanged("Panel yerleşimi değiştirildi");
         if (PanelListesi.Any(p => p.IsSelected))
             UpdateSelectedSurfaceIdsFromPanelRows();
         StatusMessage = $"{PanelListesi.Count} panel senkronize edildi.";
@@ -742,11 +741,11 @@ public sealed partial class ProjectWindowViewModel
                 node.IsExpanded = existingNode.IsExpanded;
             }
             
-            node.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(CategoryNodeViewModel.IsVisible))
-                    OnPropertyChanged(nameof(VisibleSurfaces));
-            };
+                node.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(CategoryNodeViewModel.IsVisible))
+                        NotifyViewportPerformanceChanged();
+                };
             newNodes.Add(node);
         }
 

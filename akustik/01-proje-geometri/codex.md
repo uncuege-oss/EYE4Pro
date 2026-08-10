@@ -24,10 +24,14 @@ Aktif kapsam:
 - DXF geometri içe aktarma
 - Yüzey/layer/kategori yönetimi
 - 2B/3B geometri önizleme
-- Kaynak ve alıcı noktalarının yönetimi
-- Proje kaydetme/açma
-- Malzeme atama ve proje penceresine geçiş
+- Kaynak ve alıcı noktalarının tekil ve toplu yönetimi
+- Proje kaydetme/açma, tam belge undo/redo, otomatik kayıt ve sürüm geçmişi
+- Malzeme atama, kalıcı eşleme şablonları ve proje penceresine geçiş
 - Sızdırmazlık/leak test
+- Model sağlık analizi ve güvenli onarım önizlemesi
+- Bağımsız akustik senaryolar ve oda tipi hedef performans panosu
+- Doğrulamalı taşınabilir `.e4pkg` proje paketi
+- Büyük modeller için yalnız viewport'u sadeleştiren performans modu
 - Akustik panel yerleşim eklentisi
 
 Kapsam dışı / eski karar:
@@ -55,6 +59,8 @@ Kapsam dışı / eski karar:
 
 - Aktif uzantı: `.e4p01`
 - İçerik formatı: JSON
+- Güncel şema sürümü: 3 (senaryo listesi, etkin senaryo ve oda tipi hedefi dahil)
+- Taşınabilir paylaşım uzantısı: `.e4pkg`; ZIP içindeki her girdi manifest SHA-256 değeriyle doğrulanır.
 - Eski `.eye4proj.json` bilgisi tarihsel kabul edilir; yeni kayıt/açma akışı `.e4p01` kullanır.
 - Eksik JSON alanları geriye dönük uyumluluk için boş liste/null olarak karşılanmalıdır.
 - Kayıt durumu `IsDirty` ile izlenir; kaydedilmemiş değişiklikler başlıkta `*` ile gösterilir.
@@ -175,6 +181,54 @@ Kapsam dışı bırakılanlar (bilinçli, gelecekte ele alınabilir): DXF adjace
 - Sıfır veya bilinmeyen hacim artık sessizce `100 m³` yapılmaz; kullanıcıya kaynağı gösterilir ve simülasyon öncesi gerçek değer istenir.
 - Ölçüm karşılaştırması ve ImportPreview yedekten kurtarmayı görünür biçimde taşır; eski veya parmak izi uyuşmayan simülasyon sonucu ölçümle karşılaştırılmaz.
 
+### 8.4 2026-08-10 üretkenlik ve profesyonel kullanım paketi
+
+**Model sağlık ve güvenli onarım merkezi:**
+- `Araçlar > Sağlık` geometri/topoloji, yinelenen veya bozuk yüzey, küçük yüzey, winding, eksik materyal,
+  oda dışı kaynak/alıcı, hacim/birim ve grid risklerini tek raporda toplar.
+- `Onarımları Önizle` canlı belgeyi değiştirmez. Güvenli uygulama; ardışık yinelenen köşeleri,
+  yinelenen/dejenere/mikro yüzeyleri temizleyebilir ve kapalı kabuk winding'ini yönlendirebilir.
+  Korunan panel yüzeyleri otomatik silinmez. Uygulama tek undo adımıdır.
+
+**Belge geçmişi ve otomatik kayıt:**
+- Araç çubuğu veya `Ctrl/Cmd+Z`, `Ctrl/Cmd+Y` ve `Ctrl/Cmd+Shift+Z` ile tüm kalıcı proje değişiklikleri
+  geri alınır/yinelenir; bellekte son 50 geçerli belge snapshot'ı tutulur.
+- Proje penceresi açılınca 2 dakikalık otomatik kayıt başlar. `Araçlar > Geçmiş` elle sürüm alma,
+  liste yenileme, geri yükleme ve silme sunar; diskte proje başına en fazla 20 atomik sürüm tutulur.
+- Geçmiş; geometri, materyal, noktalar, simülasyon ayar/sonuç durumu, paneller ve senaryoları birlikte taşır.
+
+**Akustik senaryolar ve hedef panosu:**
+- `Araçlar > Senaryo` ana modeli koruyarak alternatif oluşturma, kopyalama, yeniden adlandırma,
+  silme, etkinleştirme ve ana modele dönme akışını sağlar. Her senaryo kendi yüzey, materyal,
+  nokta, panel, ayar, sonuç, hacim ve oda tipi snapshot'ını taşır.
+- Oda kullanım tipi seçimi hedef RT60/STI/C80/EDT/G değerlendirmesini, eksik veri açıklamasını ve
+  ilave eşdeğer yutum alanı önerisini yeniler; senaryo karşılaştırmaları aynı panelde görünür.
+
+**Toplu nokta ve materyal üretkenliği:**
+- `Noktalar > Toplu Yerleştirme Asistanı`; çizgisel, dikdörtgen ızgara, dairesel ve seçili yüzey sınırı
+  desenleri üretir. Aralık/yarıçap metre cinsindendir ve proje birimine güvenle çevrilir; oda içinde
+  tutma, güvenlik limiti ve viewport önizlemesi vardır.
+- `Materyaller > Katman Eşleme Şablonu` Türkçe/aksan duyarsız layer-kategori kurallarıyla toplu atama
+  yapar. Mevcut atamalar adlandırılmış kullanıcı şablonu olarak atomik biçimde saklanabilir;
+  yerleşik şablon silinemez ve toplu uygulama tek undo adımıdır.
+
+**Paketleme ve büyük model modu:**
+- Araç çubuğundaki `Paketle` veya `Araçlar > Geçmiş` ile `.e4pkg` oluşturulur. Paket `.e4p01`, yalnız
+  kullanılan malzeme/hoparlör tanımları, erişilebilen kaynak geometri ve README içerir. Güvenli yol,
+  yinelenen girdi, açılmış boyut ve SHA-256 denetiminden geçmeyen paket açılmaz.
+- `.e4pkg` ana açma akışından doğrudan yüklenir; paketteki eksik kütüphane tanımları uygulamaya alınır.
+- 10.000 yüzey veya 100.000 köşede büyük model modu otomatik açılır. Varsayılan viewport limiti
+  4.000 yüzeydir (250–50.000 ayarlanabilir); seçili/vurgulu yüzeyler ve uzamsal/kategori dengesi korunur.
+  Kayıt, sağlık analizi ve simülasyon her zaman tam geometriyi kullanır.
+
+**Teknik kararlar:**
+- Simülasyon girdi izi V2, açıkça atanmış varsayılan materyal ile boş/default eşlemeyi aynı semantik
+  kabul eder; bu sayede undo/redo sonrası eşdeğer proje yanlışlıkla eski sonuç olarak işaretlenmez.
+- `AcousticMaterial` JSON kurucusu açıkça tanımlıdır; `.e4pkg` kütüphane round-trip'i domain modeliyle uyumludur.
+- Yeni Core servisleri: `ModelHealthService`, `ProjectVersionHistoryService`, `AcousticScenarioManager`,
+  `TargetPerformanceService`, `AcousticPointPlacementService`, `MaterialMappingTemplateService`,
+  `ProjectPackageService`, `ViewportSurfaceDecimator`.
+
 ---
 
 ## 9. Doğrulama Komutları
@@ -186,11 +240,11 @@ dotnet build src/Kst.Acoustics.App/Kst.Acoustics.App.csproj
 dotnet run --project src/Kst.Acoustics.Tests/Kst.Acoustics.Tests.csproj
 ```
 
-Son bilinen durum (2026-08-07):
-- Release build: Core + App + Tests 0 hata / 0 uyarı.
-- Standart M01 test keşfi: 17/17 geçer.
-- Genel özel koşucu: 699/699 geçer; M01/M51 ve diğer modüllerde regresyon yoktur.
-- ImportPreview Release build: 0 hata / 0 uyarı.
+Son bilinen durum (2026-08-10):
+- Release App build: Core + App 0 hata / 0 uyarı.
+- M01 xUnit testleri: 38/38 geçer.
+- Tüm xUnit testleri: 111/111 geçer.
+- Genel özel koşucu: 791/791 geçer; M01 ve diğer modüllerde regresyon yoktur.
 
 ---
 

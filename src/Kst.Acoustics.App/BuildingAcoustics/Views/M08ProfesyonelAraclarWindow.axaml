@@ -1,0 +1,355 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.BuildingAcoustics.Views.M08ProfesyonelAraclarWindow"
+        x:CompileBindings="False"
+        Width="1320" Height="780" MinWidth="980" MinHeight="620"
+        Title="M08 Profesyonel Araçlar"
+        Background="#111923" Foreground="#DCEAF4">
+
+  <Grid RowDefinitions="Auto,*,Auto" Margin="14">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+      <StackPanel Spacing="2">
+        <TextBlock Text="M08 PROFESYONEL ARAÇLAR" Foreground="#25C3D9"
+                   FontSize="16" FontWeight="Bold"/>
+        <TextBlock Text="{Binding OzetMetni}" Foreground="#91AABE" FontSize="11"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="↻ Tümünü Yenile" Click="TumunuYenile_OnClick"
+              Background="#17354A" Foreground="#BFEAFF" Padding="14,7"/>
+    </Grid>
+
+    <TabControl Grid.Row="1">
+      <TabItem Header="İş Listesi">
+        <Grid RowDefinitions="Auto,*" Margin="8">
+          <WrapPanel Grid.Row="0" Margin="0,0,0,8">
+            <Button Content="Eksikleri Tara" Click="GorevleriYenile_OnClick"
+                    Background="#20482F" Foreground="#BFFFD0" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Seçiliyi Tamamla" Click="GoreviTamamla_OnClick"
+                    Background="#17354A" Foreground="#BFEAFF" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Seçili Mekâna Git" Click="GoreveGit_OnClick"
+                    Background="#312A16" Foreground="#FFE4A0" Padding="12,6" Margin="0,0,6,6"/>
+          </WrapPanel>
+          <DataGrid Grid.Row="1" ItemsSource="{Binding GorevSatirlari}" SelectedItem="{Binding SeciliGorev}"
+                    AutoGenerateColumns="False" IsReadOnly="True" CanUserResizeColumns="True"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Öncelik" Binding="{Binding Durum}" Width="90"/>
+              <DataGridTextColumn Header="İş" Binding="{Binding Baslik}" Width="240"/>
+              <DataGridTextColumn Header="Yer / Eleman" Binding="{Binding AltBaslik}" Width="240"/>
+              <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+              <DataGridTextColumn Header="Durum" Binding="{Binding Deger}" Width="120"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Revizyon ve Senaryo">
+        <Grid RowDefinitions="Auto,*,Auto,*" Margin="8">
+          <WrapPanel Grid.Row="0" Margin="0,0,0,8">
+            <Button Content="M50 Revizyonunu Karşılaştır" Click="RevizyonKarsilastir_OnClick"
+                    Background="#3A2816" Foreground="#FFD090" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Seçili Revizyonu Uygula" Click="RevizyonUygula_OnClick"
+                    Background="#17452E" Foreground="#BFFFD0" Padding="12,6" Margin="0,0,6,6"/>
+            <TextBlock Text="Önizleme, canlı projeyi değiştirmez." Foreground="#8098AA"
+                       VerticalAlignment="Center" Margin="8,0"/>
+          </WrapPanel>
+          <DataGrid Grid.Row="1" ItemsSource="{Binding RevizyonSatirlari}"
+                    AutoGenerateColumns="False" IsReadOnly="True" MinHeight="130"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Tür" Binding="{Binding Durum}" Width="100"/>
+              <DataGridTextColumn Header="Nesne" Binding="{Binding Baslik}" Width="220"/>
+              <DataGridTextColumn Header="Konum" Binding="{Binding AltBaslik}" Width="180"/>
+              <DataGridTextColumn Header="Değişiklik / Etki" Binding="{Binding Aciklama}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <Grid Grid.Row="2" ColumnDefinitions="Auto,240,Auto,Auto,Auto,*" Margin="0,10,0,7">
+            <TextBlock Text="Senaryo adı" VerticalAlignment="Center" Foreground="#9EB5C7" Margin="0,0,7,0"/>
+            <TextBox Grid.Column="1" Text="{Binding SenaryoAdi}" PlaceholderText="Örn. Ekonomik çözüm"/>
+            <Button Grid.Column="2" Content="Mevcudu Kaydet" Click="SenaryoKaydet_OnClick"
+                    Background="#20482F" Foreground="#BFFFD0" Padding="12,5" Margin="7,0,0,0"/>
+            <Button Grid.Column="3" Content="Seçiliyi Uygula" Click="SenaryoUygula_OnClick"
+                    Background="#17354A" Foreground="#BFEAFF" Padding="12,5" Margin="6,0,0,0"/>
+            <Button Grid.Column="4" Content="Sil" Click="SenaryoSil_OnClick"
+                    Background="#4A2020" Foreground="#FFB8B8" Padding="12,5" Margin="6,0,0,0"/>
+          </Grid>
+          <DataGrid Grid.Row="3" ItemsSource="{Binding SenaryoSatirlari}" SelectedItem="{Binding SeciliSenaryo}"
+                    AutoGenerateColumns="False" IsReadOnly="True" MinHeight="150"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Senaryo" Binding="{Binding Baslik}" Width="230"/>
+              <DataGridTextColumn Header="Oluşturma" Binding="{Binding AltBaslik}" Width="160"/>
+              <DataGridTextColumn Header="Uyum Özeti" Binding="{Binding Deger}" Width="180"/>
+              <DataGridTextColumn Header="Karşılaştırma" Binding="{Binding Aciklama}" Width="*"/>
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="110"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Analiz ve Optimizasyon">
+        <Grid RowDefinitions="Auto,*,Auto,*" Margin="8">
+          <WrapPanel Grid.Row="0" Margin="0,0,0,8">
+            <ComboBox Width="310" ItemsSource="{Binding SonucSecenekleri}"
+                      SelectedItem="{Binding SeciliSonuc}" DisplayMemberBinding="{Binding Baslik}"
+                      PlaceholderText="Analiz edilecek sonucu seçin" Margin="0,0,7,6"/>
+            <Button Content="Neden Kaldı?" Click="BasarisizlikAcikla_OnClick"
+                    Background="#4A2420" Foreground="#FFC0B8" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Frekans / Yol Analizi" Click="FrekansAnalizi_OnClick"
+                    Background="#17354A" Foreground="#BFEAFF" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Çözümü Optimize Et" Click="Optimizasyon_OnClick"
+                    Background="#20482F" Foreground="#BFFFD0" Padding="12,6" Margin="0,0,6,6"/>
+            <TextBlock Text="Monte Carlo" VerticalAlignment="Center" Foreground="#9EB5C7" Margin="10,0,5,6"/>
+            <NumericUpDown Width="85" Minimum="50" Maximum="5000" Increment="50"
+                           Value="{Binding MonteCarloTekrar}" Margin="0,0,6,6"/>
+            <Button Content="Belirsizlik + Duyarlılık" Click="Belirsizlik_OnClick"
+                    Background="#30224A" Foreground="#D9C3FF" Padding="12,6" Margin="0,0,6,6"/>
+          </WrapPanel>
+          <DataGrid Grid.Row="1" ItemsSource="{Binding AnalizSatirlari}" SelectedItem="{Binding SeciliAnalizSatiri}"
+                    AutoGenerateColumns="False" IsReadOnly="True" MinHeight="190"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Analiz" Binding="{Binding Durum}" Width="125"/>
+              <DataGridTextColumn Header="Bileşen / Parametre" Binding="{Binding Baslik}" Width="230"/>
+              <DataGridTextColumn Header="Sonuç" Binding="{Binding Deger}" Width="170"/>
+              <DataGridTextColumn Header="Kanıt" Binding="{Binding Aciklama}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <TextBlock Grid.Row="2" Text="OPTİMİZASYON ADAYLARI — maliyet, marj ve uygulanabilirlik birlikte sıralanır"
+                     Foreground="#7F9BB0" FontSize="10" FontWeight="Bold" Margin="0,10,0,5"/>
+          <DataGrid Grid.Row="3" ItemsSource="{Binding OptimizasyonSatirlari}"
+                    SelectedItem="{Binding SeciliOptimizasyon}" AutoGenerateColumns="False" IsReadOnly="True"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Çözüm" Binding="{Binding Baslik}" Width="250"/>
+              <DataGridTextColumn Header="Eleman" Binding="{Binding AltBaslik}" Width="210"/>
+              <DataGridTextColumn Header="Sonuç / Maliyet" Binding="{Binding Deger}" Width="190"/>
+              <DataGridTextColumn Header="Değerlendirme" Binding="{Binding Aciklama}" Width="*"/>
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="100"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Veri, Ölçüm ve Metraj">
+        <Grid RowDefinitions="Auto,*,Auto,*" Margin="8">
+          <WrapPanel Grid.Row="0" Margin="0,0,0,8">
+            <Button Content="Ölçüm İçe Aktar" Click="OlcumIceriAktar_OnClick"
+                    Background="#17354A" Foreground="#BFEAFF" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Toplu CSV Dışa Aktar" Click="TopluCsvDisaAktar_OnClick"
+                    Background="#2A3340" Foreground="#D5E3ED" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Toplu CSV İçe Aktar" Click="TopluCsvIceriAktar_OnClick"
+                    Background="#2A3340" Foreground="#D5E3ED" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Proje Şablonu Kaydet" Click="SablonKaydet_OnClick"
+                    Background="#3B3218" Foreground="#FFE59A" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Şablon Uygula" Click="SablonUygula_OnClick"
+                    Background="#3B3218" Foreground="#FFE59A" Padding="12,6" Margin="0,0,6,6"/>
+          </WrapPanel>
+          <DataGrid Grid.Row="1" ItemsSource="{Binding OlcumSatirlari}"
+                    AutoGenerateColumns="False" IsReadOnly="True" MinHeight="170"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Ölçüm" Binding="{Binding Baslik}" Width="220"/>
+              <DataGridTextColumn Header="Konum" Binding="{Binding AltBaslik}" Width="220"/>
+              <DataGridTextColumn Header="Değer / Model Δ" Binding="{Binding Deger}" Width="180"/>
+              <DataGridTextColumn Header="Kaynak ve İzlenebilirlik" Binding="{Binding Aciklama}" Width="*"/>
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="110"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <WrapPanel Grid.Row="2" Margin="0,10,0,6">
+            <Button Content="Metrajı Yenile" Click="MetrajYenile_OnClick"
+                    Background="#20482F" Foreground="#BFFFD0" Padding="12,6" Margin="0,0,6,0"/>
+            <Button Content="Metraj Excel" Click="MetrajExcel_OnClick"
+                    Background="#17412C" Foreground="#BFFFD0" Padding="12,6" Margin="0,0,6,0"/>
+            <TextBlock Text="{Binding MetrajOzetMetni}" Foreground="#9EB5C7" VerticalAlignment="Center" Margin="8,0"/>
+          </WrapPanel>
+          <DataGrid Grid.Row="3" ItemsSource="{Binding MetrajSatirlari}"
+                    AutoGenerateColumns="False" IsReadOnly="True"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Malzeme / Poz" Binding="{Binding Baslik}" Width="240"/>
+              <DataGridTextColumn Header="Tür" Binding="{Binding AltBaslik}" Width="160"/>
+              <DataGridTextColumn Header="Miktar / Tutar" Binding="{Binding Deger}" Width="190"/>
+              <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Toplu Düzenleme">
+        <Grid RowDefinitions="Auto,*,6,*" Margin="8">
+          <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBox Width="180" Text="{Binding TopluAramaMetni}" PlaceholderText="Mekân ara…"/>
+              <ComboBox Width="150" ItemsSource="{Binding KullanimTipiSecenekleri}"
+                        SelectedItem="{Binding TopluKullanimTipi}" PlaceholderText="Kullanım tipi"/>
+              <ComboBox Width="95" ItemsSource="{Binding KaynakDerecesiSecenekleri}"
+                        SelectedItem="{Binding TopluKaynakDerecesi}" PlaceholderText="Kaynak"/>
+              <ComboBox Width="95" ItemsSource="{Binding AliciSinifiSecenekleri}"
+                        SelectedItem="{Binding TopluAliciSinifi}" PlaceholderText="Alıcı"/>
+              <ComboBox Width="190" ItemsSource="{Binding DosemeMalzemeSecenekleri}"
+                        SelectedItem="{Binding TopluZeminMalzemesi}" DisplayMemberBinding="{Binding Ad}"
+                        PlaceholderText="Zemin malzemesi"/>
+              <ComboBox Width="190" ItemsSource="{Binding TavanMalzemeSecenekleri}"
+                        SelectedItem="{Binding TopluTavanMalzemesi}" DisplayMemberBinding="{Binding Ad}"
+                        PlaceholderText="Tavan malzemesi"/>
+              <Button Content="Seçili Mekânlara Uygula" Click="TopluMekanaUygula_OnClick"
+                      Background="#20482F" Foreground="#BFFFD0" Padding="12,5"/>
+              <Button Content="Tabloyu Yenile" Click="TopluTabloYenile_OnClick"
+                      Background="#17354A" Foreground="#BFEAFF" Padding="12,5"/>
+            </StackPanel>
+          </ScrollViewer>
+          <DataGrid x:Name="TopluMekanGrid" Grid.Row="1" ItemsSource="{Binding TopluMekanSatirlari}"
+                    SelectionMode="Extended" AutoGenerateColumns="False" IsReadOnly="False"
+                    BeginningEdit="TopluGrid_OnBeginningEdit"
+                    CellEditEnded="TopluMekanGrid_OnCellEditEnded"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Kat" Binding="{Binding Kat}" Width="100" IsReadOnly="True"/>
+              <DataGridTextColumn Header="Mekân" Binding="{Binding MekanAdi}" Width="170"/>
+              <DataGridTextColumn Header="Kullanım" Binding="{Binding KullanimTipi}" Width="150"/>
+              <DataGridTextColumn Header="Kaynak" Binding="{Binding KaynakDerecesi}" Width="72"/>
+              <DataGridTextColumn Header="Alıcı" Binding="{Binding AliciSinifi}" Width="68"/>
+              <DataGridTextColumn Header="Bağımsız Bölüm" Binding="{Binding BagimsizBolum}" Width="150"/>
+              <DataGridTextColumn Header="Zemin" Binding="{Binding ZeminMalzemesi}" Width="180"/>
+              <DataGridTextColumn Header="Tavan" Binding="{Binding TavanMalzemesi}" Width="180"/>
+              <DataGridTextColumn Header="Sürekli dBA" Binding="{Binding TesisatSurekliDb}" Width="90"/>
+              <DataGridTextColumn Header="Kesikli dBA" Binding="{Binding TesisatKesikliDb}" Width="90"/>
+              <DataGridTextColumn Header="Emilim m²Sabin" Binding="{Binding EmilimAlani}" Width="110"/>
+              <DataGridTextColumn Header="Atama" Binding="{Binding AtamaDurumu}" Width="90" IsReadOnly="True"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <GridSplitter Grid.Row="2" Height="6" Background="#46647A" ResizeDirection="Rows"
+                        ResizeBehavior="PreviousAndNext"/>
+          <Grid Grid.Row="3" RowDefinitions="Auto,*">
+            <WrapPanel Grid.Row="0" Margin="0,7,0,6">
+              <TextBlock Text="BÖLME VE AÇIKLIK MATRİSİ" Foreground="#7F9BB0" FontSize="10"
+                         FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+              <ComboBox Width="210" ItemsSource="{Binding DuvarMalzemeSecenekleri}"
+                        SelectedItem="{Binding TopluDuvarMalzemesi}" DisplayMemberBinding="{Binding Ad}"
+                        PlaceholderText="Duvar malzemesi"/>
+              <Button Content="Seçili Bölmelere Uygula" Click="TopluBolmeyeUygula_OnClick"
+                      Background="#20482F" Foreground="#BFFFD0" Padding="12,5" Margin="6,0,0,0"/>
+            </WrapPanel>
+            <DataGrid x:Name="TopluBolmeGrid" Grid.Row="1" ItemsSource="{Binding TopluBolmeSatirlari}"
+                      SelectionMode="Extended" AutoGenerateColumns="False" IsReadOnly="False"
+                      BeginningEdit="TopluGrid_OnBeginningEdit"
+                      CellEditEnded="TopluBolmeGrid_OnCellEditEnded"
+                      Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Kat" Binding="{Binding Kat}" Width="90" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Kaynak" Binding="{Binding KaynakMekan}" Width="150" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Alıcı / Cephe" Binding="{Binding AliciMekan}" Width="150" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Bölme" Binding="{Binding BolmeAdi}" Width="180" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Alan m²" Binding="{Binding Alan}" Width="80" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Malzeme" Binding="{Binding Malzeme}" Width="220"/>
+                <DataGridTextColumn Header="Açıklık" Binding="{Binding AciklikOzeti}" Width="180" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Komşuluk" Binding="{Binding Komsuluk}" Width="190" IsReadOnly="True"/>
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="BIM, Harita ve Portföy">
+        <Grid RowDefinitions="Auto,*,Auto,*" Margin="8">
+          <WrapPanel Grid.Row="0" Margin="0,0,0,8">
+            <Button Content="IFC4 Akustik BIM Dışa Aktar" Click="IfcDisaAktar_OnClick"
+                    Background="#17354A" Foreground="#BFEAFF" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Cephe Haritası (SVG)" Click="CepheSvg_OnClick"
+                    Background="#3A2816" Foreground="#FFD090" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Cephe Haritası (CSV)" Click="CepheCsv_OnClick"
+                    Background="#3A2816" Foreground="#FFD090" Padding="12,6" Margin="0,0,6,6"/>
+            <TextBlock Text="M50 geometrisi salt okunur; BIM çıktısı akustik Pset ekler."
+                       Foreground="#8098AA" VerticalAlignment="Center" Margin="8,0"/>
+          </WrapPanel>
+          <DataGrid Grid.Row="1" ItemsSource="{Binding CepheHaritaSatirlari}"
+                    AutoGenerateColumns="False" IsReadOnly="True" MinHeight="170"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Cephe / Mekân" Binding="{Binding Baslik}" Width="240"/>
+              <DataGridTextColumn Header="Kat" Binding="{Binding AltBaslik}" Width="120"/>
+              <DataGridTextColumn Header="Lgag / İç / Marj" Binding="{Binding Deger}" Width="210"/>
+              <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="100"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <WrapPanel Grid.Row="2" Margin="0,10,0,6">
+            <Button Content="Portföy Klasörü Seç" Click="PortfoyKlasoru_OnClick"
+                    Background="#30224A" Foreground="#D9C3FF" Padding="12,6" Margin="0,0,6,0"/>
+            <TextBlock Text="{Binding PortfoyOzetMetni}" Foreground="#9EB5C7" VerticalAlignment="Center" Margin="8,0"/>
+          </WrapPanel>
+          <DataGrid Grid.Row="3" ItemsSource="{Binding PortfoySatirlari}"
+                    AutoGenerateColumns="False" IsReadOnly="True"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Proje" Binding="{Binding Baslik}" Width="250"/>
+              <DataGridTextColumn Header="Dosya / Tarih" Binding="{Binding AltBaslik}" Width="240"/>
+              <DataGridTextColumn Header="KPI" Binding="{Binding Deger}" Width="210"/>
+              <DataGridTextColumn Header="Durum" Binding="{Binding Aciklama}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Rapor, Onay ve Saha">
+        <Grid RowDefinitions="Auto,Auto,*,Auto,*" Margin="8">
+          <WrapPanel Grid.Row="0" Margin="0,0,0,8">
+            <Button Content="Rapor Ön Kontrolü" Click="RaporOnKontrol_OnClick"
+                    Background="#17354A" Foreground="#BFEAFF" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Tarayıcıda Önizle" Click="RaporOnizle_OnClick"
+                    Background="#17354A" Foreground="#BFEAFF" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Dondur ve Bütünlük Mührü Oluştur" Click="RaporDondur_OnClick"
+                    Background="#3B3218" Foreground="#FFE59A" Padding="12,6" Margin="0,0,6,6"/>
+            <Button Content="Dondurulmuş Paketi Doğrula" Click="RaporDogrula_OnClick"
+                    Background="#2A3340" Foreground="#D5E3ED" Padding="12,6" Margin="0,0,6,6"/>
+          </WrapPanel>
+          <Grid Grid.Row="1" ColumnDefinitions="Auto,180,Auto,260,Auto,*" Margin="0,0,0,8">
+            <TextBlock Text="Onaylayan" VerticalAlignment="Center" Foreground="#9EB5C7" Margin="0,0,6,0"/>
+            <TextBox Grid.Column="1" Text="{Binding Onaylayan}"/>
+            <TextBlock Grid.Column="2" Text="Not" VerticalAlignment="Center" Foreground="#9EB5C7" Margin="10,0,6,0"/>
+            <TextBox Grid.Column="3" Text="{Binding OnayNotu}"/>
+            <Button Grid.Column="4" Content="Onay Kaydı Ekle" Click="RaporOnayla_OnClick"
+                    Background="#20482F" Foreground="#BFFFD0" Padding="12,5" Margin="8,0,0,0"/>
+          </Grid>
+          <DataGrid Grid.Row="2" ItemsSource="{Binding OnayVeDenetimSatirlari}"
+                    AutoGenerateColumns="False" IsReadOnly="True" MinHeight="170"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Olay" Binding="{Binding Baslik}" Width="220"/>
+              <DataGridTextColumn Header="Kullanıcı / Zaman" Binding="{Binding AltBaslik}" Width="220"/>
+              <DataGridTextColumn Header="Parmak izi" Binding="{Binding Deger}" Width="180"/>
+              <DataGridTextColumn Header="Açıklama" Binding="{Binding Aciklama}" Width="*"/>
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="100"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <WrapPanel Grid.Row="3" Margin="0,10,0,6">
+            <TextBlock Text="Saha sorumlusu" VerticalAlignment="Center" Foreground="#9EB5C7" Margin="0,0,6,0"/>
+            <TextBox Width="180" Text="{Binding SahaKullanicisi}" Margin="0,0,7,0"/>
+            <Button Content="Çevrimdışı Saha Paketi (HTML)" Click="SahaPaketiDisaAktar_OnClick"
+                    Background="#3A2816" Foreground="#FFD090" Padding="12,6" Margin="0,0,6,0"/>
+            <Button Content="Saha Sonucunu İçe Aktar" Click="SahaPaketiIceriAktar_OnClick"
+                    Background="#3A2816" Foreground="#FFD090" Padding="12,6" Margin="0,0,6,0"/>
+          </WrapPanel>
+          <DataGrid Grid.Row="4" ItemsSource="{Binding SahaSatirlari}"
+                    AutoGenerateColumns="False" IsReadOnly="True"
+                    Background="#0C141D" BorderBrush="#294052" BorderThickness="1">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Saha Kaydı" Binding="{Binding Baslik}" Width="220"/>
+              <DataGridTextColumn Header="Konum / Sorumlu" Binding="{Binding AltBaslik}" Width="220"/>
+              <DataGridTextColumn Header="Sonuç" Binding="{Binding Deger}" Width="170"/>
+              <DataGridTextColumn Header="Not" Binding="{Binding Aciklama}" Width="*"/>
+              <DataGridTextColumn Header="Durum" Binding="{Binding Durum}" Width="100"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+    </TabControl>
+
+    <Border Grid.Row="2" Background="#172432" BorderBrush="#294052" BorderThickness="1"
+            CornerRadius="4" Padding="9,6" Margin="0,10,0,0">
+      <TextBlock Text="{Binding DurumMesaji}" Foreground="#B9D3E4" TextWrapping="Wrap"/>
+    </Border>
+  </Grid>
+</Window>

@@ -30,39 +30,45 @@ public static class SalonHacimServisi
         // Tavan hacmi: düz tavanda alan × h; profilli tavanda ∫ z(y) dA (bant bazlı,
         // her bantta z = a + b·y doğrusal → integral = a·A + b·∫y dA).
         double v = SalonTavanServisi.ProfilliMi(salon) ? ProfilHacmi(salon, kabuk) : alan * h;
-        double maksKot = SalonTavanServisi.MaksKot(salon);
-
         // Sahne platformu: kabuk içindeki alan × platform yüksekliği (salon içinde kalan kısım).
         if (salon.Sahne is { } sahne && sahne.YukseklikM > 0)
         {
-            double icAlan = IcAlan(kabuk, sahne.TabanPoligonu(Salon3DGorunumServisi.Faset(salon)));
-            double yukseklik = Math.Clamp(sahne.YukseklikM, 0, Math.Max(0, maksKot - sahne.TabanKotuM));
-            v -= icAlan * yukseklik;
+            v -= YatayKatiHacmi(salon, kabuk,
+                sahne.TabanPoligonu(Salon3DGorunumServisi.Faset(salon)),
+                sahne.TabanKotuM, sahne.TabanKotuM + sahne.YukseklikM);
         }
 
         // Kademeli seyirci: teraslar dolu (katı) kabul edilir.
         // Katı hacim = Σ basamakAlan × basamakKotu; kabuk içinde kalan oranla düşülür.
         foreach (var sek in salon.SeyirciSekciyonlari)
         {
-            var fp = SalonSeyirciServisi.Footprint(sek);
-            double fpAlan = Math.Abs(ClipperAdaptor.IsaretliAlan(fp));
-            if (fpAlan < 1e-9) continue;
-            double oran = IcAlan(kabuk, fp) / fpAlan;
-
             int n = Math.Max(1, sek.KademeSayisi);
-            double basamakAlan = fpAlan / n;
             double kati = 0;
+            double xL = sek.MerkezX - sek.GenislikM / 2;
+            double xR = sek.MerkezX + sek.GenislikM / 2;
+            double yOn = sek.TersYon
+                ? sek.MerkezY + sek.DerinlikM / 2
+                : sek.MerkezY - sek.DerinlikM / 2;
+            double yon = sek.TersYon ? -1.0 : 1.0;
+            double kademeDerinligi = sek.DerinlikM / n;
             for (int i = 0; i < n; i++)
             {
+                double y1 = yOn + yon * i * kademeDerinligi;
+                double y2 = yOn + yon * (i + 1) * kademeDerinligi;
+                double yA = Math.Min(y1, y2), yB = Math.Max(y1, y2);
+                var basamak = new List<Point2D>
+                {
+                    new(xL, yA), new(xR, yA), new(xR, yB), new(xL, yB)
+                };
+
                 // TabanKotu geometriyi yükseltir; 0 ile taban arasındaki hava katı
-                // değildir (örn. balkon üstündeki seyirci). Yalnız destek düzleminin
-                // üzerindeki kademe yükselmeleri hacimden düşülür. Zemine oturan
-                // sekmede TabanKotu=0 olduğundan mevcut sonuç değişmez.
-                var availableHeight = Math.Max(0, maksKot - Math.Max(0, sek.TabanKotuM));
-                var solidHeight = Math.Clamp(i * sek.KademeYuksekligiM, 0, availableHeight);
-                kati += basamakAlan * solidHeight;
+                // değildir. Her basamağı kendi gerçek Y aralığında kırpmak, kısmi
+                // taşmalarda yüksek/alçak kademelerin aynı alan oranını paylaşmasını önler.
+                kati += YatayKatiHacmi(salon, kabuk, basamak,
+                    sek.TabanKotuM,
+                    sek.TabanKotuM + Math.Max(0, i * sek.KademeYuksekligiM));
             }
-            v -= kati * oran;
+            v -= kati;
         }
 
         // Orkestra çukuru: zemin altına inen hava hacmi eklenir.
@@ -73,12 +79,13 @@ public static class SalonHacimServisi
         foreach (var b in salon.Balkonlar)
         {
             if (b.KalinlikM <= 0) continue;
-            double icAlan = IcAlan(kabuk, SalonBalkonServisi.Footprint(b));
-            v -= icAlan * b.KalinlikM;
+            v -= YatayKatiHacmi(salon, kabuk, SalonBalkonServisi.Footprint(b),
+                b.TabanKotuM - b.KalinlikM, b.TabanKotuM);
         }
 
-        // Düşümler hacmi tüketmişse (uç parametreler) plan hacmine geri düş.
-        return v > 1e-6 ? v : alan * h;
+        // Katılar bütün havayı tüketmişse sonuç sıfırdır. Brüt hacme geri dönmek,
+        // fiziksel olarak dolu bir salonu boşmuş gibi M01'e aktarıyordu.
+        return Math.Max(0, v);
     }
 
     /// 3D üretimle aynı küme: görünür katmandaki Zemin tipli (veya katmansız) kapalı öğeler.
@@ -140,6 +147,99 @@ public static class SalonHacimServisi
         => footprint.Count < 3
             ? 0
             : ClipperAdaptor.NetAlan(ClipperAdaptor.Kesisim(kabuk, new[] { footprint }));
+
+    /// Yatay bir katının salon havasıyla gerçek 3B kesişim hacmi. Katı footprint'i
+    /// kabuğa; [zAlt,zUst] aralığı da zemin ve (gerekirse profilli) tavana kırpılır.
+    private static double YatayKatiHacmi(
+        SalonGeometri salon,
+        List<List<Point2D>> kabuk,
+        IReadOnlyList<Point2D> footprint,
+        double zAlt,
+        double zUst)
+    {
+        if (footprint.Count < 3) return 0;
+        if (zUst < zAlt) (zAlt, zUst) = (zUst, zAlt);
+        zAlt = Math.Max(0, zAlt);
+        if (zUst - zAlt < 1e-9) return 0;
+
+        var ic = ClipperAdaptor.Kesisim(kabuk, new[] { footprint });
+        if (ic.Count == 0) return 0;
+
+        if (!SalonTavanServisi.ProfilliMi(salon))
+        {
+            double tavan = SalonTavanServisi.Kot(salon, 0);
+            double yukseklik = Math.Max(0, Math.Min(zUst, tavan) - zAlt);
+            return ClipperAdaptor.NetAlan(ic) * yukseklik;
+        }
+
+        var tum = ic.SelectMany(hh => hh).ToList();
+        double minY = tum.Min(p => p.Y), maxY = tum.Max(p => p.Y);
+        if (maxY - minY < 1e-9) return 0;
+
+        // Önce tavan kırılımlarını, sonra katı alt/üst kotuyla kesişen ek Y
+        // noktalarını sınır yap. Böylece her bantta clamp edilmiş yükseklik ya
+        // sıfır, ya sabit, ya da doğrusal kalır ve analitik integral alınabilir.
+        var temel = new List<double> { minY };
+        temel.AddRange(SalonTavanServisi.SiraliNoktalar(salon)
+            .Select(n => n.YM)
+            .Where(y => y > minY && y < maxY)
+            .Distinct());
+        temel.Add(maxY);
+        temel.Sort();
+
+        var sinirlar = new List<double>(temel);
+        for (int i = 0; i + 1 < temel.Count; i++)
+        {
+            double ya = temel[i], yb = temel[i + 1];
+            if (yb - ya < 1e-9) continue;
+            double e = (yb - ya) * 1e-6;
+            double y1 = ya + e, y2 = yb - e;
+            double z1 = SalonTavanServisi.Kot(salon, y1);
+            double z2 = SalonTavanServisi.Kot(salon, y2);
+            double egim = (z2 - z1) / (y2 - y1);
+            if (Math.Abs(egim) < 1e-12) continue;
+            double sabit = z1 - egim * y1;
+            foreach (double kot in new[] { zAlt, zUst })
+            {
+                double y = (kot - sabit) / egim;
+                if (y > ya + 1e-9 && y < yb - 1e-9) sinirlar.Add(y);
+            }
+        }
+        sinirlar = sinirlar.Distinct().OrderBy(y => y).ToList();
+
+        double hacim = 0;
+        double tamYukseklik = zUst - zAlt;
+        double minX = tum.Min(p => p.X) - 1, maxX = tum.Max(p => p.X) + 1;
+        for (int i = 0; i + 1 < sinirlar.Count; i++)
+        {
+            double ya = sinirlar[i], yb = sinirlar[i + 1];
+            if (yb - ya < 1e-9) continue;
+            double e = (yb - ya) * 1e-6;
+            double y1 = ya + e, y2 = yb - e;
+            double z1 = SalonTavanServisi.Kot(salon, y1);
+            double z2 = SalonTavanServisi.Kot(salon, y2);
+            double egim = (z2 - z1) / (y2 - y1);
+            double sabit = z1 - egim * y1;
+            double zOrta = SalonTavanServisi.Kot(salon, (ya + yb) / 2);
+
+            var bant = new List<Point2D>
+            {
+                new(minX, ya), new(maxX, ya), new(maxX, yb), new(minX, yb)
+            };
+            foreach (var halka in ClipperAdaptor.Kesisim(ic, new[] { (IReadOnlyList<Point2D>)bant }))
+            {
+                double a = ClipperAdaptor.IsaretliAlan(halka);
+                if (zOrta <= zAlt)
+                    continue;
+                if (zOrta >= zUst)
+                    hacim += a * tamYukseklik;
+                else
+                    hacim += (sabit - zAlt) * a
+                              + egim * SalonPoligonServisi.IsaretliYMomenti(halka);
+            }
+        }
+        return Math.Max(0, Math.Abs(hacim));
+    }
 
     /// Geriye dönüş: tüm öğe/platform footprint'lerinin sınırlayıcı kutusu × yükseklik.
     private static double BboxHacim(SalonGeometri salon, double h)

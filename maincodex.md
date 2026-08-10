@@ -16,6 +16,7 @@
 | Stack | C# + Avalonia (net10.0) |
 | UI Dili | Türkçe (tüm görünür etiket ve mesajlar) |
 | Proje Dosyası | `.e4p01` (JSON tabanlı; eski `.eye4proj.json` yalnız geriye uyumluluk) |
+| Taşınabilir M01 Paketi | `.e4pkg` (ZIP tabanlı; manifest + SHA-256 bütünlük denetimi) |
 | Solution | `src/Kst.Acoustics.slnx` |
 
 ---
@@ -178,6 +179,9 @@ Modüller henüz tanımlanmadı. Yeni modül açıldığında:
 
 ### 4.2 Proje Dosyası
 - M01 aktif formatı: JSON, uzantı `.e4p01`; eski `.eye4proj.json` yalnız geriye uyumluluk içindir.
+- M01 şema sürümü 3'tür; akustik senaryolar, etkin senaryo ve oda kullanım hedefi proje içinde saklanır.
+- Paylaşım/arşiv için `.e4pkg`; proje, yalnız kullanılan malzeme/hoparlör tanımları, mevcutsa kaynak geometri,
+  README ve SHA-256 manifestini birlikte taşır. Açılışta güvenli yol, boyut ve hash denetimi zorunludur.
 - Geriye dönük uyumluluk: eksik JSON alanları boş liste/null olarak deserialize edilir.
 - Kayıt durumu `IsDirty` bayrağıyla izlenir; başlık çubuğunda `*` gösterilir.
 
@@ -305,6 +309,9 @@ Kst.Acoustics.Core/
 
 | Tarih | Not |
 |-------|-----|
+| 2026-08-10 | **M08 yönetmelik rapor profilleri ve resmî çıktı kapıları** — Mimari Akustik Raporu, Akustik Proje Rapor Paketi, Saha Ölçüm Raporu ve Akustik Performans Belgesi ayrıştırıldı; Madde 5/6 uygulanabilirlik kontrolü, belge no/revizyon/yayın durumu/yetki alanları, kapsam dışı gerekçeleri, yalnız onaylı ölçüm filtresi, ölçüme dayalı sınıflandırma, A4 baskı düzeni ve ekleri içeren `.e4r08` v2 paketi tamamlandı. Hesap sonucu resmî performans sınıfı olarak sunulmaz; EK-10 kapsam/örnekleme eksiğinde yayın engellenir — codex8 §17. |
+| 2026-08-10 | **M08 profesyonel üretim ve saha paketi** — kararlı görev/eksik listesi, M50 revizyon farkı, akustik senaryo/şablon, başarısızlık açıklaması, frekans-yol analizi, katalog tabanlı çözüm optimizasyonu, duyarlılık+Monte Carlo, saha ölçümü/model kıyası, atomik toplu CSV, metraj/Excel, IFC4 akustik property seti, cephe sonuç haritası, portföy taraması, ön kontrollü/parmak izli `.e4r08` rapor-onay akışı, ürün belge arşivi ve çevrimdışı saha dönüşü tamamlandı. Avalonia build 0 hata/uyarı; M08 testleri 17/17 — codex8 §16. |
+| 2026-08-10 | **M01 üretkenlik ve profesyonel proje paketi tamamlandı** — model sağlık/onarım merkezi, tam belge undo/redo, 2 dakikalık otomatik kayıt + disk sürüm geçmişi, bağımsız akustik senaryolar, oda tipi hedef panosu, toplu kaynak/alıcı yerleştirme, kalıcı materyal eşleme şablonları, doğrulamalı `.e4pkg` paylaşım paketi ve yalnız viewport'u sadeleştiren büyük model modu eklendi. M01 şeması 3. Release App build 0 hata/0 uyarı; M01 xUnit 38/38, tüm xUnit 111/111, özel koşucu 791/791. Ayrıntı: `akustik/01-proje-geometri/codex.md` §8.4. |
 | 2026-08-07 | **M01 bütüncül güvenilirlik ve kullanılabilirlik paketi** — belge yaşam döngüsü/revizyonlu kayıt, atomik doğrulamalı `.e4p01` + recovery-aware `.bak`, şema/sonuç doğrulama, DXF/birim/hacim/snap/winding düzeltmeleri, atomik taşma-korumalı ölçek, güncel host tabanlı paneller, simülasyon girdi parmak izi ve yeniden açılabilir sonuç özeti, responsive Türkçe UI. Release build 0 hata/0 uyarı; M01 testleri 17/17, genel özel koşucu 699/699. Ayrıntı: `akustik/01-proje-geometri/codex.md` §8.3. |
 | 2026-04-23 | EYE4PRO Acoustics ilk modül (M01) — proje kökü o zaman `KST01/CDX` |
 | 2026-05-15 | EYE4PRO Electric ilk modül (M11) başladı |

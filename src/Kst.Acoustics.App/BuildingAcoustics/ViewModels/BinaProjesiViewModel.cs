@@ -7,6 +7,7 @@ using Kst.Acoustics.Core.BuildingAcoustics.Calculation;
 using Kst.Acoustics.Core.BuildingAcoustics.Database;
 using Kst.Acoustics.Core.BuildingAcoustics.Geometry;
 using Kst.Acoustics.Core.BuildingAcoustics.Reports;
+using Kst.Acoustics.Core.BuildingAcoustics.Workflow;
 using Kst.Acoustics.Core.Common.Geometry;
 using Kst.Acoustics.Core.Projects;
 using System.Collections.Generic;
@@ -220,7 +221,10 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
         var oncekiSecimler = RaporDahilSatirlar
             .Where(r => r.SonucId != Guid.Empty)
             .GroupBy(r => r.SonucId)
-            .ToDictionary(g => g.Key, g => g.Last().DahilMi);
+            .ToDictionary(g => g.Key, g => (g.Last().DahilMi, g.Last().HaricTutmaGerekcesi));
+        var kaliciHaricler = Proje.RaporKapsamDisiKayitlari
+            .GroupBy(x => x.SonucId)
+            .ToDictionary(x => x.Key, x => x.Last());
         RaporDahilSatirlar.Clear();
         // Seçim kapsamı, dışa aktarımların kullandığı aynı kanonik satırlardan gelir.
         // Böylece oda özetinde görünmeyen fiziksel duvarlar ile VeriEksik/HVAC/RT
@@ -228,15 +232,51 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
         foreach (var s in new BinaAkustikRaporServisi().TabloVerisiOlustur(Proje))
         {
             var satir = RaporSatiriViewModel.FromRapor(s, Proje);
-            if (oncekiSecimler.TryGetValue(satir.SonucId, out var dahilMi)) satir.DahilMi = dahilMi;
+            if (oncekiSecimler.TryGetValue(satir.SonucId, out var onceki))
+            {
+                satir.DahilMi = onceki.DahilMi;
+                satir.HaricTutmaGerekcesi = onceki.HaricTutmaGerekcesi;
+            }
+            else if (kaliciHaricler.TryGetValue(satir.SonucId, out var kayit))
+            {
+                satir.DahilMi = false;
+                satir.HaricTutmaGerekcesi = kayit.Gerekce;
+            }
             satir.PropertyChanged += (_, e) =>
             {
-                if (e.PropertyName == nameof(RaporSatiriViewModel.DahilMi))
+                if (e.PropertyName is nameof(RaporSatiriViewModel.DahilMi) or nameof(RaporSatiriViewModel.HaricTutmaGerekcesi))
+                {
+                    RaporKapsamKaydiniGuncelle(satir);
                     OnPropertyChanged(nameof(RaporDahilSonucSayisi));
+                }
             };
             RaporDahilSatirlar.Add(satir);
         }
         OnPropertyChanged(nameof(RaporDahilSonucSayisi));
+    }
+
+    private void RaporKapsamKaydiniGuncelle(RaporSatiriViewModel satir)
+    {
+        var mevcut = Proje.RaporKapsamDisiKayitlari.FirstOrDefault(x => x.SonucId == satir.SonucId);
+        if (satir.DahilMi)
+        {
+            if (mevcut != null)
+            {
+                Proje.RaporKapsamDisiKayitlari.Remove(mevcut);
+                RaporuKirlet();
+            }
+            return;
+        }
+
+        if (mevcut == null)
+        {
+            mevcut = new M08RaporKapsamDisiKaydi { SonucId = satir.SonucId };
+            Proje.RaporKapsamDisiKayitlari.Add(mevcut);
+        }
+        mevcut.Gerekce = satir.HaricTutmaGerekcesi?.Trim() ?? "";
+        mevcut.Kullanici = Proje.RaporAyarlari.HazirlayanAdi?.Trim() ?? "";
+        mevcut.Tarih = DateTime.Now;
+        RaporuKirlet();
     }
 
     // UX — Senaryo karşılaştırma: mevcut Deger'leri anlık görüntü olarak sakla,
@@ -914,6 +954,7 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
             AltKatNo = b.AltKatNo,
             Uyeler = b.Uyeler.Select(u => new DuseyMekanBirlesimUyesi
             {
+                KatId = u.KatId,
                 KatNo = u.KatNo,
                 MekanId = u.MekanId,
                 TavanAcik = u.TavanAcik,
@@ -981,25 +1022,149 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
     public string ProjeAdiMetni
     {
         get => Proje.ProjeAdi;
-        set { if (Proje.ProjeAdi == value) return; Proje.ProjeAdi = value; Kirlet(); OnPropertyChanged(); }
+        set { if (Proje.ProjeAdi == value) return; Proje.ProjeAdi = value; RaporuKirlet(); OnPropertyChanged(); }
     }
 
     public string ProjeAdresMetni
     {
         get => Proje.Adres;
-        set { if (Proje.Adres == value) return; Proje.Adres = value; Kirlet(); OnPropertyChanged(); }
+        set { if (Proje.Adres == value) return; Proje.Adres = value; RaporuKirlet(); OnPropertyChanged(); }
     }
 
     public string MusteriAdiMetni
     {
         get => Proje.MusteriAdi;
-        set { if (Proje.MusteriAdi == value) return; Proje.MusteriAdi = value; Kirlet(); OnPropertyChanged(); }
+        set { if (Proje.MusteriAdi == value) return; Proje.MusteriAdi = value; RaporuKirlet(); OnPropertyChanged(); }
     }
 
     public string SorumluKisiKurulusMetni
     {
         get => Proje.SorumluKisiKurulus;
-        set { if (Proje.SorumluKisiKurulus == value) return; Proje.SorumluKisiKurulus = value; Kirlet(); OnPropertyChanged(); }
+        set { if (Proje.SorumluKisiKurulus == value) return; Proje.SorumluKisiKurulus = value; RaporuKirlet(); OnPropertyChanged(); }
+    }
+
+    public IReadOnlyList<M08RaporSecenegi<M08RaporBelgeTuru>> RaporBelgeTurleri =>
+        M08RaporUygulanabilirlikServisi.BelgeTurleri;
+    public IReadOnlyList<M08RaporSecenegi<M08RaporYayinDurumu>> RaporYayinDurumlari =>
+        M08RaporUygulanabilirlikServisi.YayinDurumlari;
+    public IReadOnlyList<M08RaporSecenegi<M08YapiDurumu>> RaporYapiDurumlari =>
+        M08RaporUygulanabilirlikServisi.YapiDurumlari;
+
+    public M08RaporSecenegi<M08RaporBelgeTuru> SeciliRaporBelgeTuru
+    {
+        get => RaporBelgeTurleri.First(x => x.Deger == Proje.RaporAyarlari.BelgeTuru);
+        set { if (value == null || value.Deger == Proje.RaporAyarlari.BelgeTuru) return; Proje.RaporAyarlari.BelgeTuru = value.Deger; RaporuKirlet(); OnPropertyChanged(); OnPropertyChanged(nameof(RaporBelgeTuruEtiketi)); }
+    }
+
+    public string RaporBelgeTuruEtiketi => "🧾 " +
+        M08RaporUygulanabilirlikServisi.BelgeTuruAdi(Proje.RaporAyarlari.BelgeTuru);
+
+    public M08RaporSecenegi<M08RaporYayinDurumu> SeciliRaporYayinDurumu
+    {
+        get => RaporYayinDurumlari.First(x => x.Deger == Proje.RaporAyarlari.YayinDurumu);
+        set { if (value == null || value.Deger == Proje.RaporAyarlari.YayinDurumu) return; Proje.RaporAyarlari.YayinDurumu = value.Deger; RaporuKirlet(); OnPropertyChanged(); }
+    }
+
+    public M08RaporSecenegi<M08YapiDurumu> SeciliRaporYapiDurumu
+    {
+        get => RaporYapiDurumlari.First(x => x.Deger == Proje.RaporAyarlari.YapiDurumu);
+        set { if (value == null || value.Deger == Proje.RaporAyarlari.YapiDurumu) return; Proje.RaporAyarlari.YapiDurumu = value.Deger; RaporuKirlet(); OnPropertyChanged(); }
+    }
+
+    public string RaporNumarasi { get => Proje.RaporAyarlari.RaporNumarasi; set => RaporMetniAyarla(nameof(RaporNumarasi), value, x => x.RaporNumarasi, (x, v) => x.RaporNumarasi = v); }
+    public string RaporRevizyonKodu { get => Proje.RaporAyarlari.RevizyonKodu; set => RaporMetniAyarla(nameof(RaporRevizyonKodu), value, x => x.RevizyonKodu, (x, v) => x.RevizyonKodu = v); }
+    public DateTimeOffset? RaporYayinTarihi
+    {
+        get => TarihOku(Proje.RaporAyarlari.YayinTarihi);
+        set => RaporTarihiAyarla(nameof(RaporYayinTarihi), value, x => x.YayinTarihi, (x, v) => x.YayinTarihi = v);
+    }
+    public DateTimeOffset? RaporBelgeGecerlilikTarihi
+    {
+        get => TarihOku(Proje.RaporAyarlari.BelgeGecerlilikTarihi);
+        set => RaporTarihiAyarla(nameof(RaporBelgeGecerlilikTarihi), value, x => x.BelgeGecerlilikTarihi, (x, v) => x.BelgeGecerlilikTarihi = v);
+    }
+    public string RaporBinaFotografiYolu { get => Proje.RaporAyarlari.BinaFotografiYolu; set => RaporMetniAyarla(nameof(RaporBinaFotografiYolu), value, x => x.BinaFotografiYolu, (x, v) => x.BinaFotografiYolu = v); }
+    public string RaporAda { get => Proje.RaporAyarlari.Ada; set => RaporMetniAyarla(nameof(RaporAda), value, x => x.Ada, (x, v) => x.Ada = v); }
+    public string RaporParsel { get => Proje.RaporAyarlari.Parsel; set => RaporMetniAyarla(nameof(RaporParsel), value, x => x.Parsel, (x, v) => x.Parsel = v); }
+    public string RaporRuhsatNumarasi { get => Proje.RaporAyarlari.RuhsatNumarasi; set => RaporMetniAyarla(nameof(RaporRuhsatNumarasi), value, x => x.RuhsatNumarasi, (x, v) => x.RuhsatNumarasi = v); }
+    public string RaporHazirlayanAdi { get => Proje.RaporAyarlari.HazirlayanAdi; set => RaporMetniAyarla(nameof(RaporHazirlayanAdi), value, x => x.HazirlayanAdi, (x, v) => x.HazirlayanAdi = v); }
+    public string RaporHazirlayanUnvani { get => Proje.RaporAyarlari.HazirlayanUnvani; set => RaporMetniAyarla(nameof(RaporHazirlayanUnvani), value, x => x.HazirlayanUnvani, (x, v) => x.HazirlayanUnvani = v); }
+    public string RaporHazirlayanYetkiNo { get => Proje.RaporAyarlari.HazirlayanYetkiNo; set => RaporMetniAyarla(nameof(RaporHazirlayanYetkiNo), value, x => x.HazirlayanYetkiNo, (x, v) => x.HazirlayanYetkiNo = v); }
+    public string RaporKontrolEdenAdi { get => Proje.RaporAyarlari.KontrolEdenAdi; set => RaporMetniAyarla(nameof(RaporKontrolEdenAdi), value, x => x.KontrolEdenAdi, (x, v) => x.KontrolEdenAdi = v); }
+    public string RaporOnaylayanAdi { get => Proje.RaporAyarlari.OnaylayanAdi; set => RaporMetniAyarla(nameof(RaporOnaylayanAdi), value, x => x.OnaylayanAdi, (x, v) => x.OnaylayanAdi = v); }
+    public string RaporMimariRevizyonu { get => Proje.RaporAyarlari.MimariProjeRevizyonu; set => RaporMetniAyarla(nameof(RaporMimariRevizyonu), value, x => x.MimariProjeRevizyonu, (x, v) => x.MimariProjeRevizyonu = v); }
+    public string RaporMekanikRevizyonu { get => Proje.RaporAyarlari.MekanikProjeRevizyonu; set => RaporMetniAyarla(nameof(RaporMekanikRevizyonu), value, x => x.MekanikProjeRevizyonu, (x, v) => x.MekanikProjeRevizyonu = v); }
+    public string RaporDisGurultuYontemi { get => Proje.RaporAyarlari.DisGurultuYontemi; set => RaporMetniAyarla(nameof(RaporDisGurultuYontemi), value, x => x.DisGurultuYontemi, (x, v) => x.DisGurultuYontemi = v); }
+    public string RaporDisGurultuKonumu { get => Proje.RaporAyarlari.DisGurultuKonumu; set => RaporMetniAyarla(nameof(RaporDisGurultuKonumu), value, x => x.DisGurultuKonumu, (x, v) => x.DisGurultuKonumu = v); }
+    public string RaporDisGurultuKaynakBelgesi { get => Proje.RaporAyarlari.DisGurultuKaynakBelgesi; set => RaporMetniAyarla(nameof(RaporDisGurultuKaynakBelgesi), value, x => x.DisGurultuKaynakBelgesi, (x, v) => x.DisGurultuKaynakBelgesi = v); }
+    public DateTimeOffset? RaporDisGurultuVeriTarihi
+    {
+        get => TarihOku(Proje.RaporAyarlari.DisGurultuVeriTarihi);
+        set => RaporTarihiAyarla(nameof(RaporDisGurultuVeriTarihi), value, x => x.DisGurultuVeriTarihi, (x, v) => x.DisGurultuVeriTarihi = v);
+    }
+    public string RaporHesapStandartlariSurumu { get => Proje.RaporAyarlari.HesapStandartlariSurumu; set => RaporMetniAyarla(nameof(RaporHesapStandartlariSurumu), value, x => x.HesapStandartlariSurumu, (x, v) => x.HesapStandartlariSurumu = v); }
+    public string RaporDerecelendirmeStandartlariSurumu { get => Proje.RaporAyarlari.DerecelendirmeStandartlariSurumu; set => RaporMetniAyarla(nameof(RaporDerecelendirmeStandartlariSurumu), value, x => x.DerecelendirmeStandartlariSurumu, (x, v) => x.DerecelendirmeStandartlariSurumu = v); }
+    public string RaporOlcumStandartlariSurumu { get => Proje.RaporAyarlari.OlcumStandartlariSurumu; set => RaporMetniAyarla(nameof(RaporOlcumStandartlariSurumu), value, x => x.OlcumStandartlariSurumu, (x, v) => x.OlcumStandartlariSurumu = v); }
+    public string RaporServisOlcumStandartlariSurumu { get => Proje.RaporAyarlari.ServisOlcumStandartlariSurumu; set => RaporMetniAyarla(nameof(RaporServisOlcumStandartlariSurumu), value, x => x.ServisOlcumStandartlariSurumu, (x, v) => x.ServisOlcumStandartlariSurumu = v); }
+    public string RaporBelirsizlikStandardiSurumu { get => Proje.RaporAyarlari.BelirsizlikStandardiSurumu; set => RaporMetniAyarla(nameof(RaporBelirsizlikStandardiSurumu), value, x => x.BelirsizlikStandardiSurumu, (x, v) => x.BelirsizlikStandardiSurumu = v); }
+
+    public int RaporKapsamaEsasKatSayisi
+    {
+        get => Proje.RaporAyarlari.KapsamaEsasKatSayisi;
+        set { if (value == Proje.RaporAyarlari.KapsamaEsasKatSayisi) return; Proje.RaporAyarlari.KapsamaEsasKatSayisi = Math.Max(0, value); RaporuKirlet(); OnPropertyChanged(); }
+    }
+
+    public double RaporToplamInsaatAlaniM2
+    {
+        get => Proje.RaporAyarlari.ToplamInsaatAlaniM2;
+        set { if (Math.Abs(value - Proje.RaporAyarlari.ToplamInsaatAlaniM2) < 0.001) return; Proje.RaporAyarlari.ToplamInsaatAlaniM2 = Math.Max(0, value); RaporuKirlet(); OnPropertyChanged(); }
+    }
+
+    public bool RaporBirdenFazlaIslevVar
+    {
+        get => Proje.RaporAyarlari.BirdenFazlaBinaIsleviVar;
+        set { if (value == Proje.RaporAyarlari.BirdenFazlaBinaIsleviVar) return; Proje.RaporAyarlari.BirdenFazlaBinaIsleviVar = value; RaporuKirlet(); OnPropertyChanged(); }
+    }
+
+    public bool RaporOzelAkustikTasarimGerekli
+    {
+        get => Proje.RaporAyarlari.OzelAkustikTasarimGerekli;
+        set { if (value == Proje.RaporAyarlari.OzelAkustikTasarimGerekli) return; Proje.RaporAyarlari.OzelAkustikTasarimGerekli = value; RaporuKirlet(); OnPropertyChanged(); }
+    }
+
+    public bool RaporAkustikProjeHazirlandi
+    {
+        get => Proje.RaporAyarlari.AkustikProjeHazirlandi;
+        set { if (value == Proje.RaporAyarlari.AkustikProjeHazirlandi) return; Proje.RaporAyarlari.AkustikProjeHazirlandi = value; RaporuKirlet(); OnPropertyChanged(); }
+    }
+
+    private void RaporMetniAyarla(
+        string propertyName,
+        string? value,
+        Func<M08RaporAyarlari, string> oku,
+        Action<M08RaporAyarlari, string> yaz)
+    {
+        value ??= "";
+        if (oku(Proje.RaporAyarlari) == value) return;
+        yaz(Proje.RaporAyarlari, value);
+        RaporuKirlet();
+        OnPropertyChanged(propertyName);
+    }
+
+    private static DateTimeOffset? TarihOku(DateTime? value) =>
+        value is { } tarih ? new DateTimeOffset(DateTime.SpecifyKind(tarih, DateTimeKind.Local)) : null;
+
+    private void RaporTarihiAyarla(
+        string propertyName,
+        DateTimeOffset? value,
+        Func<M08RaporAyarlari, DateTime?> oku,
+        Action<M08RaporAyarlari, DateTime?> yaz)
+    {
+        var tarih = value?.Date;
+        if (oku(Proje.RaporAyarlari) == tarih) return;
+        yaz(Proje.RaporAyarlari, tarih);
+        RaporuKirlet();
+        OnPropertyChanged(propertyName);
     }
 
     /// Proje Aç / Yeni Proje sonrası kapak alanı bildirimlerini tazeler.
@@ -1009,6 +1174,39 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ProjeAdresMetni));
         OnPropertyChanged(nameof(MusteriAdiMetni));
         OnPropertyChanged(nameof(SorumluKisiKurulusMetni));
+        OnPropertyChanged(nameof(SeciliRaporBelgeTuru));
+        OnPropertyChanged(nameof(RaporBelgeTuruEtiketi));
+        OnPropertyChanged(nameof(SeciliRaporYayinDurumu));
+        OnPropertyChanged(nameof(SeciliRaporYapiDurumu));
+        OnPropertyChanged(nameof(RaporNumarasi));
+        OnPropertyChanged(nameof(RaporRevizyonKodu));
+        OnPropertyChanged(nameof(RaporYayinTarihi));
+        OnPropertyChanged(nameof(RaporBelgeGecerlilikTarihi));
+        OnPropertyChanged(nameof(RaporBinaFotografiYolu));
+        OnPropertyChanged(nameof(RaporAda));
+        OnPropertyChanged(nameof(RaporParsel));
+        OnPropertyChanged(nameof(RaporRuhsatNumarasi));
+        OnPropertyChanged(nameof(RaporHazirlayanAdi));
+        OnPropertyChanged(nameof(RaporHazirlayanUnvani));
+        OnPropertyChanged(nameof(RaporHazirlayanYetkiNo));
+        OnPropertyChanged(nameof(RaporKontrolEdenAdi));
+        OnPropertyChanged(nameof(RaporOnaylayanAdi));
+        OnPropertyChanged(nameof(RaporMimariRevizyonu));
+        OnPropertyChanged(nameof(RaporMekanikRevizyonu));
+        OnPropertyChanged(nameof(RaporDisGurultuYontemi));
+        OnPropertyChanged(nameof(RaporDisGurultuKonumu));
+        OnPropertyChanged(nameof(RaporDisGurultuKaynakBelgesi));
+        OnPropertyChanged(nameof(RaporDisGurultuVeriTarihi));
+        OnPropertyChanged(nameof(RaporHesapStandartlariSurumu));
+        OnPropertyChanged(nameof(RaporDerecelendirmeStandartlariSurumu));
+        OnPropertyChanged(nameof(RaporOlcumStandartlariSurumu));
+        OnPropertyChanged(nameof(RaporServisOlcumStandartlariSurumu));
+        OnPropertyChanged(nameof(RaporBelirsizlikStandardiSurumu));
+        OnPropertyChanged(nameof(RaporKapsamaEsasKatSayisi));
+        OnPropertyChanged(nameof(RaporToplamInsaatAlaniM2));
+        OnPropertyChanged(nameof(RaporBirdenFazlaIslevVar));
+        OnPropertyChanged(nameof(RaporOzelAkustikTasarimGerekli));
+        OnPropertyChanged(nameof(RaporAkustikProjeHazirlandi));
     }
 
     public IReadOnlyList<CepheMaruziyet> CepheMaruziyetleri { get; } = Enum.GetValues<CepheMaruziyet>();
@@ -1257,6 +1455,16 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
         IsDirty = true;
         _modelRevizyonu++;
         BildirSonucDurumu();
+    }
+
+    /// <summary>
+    /// Rapor kimliği, kapsam gerekçesi ve yayın durumu hesap girdisi değildir. Bu alanlar
+    /// kaydedilmelidir fakat güncel akustik sonuçları gereksiz yere bayatlatmamalıdır.
+    /// </summary>
+    private void RaporuKirlet()
+    {
+        if (_degisiklikTakibiAskida) return;
+        IsDirty = true;
     }
 
     /// Kaydet / Yeni Proje / Proje Aç sonrası temiz işaretle.
@@ -2001,7 +2209,13 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
                 ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
                 MaxDepth         = 256,
             };
-            var json = System.Text.Json.JsonSerializer.Serialize(Proje, opts);
+            var kayitProjesi = ProjeyiDerinKlonla(Proje);
+            var cozulmusGeometriYolu = BinaGeometriDosyaYolunuCoz();
+            var baglantiBazYolu = anaKayit ? yol : _sonKaydedilenYol ?? yol;
+            if (!string.IsNullOrWhiteSpace(cozulmusGeometriYolu))
+                kayitProjesi.BinaGeometriYolu = BinaGeometriYolunuSaklanabilirYap(
+                    cozulmusGeometriYolu, baglantiBazYolu);
+            var json = System.Text.Json.JsonSerializer.Serialize(kayitProjesi, opts);
 
             // Atomik yazım: önce .tmp'ye yaz, sonra hedefe taşı. Yazım sırasında kesinti/çökme
             // olursa mevcut dosya bozulmaz — yarım yazılmış .tmp devreye hiç girmez.
@@ -2013,7 +2227,13 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
             if (!sessiz)
                 DxfUyariMesaji = $"Kaydedildi: {System.IO.Path.GetFileName(yol)} — {komsuToplam} komşu duvar, {dxfSegmentToplam} DXF çizgisi saklandı.";
             // Otomatik yedek ayrı bir dosyadır; kullanıcının kaydedilmemiş durumunu değiştirmez.
-            if (anaKayit) TemizIsaretle();
+            if (anaKayit)
+            {
+                _sonKaydedilenYol = yol;
+                Proje.BinaGeometriYolu = kayitProjesi.BinaGeometriYolu;
+                TemizIsaretle();
+                BinaGeometriDurumunuYenile();
+            }
             return true;
         }
         catch (Exception ex)
@@ -2178,6 +2398,9 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
                         .BinaGeometriM08ExportServisi.EskiProjeyiMigrateEt(Proje, _sonKaydedilenYol) is { } geoNot)
                 {
                     geometriMigrasyonuYapildi = true;
+                    if (!string.IsNullOrWhiteSpace(Proje.BinaGeometriYolu))
+                        Proje.BinaGeometriYolu = BinaGeometriYolunuSaklanabilirYap(
+                            Proje.BinaGeometriYolu, _sonKaydedilenYol);
                     DxfUyariMesaji += $"  · {geoNot}";
                 }
             }
@@ -2188,8 +2411,10 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
 
             // Bağlı .e4bina revizyon denetimi: geometri güncellenmişse uyar.
             if (Kst.Acoustics.Core.BuildingAcoustics.Geometry
-                    .BinaGeometriM08ExportServisi.GuncellikUyarisi(Proje) is { } geoUyari)
+                    .BinaGeometriM08ExportServisi.GuncellikUyarisi(Proje, _sonKaydedilenYol) is { } geoUyari)
                 DxfUyariMesaji += $"  ⚠ {geoUyari}";
+
+            BinaGeometriDurumunuYenile();
 
             Guncelle3DGorunum();
             // Açılan projede henüz hesap yapılmadı; SonucSatirlari zaten boşaltıldı (satır ~1725).
@@ -2236,15 +2461,27 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
         var path = files.FirstOrDefault()?.Path.LocalPath;
         if (string.IsNullOrWhiteSpace(path)) return;
 
+        await BinaGeometrisiniDosyadanUygula(parentWindow, path);
+    }
+
+    public async Task<bool> BinaGeometrisiniDosyadanUygula(Window parentWindow, string path)
+    {
+        if (ProjeKilitli)
+        {
+            DxfUyariMesaji = "Kilitli projede bina geometrisi değiştirilemez.";
+            return false;
+        }
+
         try
         {
             var geo = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Ac(path);
             // Adapter mevcut projeyi yerinde değiştirir. İşlemi derin bir aday kopyada
             // tamamlayıp yalnız başarıdan sonra atomik olarak UI/proje modeline geçir.
-            Proje.BagimsizBolumler = BagimsizBolumler.ToList();
             var adayProje = ProjeyiDerinKlonla(Proje);
+            adayProje.BagimsizBolumler = BagimsizBolumler.ToList();
+            var saklananYol = BinaGeometriYolunuSaklanabilirYap(path, _sonKaydedilenYol);
             var sonuc = Kst.Acoustics.Core.BuildingAcoustics.Geometry
-                .BinaGeometriMekanAdapteri.Uygula(adayProje, geo, path);
+                .BinaGeometriMekanAdapteri.Uygula(adayProje, geo, saklananYol);
 
             var adayMekanIdleri = adayProje.Katlar.SelectMany(k => k.Mekanlar).Select(m => m.Id).ToHashSet();
             var akustikVeriyleSilinecek = Proje.Katlar
@@ -2266,7 +2503,7 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
                 if (await onay.ShowDialog<OnaySonucu>(parentWindow) != OnaySonucu.Tamam)
                 {
                     DxfUyariMesaji = "Bina geometrisi yüklenmedi; mevcut M08 akustik verileri korundu.";
-                    return;
+                    return false;
                 }
             }
 
@@ -2300,17 +2537,91 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
             if (sonuc.Uyarilar.Count > 0)
                 ozet += "  ⚠ " + string.Join(" ", sonuc.Uyarilar);
             DxfUyariMesaji = ozet;
+            BinaGeometriDurumunuYenile();
             GuncelleDogrulamaUyarisi();
             Guncelle3DGorunum();
+            return true;
         }
         catch (Exception ex)
         {
             DxfUyariMesaji = $"Bina geometrisi yüklenemedi: {ex.Message}";
+            return false;
         }
+    }
+
+    public string? BinaGeometriDosyaYolunuCoz()
+    {
+        try
+        {
+            var yol = Proje.BinaGeometriYolu;
+            if (string.IsNullOrWhiteSpace(yol)) return null;
+            if (System.IO.Path.IsPathRooted(yol)) return System.IO.Path.GetFullPath(yol);
+            var dizin = !string.IsNullOrWhiteSpace(_sonKaydedilenYol)
+                ? System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(_sonKaydedilenYol))
+                : null;
+            return string.IsNullOrWhiteSpace(dizin)
+                ? System.IO.Path.GetFullPath(yol)
+                : System.IO.Path.GetFullPath(System.IO.Path.Combine(dizin, yol));
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or System.IO.PathTooLongException)
+        {
+            return null;
+        }
+    }
+
+    private static string BinaGeometriYolunuSaklanabilirYap(string yol, string? projeDosyaYolu)
+    {
+        var tamYol = System.IO.Path.GetFullPath(yol);
+        if (string.IsNullOrWhiteSpace(projeDosyaYolu)) return tamYol;
+        var dizin = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(projeDosyaYolu));
+        return string.IsNullOrWhiteSpace(dizin)
+            ? tamYol
+            : System.IO.Path.GetRelativePath(dizin, tamYol);
+    }
+
+    public bool BinaGeometriDosyasiVar =>
+        BinaGeometriDosyaYolunuCoz() is { } yol && System.IO.File.Exists(yol);
+    public bool BinaGeometriKurtarilabilir => Proje.BinaGeometriKopya is not null;
+    public string BinaGeometriDurumMetni
+    {
+        get
+        {
+            var bagliRev = Proje.BinaGeometriRevizyon ?? Proje.BinaGeometriKopya?.GeometriRevizyon;
+            var yol = BinaGeometriDosyaYolunuCoz();
+            if (!string.IsNullOrWhiteSpace(Proje.BinaGeometriYolu) && string.IsNullOrWhiteSpace(yol))
+                return bagliRev is { } gecersizRev
+                    ? $"Dosya yolu geçersiz · gömülü Rev. {gecersizRev}"
+                    : "Dosya yolu geçersiz";
+            if (string.IsNullOrWhiteSpace(yol) || !System.IO.File.Exists(yol))
+                return bagliRev is { } rev ? $"Dosya Yok · gömülü Rev. {rev}" : "Dosya Yok";
+            try
+            {
+                var dosya = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Ac(yol);
+                if (bagliRev is null) return $"Dosya Var · Rev. {dosya.GeometriRevizyon}";
+                if (dosya.GeometriRevizyon > bagliRev.Value)
+                    return $"Bayat · Rev. {bagliRev} → {dosya.GeometriRevizyon}";
+                if (dosya.GeometriRevizyon < bagliRev.Value)
+                    return $"Dosya geri revizyonda · dosya {dosya.GeometriRevizyon}, gömülü {bagliRev}";
+                return $"Güncel · Rev. {dosya.GeometriRevizyon}";
+            }
+            catch
+            {
+                return bagliRev is { } rev ? $"Dosya okunamıyor · gömülü Rev. {rev}" : "Dosya okunamıyor";
+            }
+        }
+    }
+
+    public void BinaGeometriDurumunuYenile()
+    {
+        OnPropertyChanged(nameof(BinaGeometriDurumMetni));
+        OnPropertyChanged(nameof(BinaGeometriDosyasiVar));
+        OnPropertyChanged(nameof(BinaGeometriKurtarilabilir));
     }
 
     private static bool MekandaM08AkustikVerisiVar(Mekan mekan) =>
         mekan.BagimsizBolumId != null ||
+        mekan.Sinif != MekanSinifi.Tanimsiz ||
+        mekan.RT60 > 0 ||
         !string.IsNullOrWhiteSpace(mekan.KaynakDerecesi) ||
         !string.IsNullOrWhiteSpace(mekan.AliciSinifi) ||
         mekan.EmilimAlani > 0 ||
@@ -2997,83 +3308,22 @@ public partial class BinaProjesiViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(AtamaBekleyenVarMi));
     }
 
-    [RelayCommand]
     private Task TavanPatlat(Window? parentWindow) => PatlatOrtak(parentWindow, asagiBak: false);
 
-    [RelayCommand]
     private Task DosemePatlat(Window? parentWindow) => PatlatOrtak(parentWindow, asagiBak: true);
 
     private async Task PatlatOrtak(Window? parentWindow, bool asagiBak)
     {
         var yonStr = asagiBak ? "Döşeme" : "Tavan";
-        if (SeciliKat == null || SeciliMekan == null)
-        {
-            DuseyBirlesimMesaji = $"{yonStr} patlatmak için önce bir oda seçin.";
-            return;
-        }
-
-        // Uyarı: işlem geri-dönüşü zor; proje kilitlenecek.
-        if (parentWindow != null)
-        {
-            var diyalog = new OnayDiyaloguWindow(
-                $"{yonStr} Patlat — Dikkat",
-                $"'{SeciliMekan.Ad}' odasının {yonStr.ToLower()}si patlatılacak. Üst kat odası kaldırılıp duvarları " +
-                "bu hacme taşınacak.\n\nBu işlemden sonra PROJE OTOMATİK KİLİTLENİR ve patlatma geri alınmadan " +
-                "yeniden açılamaz/düzenlenemez.\n\nDevam edilsin mi?",
-                tamamYazi: $"{yonStr} Patlat", tamamSonuc: OnaySonucu.Tamam);
-            var sonucDiyalog = await diyalog.ShowDialog<OnaySonucu>(parentWindow);
-            if (sonucDiyalog != OnaySonucu.Tamam) { DuseyBirlesimMesaji = "Patlatma iptal edildi."; return; }
-        }
-
-        PushUndoSnapshot();
-        var servis = new DuseyMekanBirlesimServisi();
-        var sonuc = asagiBak
-            ? servis.DosemePatlat(Proje, SeciliKat, SeciliMekan)
-            : servis.TavanPatlat(Proje, SeciliKat, SeciliMekan);
-        DuseyBirlesimMesaji = sonuc.Mesaj;
-
-        if (sonuc.Basarili)
-        {
-            // Görünür (en alt kat) birleşik odaya geç → panelde tüm birleşik duvarlar görünür
-            var altUye = sonuc.Birlesim?.Uyeler.OrderBy(u => u.KatNo).FirstOrDefault();
-            if (altUye != null)
-            {
-                var kat = Katlar.FirstOrDefault(k => k.KatNo == altUye.KatNo);
-                SeciliKat = kat ?? SeciliKat;
-                SeciliMekan = kat?.Mekanlar.FirstOrDefault(m => m.Id == altUye.MekanId) ?? SeciliMekan;
-            }
-            ProjeKilitli = true; // otomatik kalıcı kilit
-        }
-
-        Kirlet();
-        DuseyMekanBirlesimServisi.HacimleriGuncelle(Proje);
-        GuncelleDogrulamaUyarisi();
-        Guncelle3DGorunum();
+        DuseyBirlesimMesaji = $"{yonStr} patlatma M50 Bina Geometrisi'nde yönetilir. 'M50'de Düzenle'yi kullanın.";
+        DxfUyariMesaji = DuseyBirlesimMesaji;
+        await Task.CompletedTask;
     }
 
-    [RelayCommand]
     private void DuseyBirlesimiKaldir()
     {
-        if (SeciliMekan == null)
-        {
-            DuseyBirlesimMesaji = "Patlatmayı geri almak için önce bir oda seçin.";
-            return;
-        }
-
-        if (new DuseyMekanBirlesimServisi().BirlesimdenCikar(Proje, SeciliMekan, out var mesaj))
-        {
-            DuseyBirlesimMesaji = mesaj;
-            // Patlatma kalmadıysa kilidi otomatik çöz
-            if (!Proje.PatlatilmisDosemeVar) ProjeKilitli = false;
-            Kirlet();
-            DuseyMekanBirlesimServisi.HacimleriGuncelle(Proje);
-            GuncelleDogrulamaUyarisi();
-            Guncelle3DGorunum();
-        }
-        else
-        {
-            DuseyBirlesimMesaji = mesaj;
-        }
+        DuseyBirlesimMesaji = "Patlatmayı geri alma M50 Bina Geometrisi'nde yönetilir. 'M50'de Düzenle'yi kullanın.";
+        DxfUyariMesaji = DuseyBirlesimMesaji;
     }
 
     private void GuncelleDuseyBirlesimMesaji()
@@ -4084,11 +4334,18 @@ public class MekanSinifSatiri : CommunityToolkit.Mvvm.ComponentModel.ObservableO
 public class RaporSatiriViewModel : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
 {
     private bool _dahilMi = true;
+    private string _haricTutmaGerekcesi = "";
 
     public bool DahilMi
     {
         get => _dahilMi;
         set { if (_dahilMi != value) { _dahilMi = value; OnPropertyChanged(); } }
+    }
+
+    public string HaricTutmaGerekcesi
+    {
+        get => _haricTutmaGerekcesi;
+        set { value ??= ""; if (_haricTutmaGerekcesi != value) { _haricTutmaGerekcesi = value; OnPropertyChanged(); } }
     }
 
     public string KatAdi           { get; init; } = "";

@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Kst.Acoustics.Core.Bina.Models;
 using Kst.Acoustics.Core.BuildingAcoustics.Models;
 using Kst.Acoustics.Core.Common.Geometry;
@@ -19,8 +22,8 @@ namespace Kst.Acoustics.Core.BuildingAcoustics.Geometry;
 /// Id kararlılığı:
 /// - Mekan.Id (Guid) → BinaOda.Id = guid string; BinaGeometriMekanAdapteri geri
 ///   yüklerken Guid.TryParse ile aynı mekana bağlar.
-/// - Kat Id'si deterministik "m08-kat-{KatNo}" (M08 Kat modelinde Id yok; adapter
-///   geri eşleşmeyi KatNo ile yapar).
+/// - Kat Id'si M08 modelinde saklanan kararlı BinaGeometriKatId'dir; eski
+///   belgelerde ilk dışa aktarımda deterministik bir kimlik üretilir.
 /// - Bölme açıklıkları AciklikId'leriyle taşınır; AciklikId'siz (M08'de elle
 ///   eklenmiş) açıklıklar yeni Id alarak geometriye terfi eder — migrasyondan
 ///   sonra geometri sahibi M50'dir.
@@ -33,9 +36,11 @@ public static class BinaGeometriM08ExportServisi
 
         foreach (var kat in proje.Katlar)
         {
+            if (string.IsNullOrWhiteSpace(kat.BinaGeometriKatId))
+                kat.BinaGeometriKatId = $"m08-kat-{kat.KatNo}";
             var binaKat = new BinaKat
             {
-                Id = $"m08-kat-{kat.KatNo}",
+                Id = kat.BinaGeometriKatId,
                 Ad = kat.Ad,
                 KatNo = kat.KatNo,
                 KatYuksekligiM = kat.KatYuksekligi,
@@ -83,6 +88,9 @@ public static class BinaGeometriM08ExportServisi
                 AltKatNo = b.AltKatNo,
                 Uyeler = b.Uyeler.Select(u => new BinaBirlesimUyesi
                 {
+                    KatId = !string.IsNullOrWhiteSpace(u.KatId)
+                        ? u.KatId
+                        : proje.Katlar.FirstOrDefault(k => k.KatNo == u.KatNo)?.BinaGeometriKatId ?? "",
                     KatNo = u.KatNo,
                     OdaId = u.MekanId.ToString(),
                     TavanAcik = u.TavanAcik,
@@ -162,6 +170,8 @@ public static class BinaGeometriM08ExportServisi
             return null;
 
         var geo = GeometriyeCevir(proje);
+        geo.KaynakModul = "M08";
+        geo.KaynakArtifactKimligi = KaynakArtifactKimligi(geo, e4p08Yolu);
 
         if (string.IsNullOrWhiteSpace(e4p08Yolu))
         {
@@ -179,7 +189,11 @@ public static class BinaGeometriM08ExportServisi
             try
             {
                 var mevcut = M50GeometriServisi.Ac(hedef);
-                if (AyniMekanKimlikleri(mevcut, geo))
+                bool dogrulandi = mevcut.KaynakModul == "M08" &&
+                                  !string.IsNullOrWhiteSpace(mevcut.KaynakArtifactKimligi)
+                    ? mevcut.KaynakArtifactKimligi == geo.KaynakArtifactKimligi
+                    : AyniGeometriKimligi(mevcut, geo);
+                if (dogrulandi)
                 {
                     proje.BinaGeometriYolu = hedef;
                     proje.BinaGeometriRevizyon = mevcut.GeometriRevizyon;
@@ -210,15 +224,39 @@ public static class BinaGeometriM08ExportServisi
         return $"Gömülü geometri dışa aktarıldı: {Path.GetFileName(hedef)} — artık M50'de düzenlenebilir.";
     }
 
-    private static bool AyniMekanKimlikleri(BinaGeometri a, BinaGeometri b)
+    private static bool AyniGeometriKimligi(BinaGeometri a, BinaGeometri b)
     {
-        var aKimlikleri = a.Katlar
-            .SelectMany(k => k.Odalar.Select(o => $"{k.KatNo}:{o.Id}"))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var bKimlikleri = b.Katlar
-            .SelectMany(k => k.Odalar.Select(o => $"{k.KatNo}:{o.Id}"))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return aKimlikleri.Count > 0 && aKimlikleri.SetEquals(bKimlikleri);
+        if (!a.Katlar.Select(k => k.Id).ToHashSet(StringComparer.Ordinal)
+                .SetEquals(b.Katlar.Select(k => k.Id)))
+            return false;
+        return GeometriParmakIzi(a) == GeometriParmakIzi(b);
+    }
+
+    private static string KaynakArtifactKimligi(BinaGeometri geo, string? e4p08Yolu)
+    {
+        if (!string.IsNullOrWhiteSpace(e4p08Yolu) && File.Exists(e4p08Yolu))
+        {
+            using var stream = File.OpenRead(e4p08Yolu);
+            return "dosya:" + Convert.ToHexString(SHA256.HashData(stream));
+        }
+        return "geometri:" + GeometriParmakIzi(geo);
+    }
+
+    private static string GeometriParmakIzi(BinaGeometri geo)
+    {
+        var veri = new
+        {
+            geo.BinaAdi,
+            Katlar = geo.Katlar.Select(k => new
+            {
+                k.Id, k.Ad, k.KatNo, k.KatYuksekligiM,
+                Odalar = k.Odalar.Select(o => new { o.Id, o.Ad, o.AlanM2, o.Poligon }),
+                Acikliklar = k.Acikliklar.Select(a =>
+                    new { a.Id, a.Bas, a.Bit, a.Tip, a.IptalEdildi, a.ManuelEklendi })
+            })
+        };
+        var json = JsonSerializer.Serialize(veri);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)));
     }
 
     private static string BenzersizMigrasyonYolu(string e4p08Yolu, Guid projeId)
@@ -236,23 +274,42 @@ public static class BinaGeometriM08ExportServisi
     }
 
     /// Proje açılışında bağlı .e4bina'nın güncelliğini denetler; yeniyse uyarı döner.
-    public static string? GuncellikUyarisi(BinaProje proje)
+    public static string? GuncellikUyarisi(BinaProje proje, string? projeDosyaYolu = null)
     {
-        if (string.IsNullOrWhiteSpace(proje.BinaGeometriYolu) || proje.BinaGeometriRevizyon is null)
+        if (string.IsNullOrWhiteSpace(proje.BinaGeometriYolu))
+            return proje.BinaGeometriKopya is null
+                ? null
+                : "Bina geometrisi yalnız gömülü kopyada; 'Gömülü Kurtar' ile sidecar oluşturun.";
+        if (proje.BinaGeometriRevizyon is null)
             return null;
         try
         {
-            if (!File.Exists(proje.BinaGeometriYolu))
-                return "Bağlı .e4bina dosyası bulunamadı; gömülü geometri kopyası kullanılıyor.";
-            var guncel = M50GeometriServisi.Ac(proje.BinaGeometriYolu);
+            var yol = BagliYoluCoz(proje.BinaGeometriYolu, projeDosyaYolu);
+            if (!File.Exists(yol))
+                return "Bağlı .e4bina dosyası bulunamadı; gömülü geometri kullanılıyor. 'Gömülü Kurtar' ile yeniden oluşturabilirsiniz.";
+            var guncel = M50GeometriServisi.Ac(yol);
             if (guncel.GeometriRevizyon > proje.BinaGeometriRevizyon)
                 return $"Bina geometrisi güncellenmiş (Rev. {proje.BinaGeometriRevizyon} → {guncel.GeometriRevizyon}). " +
-                       "Yeniden yüklemek için 'Bina Geometrisi Yükle'yi kullanın.";
+                       "Tek tıkla 'Güncelle'yi kullanın.";
+            if (guncel.GeometriRevizyon < proje.BinaGeometriRevizyon)
+                return $"Bağlı dosya geri revizyonda (dosya Rev. {guncel.GeometriRevizyon}, proje Rev. {proje.BinaGeometriRevizyon}); " +
+                       "gömülü kopya daha yeni. Gerekirse 'Gömülü Kurtar'ı kullanın.";
         }
-        catch
+        catch (Exception ex)
         {
-            // Denetim başarısızsa sessiz geç — proje açılışını engelleme.
+            return $"Bağlı .e4bina okunamıyor ({ex.Message}); gömülü kopya kullanılabilir.";
         }
         return null;
+    }
+
+    private static string BagliYoluCoz(string yol, string? projeDosyaYolu)
+    {
+        if (Path.IsPathRooted(yol)) return Path.GetFullPath(yol);
+        var dizin = string.IsNullOrWhiteSpace(projeDosyaYolu)
+            ? null
+            : Path.GetDirectoryName(Path.GetFullPath(projeDosyaYolu));
+        return string.IsNullOrWhiteSpace(dizin)
+            ? Path.GetFullPath(yol)
+            : Path.GetFullPath(Path.Combine(dizin, yol));
     }
 }

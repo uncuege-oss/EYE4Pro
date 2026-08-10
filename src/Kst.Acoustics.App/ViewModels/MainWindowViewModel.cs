@@ -13,6 +13,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly SurfaceImportService _importService = new();
     private readonly ProjectFileService _projectFileService = new();
+    private readonly ProjectPackageService _projectPackageService = new();
     private readonly LeakTestService _leakTestService = new();
     private AcousticsProject? _currentProject;
     private string? _savedProjectPath;
@@ -654,7 +655,15 @@ public partial class MainWindowViewModel : ViewModelBase
                 scalePhysicalVolume),
             LastResult = snapshot.LastResult is { } result
                 ? CreateStaleSimulationResult(result, staleReason)
-                : null
+                : null,
+            Scenarios = snapshot.Scenarios
+                .Select(scenario => scenario with
+                {
+                    State = ScaleScenarioState(
+                        scenario.State, factor, unit, scalePhysicalVolume, staleReason),
+                    UpdatedAtUtc = DateTime.UtcNow
+                })
+                .ToArray()
         };
         var validationIssues = AcousticsProjectValidator.Validate(candidate);
         var firstError = validationIssues.FirstOrDefault(
@@ -747,6 +756,39 @@ public partial class MainWindowViewModel : ViewModelBase
             UnitScale = ProjectScalingService.GetMetersPerUnit(targetUnit),
             InputFingerprint = null
         };
+    }
+
+    private static AcousticScenarioState ScaleScenarioState(
+        AcousticScenarioState source,
+        double factor,
+        SurfaceImportUnit targetUnit,
+        bool scalePhysicalVolume,
+        string staleReason)
+    {
+        var volume = scalePhysicalVolume
+            ? ProjectScalingService.ScaleVolume(source.RoomVolume, factor)
+            : source.RoomVolume;
+        return AcousticScenarioCloner.Clone(new AcousticScenarioState
+        {
+            Surfaces = ProjectScalingService.ScaleSurfaces(source.Surfaces, factor),
+            Sources = ProjectScalingService.ScalePoints(source.Sources, factor),
+            Receivers = ProjectScalingService.ScalePoints(source.Receivers, factor),
+            CategoryMaterials = source.CategoryMaterials,
+            SurfaceMaterials = source.SurfaceMaterials,
+            PanelKonfigurasyon = ScalePanelConfiguration(
+                source.PanelKonfigurasyon, factor, scalePhysicalVolume),
+            SimulationSettings = ScaleSimulationSettings(
+                source.SimulationSettings ?? source.LastResult?.Parameters,
+                factor,
+                targetUnit,
+                scalePhysicalVolume),
+            LastResult = source.LastResult is { } result
+                ? CreateStaleSimulationResult(result, staleReason)
+                : null,
+            SelectedRoomType = source.SelectedRoomType,
+            RoomVolume = volume,
+            VolumeOrigin = source.VolumeOrigin
+        });
     }
 
     private static string BuildProjectSizeSummary(IReadOnlyList<ProjectSurface> surfaces, SurfaceImportUnit unit)

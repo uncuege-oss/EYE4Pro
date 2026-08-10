@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 using Kst.Acoustics.Core.Bina.Models;
 using Kst.Acoustics.Core.Common.Geometry;
 using Kst.Acoustics.Core.Electric.BasitProjeCiz.Models;
@@ -27,6 +28,7 @@ public static class BinaGeometriImportServisi
     public static BinaGeometriImportSonucu Uygula(
         BasitProjeCizProje proje, BinaGeometri geo, string? dosyaYolu)
     {
+        Dogrula(proje, geo);
         var uyarilar = new List<string>();
         int yeni = 0, guncellenen = 0, korunan = 0;
 
@@ -36,6 +38,26 @@ public static class BinaGeometriImportServisi
         proje.BinaGeometriKopya = geo;
 
         var geoKatIdleri = new HashSet<string>(geo.Katlar.Select(k => k.Id));
+        var tumEskiOdalar = proje.Katlar
+            .SelectMany(k => k.Odalar)
+            .ToDictionary(o => o.Id, StringComparer.Ordinal);
+        var odaHedefKatlari = geo.Katlar
+            .SelectMany(k => k.Odalar.Select(o => (OdaId: o.Id, KatId: k.Id)))
+            .ToDictionary(x => x.OdaId, x => x.KatId, StringComparer.Ordinal);
+
+        // Aynı kararlı oda Id'si yeni geometride başka kata taşındıysa eski katın
+        // koleksiyonundan ayır. M12 bayrakları global lookup üzerinden yeni kata
+        // aktarılır; böylece iki katta yinelenen OdaId bırakılmaz.
+        foreach (var eskiKat in proje.Katlar)
+        {
+            for (int i = eskiKat.Odalar.Count - 1; i >= 0; i--)
+            {
+                var oda = eskiKat.Odalar[i];
+                if (odaHedefKatlari.TryGetValue(oda.Id, out var hedefKatId) &&
+                    !string.Equals(eskiKat.Id, hedefKatId, StringComparison.Ordinal))
+                    eskiKat.Odalar.RemoveAt(i);
+            }
+        }
 
         // Geometride olmayan eski katlar: yalnız gerçekten elektrik verisi yoksa kaldır.
         foreach (var eski in proje.Katlar.Where(k => !geoKatIdleri.Contains(k.Id)).ToList())
@@ -66,7 +88,7 @@ public static class BinaGeometriImportServisi
             {
                 guncellenen++;
             }
-            KatiGuncelle(hedef, geoKat);
+            KatiGuncelle(hedef, geoKat, tumEskiOdalar);
         }
 
         // Kat sırası M50 sol panelindeki görsel sırayı izler (korunan eski katlar sona düşer).
@@ -79,6 +101,26 @@ public static class BinaGeometriImportServisi
         foreach (var k in sirali) proje.Katlar.Add(k);
 
         return new BinaGeometriImportSonucu(yeni, guncellenen, korunan, uyarilar);
+    }
+
+    /// <summary>
+    /// Mutasyondan önce tüm kimlik varsayımlarını doğrular. Böylece bozuk bir
+    /// sidecar yarım uygulanıp projeyi karma durumda bırakamaz.
+    /// </summary>
+    private static void Dogrula(BasitProjeCizProje proje, BinaGeometri geo)
+    {
+        if (geo.Katlar.Any(k => string.IsNullOrWhiteSpace(k.Id)))
+            throw new InvalidOperationException("Bina geometrisinde kimliği boş kat var.");
+        if (geo.Katlar.GroupBy(k => k.Id, StringComparer.Ordinal).Any(g => g.Count() > 1))
+            throw new InvalidOperationException("Bina geometrisinde yinelenen kat kimliği var.");
+        if (geo.Katlar.SelectMany(k => k.Odalar).Any(o => string.IsNullOrWhiteSpace(o.Id)))
+            throw new InvalidOperationException("Bina geometrisinde kimliği boş oda var.");
+        if (geo.Katlar.SelectMany(k => k.Odalar)
+            .GroupBy(o => o.Id, StringComparer.Ordinal).Any(g => g.Count() > 1))
+            throw new InvalidOperationException("Bina geometrisinde katlar arasında yinelenen oda kimliği var.");
+        if (proje.Katlar.SelectMany(k => k.Odalar)
+            .GroupBy(o => o.Id, StringComparer.Ordinal).Any(g => g.Count() > 1))
+            throw new InvalidOperationException("Mevcut M12 projesinde katlar arasında yinelenen oda kimliği var.");
     }
 
     private static int ElektrikVerisiSayisi(BasitProjeKat kat)
@@ -107,7 +149,10 @@ public static class BinaGeometriImportServisi
         return toplam;
     }
 
-    private static void KatiGuncelle(BasitProjeKat hedef, BinaKat kaynak)
+    private static void KatiGuncelle(
+        BasitProjeKat hedef,
+        BinaKat kaynak,
+        IReadOnlyDictionary<string, BasitProjeOda> tumEskiOdalar)
     {
         hedef.Ad = kaynak.Ad;
         hedef.KatNo = kaynak.KatNo;
@@ -119,11 +164,10 @@ public static class BinaGeometriImportServisi
         hedef.BloklariGoster = kaynak.BloklariGoster;
 
         // Odalar: Id eşleşmesiyle birleştir — M12 bayrakları korunur.
-        var eskiOdalar = hedef.Odalar.ToDictionary(o => o.Id);
         hedef.Odalar.Clear();
         foreach (var geoOda in kaynak.Odalar)
         {
-            eskiOdalar.TryGetValue(geoOda.Id, out var eski);
+            tumEskiOdalar.TryGetValue(geoOda.Id, out var eski);
             hedef.Odalar.Add(new BasitProjeOda
             {
                 Id = geoOda.Id,

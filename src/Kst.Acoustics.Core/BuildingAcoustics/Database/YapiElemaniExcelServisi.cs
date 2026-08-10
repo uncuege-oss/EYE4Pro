@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using ClosedXML.Excel;
 using Kst.Acoustics.Core.BuildingAcoustics.Models;
@@ -20,20 +22,39 @@ public static class YapiElemaniExcelServisi
         "R100_3", "R125_3", "R160_3", "R200_3", "R250_3", "R315_3", "R400_3", "R500_3",
         "R630_3", "R800_3", "R1000_3", "R1250_3", "R1600_3", "R2000_3", "R2500_3", "R3150_3",
         "Hafiflik",
-        "YapisalRtSn"
+        "YapisalRtSn",
+        "Id", "Uretici", "UrunKodu", "Kategori", "PozNo", "MetrajBirimi",
+        "BirimFiyat", "ParaBirimi", "FireYuzdesi", "BirimFiyatTarihi",
+        "SpektrumKaynagi", "DarbeSpektrumKaynagi"
     ];
 
     public static void ExportToExcel(string filePath, IReadOnlyList<YapiElemani> elemanlar)
     {
-        using var workbook = new XLWorkbook();
-        var ws = workbook.Worksheets.Add("YapiElemanlari");
-        WriteHeader(ws);
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentNullException.ThrowIfNull(elemanlar);
+        string tamYol = Path.GetFullPath(filePath);
+        string klasor = Path.GetDirectoryName(tamYol)
+                         ?? throw new IOException($"Excel hedef klasörü belirlenemedi: {filePath}");
+        Directory.CreateDirectory(klasor);
+        string gecici = Path.Combine(klasor, $".{Path.GetFileNameWithoutExtension(tamYol)}.{Guid.NewGuid():N}.tmp.xlsx");
+        try
+        {
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("YapiElemanlari");
+            WriteHeader(ws);
 
-        for (int i = 0; i < elemanlar.Count; i++)
-            WriteElement(ws, i + 2, elemanlar[i]);
+            for (int i = 0; i < elemanlar.Count; i++)
+                WriteElement(ws, i + 2, elemanlar[i]);
 
-        ws.Columns().AdjustToContents();
-        workbook.SaveAs(filePath);
+            ws.Columns().AdjustToContents();
+            workbook.SaveAs(gecici);
+            File.Move(gecici, tamYol, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(gecici))
+                File.Delete(gecici);
+        }
     }
 
     public static List<YapiElemani> ImportFromExcel(string filePath)
@@ -98,6 +119,29 @@ public static class YapiElemaniExcelServisi
                 eleman.Hafiflik = hafiflik;
             // YapisalRtSn kolonu (45): boş ise 0 (varsayılan 0.5s davranışı korunur)
             eleman.YapisalRtSn = GetDouble(row.Cell(45), 0);
+
+            if (Guid.TryParse(row.Cell(46).GetString().Trim(), out var id))
+                eleman.Id = id;
+            eleman.Uretici = row.Cell(47).GetString().Trim();
+            eleman.UrunKodu = row.Cell(48).GetString().Trim();
+            eleman.Kategori = row.Cell(49).GetString().Trim();
+            eleman.PozNo = row.Cell(50).GetString().Trim();
+            if (Enum.TryParse<AkustikMetrajBirimi>(row.Cell(51).GetString().Trim(), true, out var metrajBirimi))
+                eleman.MetrajBirimi = metrajBirimi;
+            eleman.BirimFiyat = GetDecimal(row.Cell(52), 0m);
+            eleman.ParaBirimi = string.IsNullOrWhiteSpace(row.Cell(53).GetString())
+                ? "TRY"
+                : row.Cell(53).GetString().Trim().ToUpperInvariant();
+            eleman.FireYuzdesi = GetDecimal(row.Cell(54), 0m);
+            if (row.Cell(55).TryGetValue<DateTime>(out var fiyatTarihi))
+                eleman.BirimFiyatTarihi = fiyatTarihi;
+            else if (DateTime.TryParse(row.Cell(55).GetString(), CultureInfo.CurrentCulture,
+                         DateTimeStyles.AssumeLocal, out fiyatTarihi))
+                eleman.BirimFiyatTarihi = fiyatTarihi;
+            if (Enum.TryParse<SpektrumVeriKaynagi>(row.Cell(56).GetString().Trim(), true, out var spektrumKaynagi))
+                eleman.SpektrumKaynagi = spektrumKaynagi;
+            if (Enum.TryParse<SpektrumVeriKaynagi>(row.Cell(57).GetString().Trim(), true, out var darbeKaynagi))
+                eleman.DarbeSpektrumKaynagi = darbeKaynagi;
 
             if (yuzeyKutlesi > 0)
             {
@@ -221,6 +265,19 @@ public static class YapiElemaniExcelServisi
             ws.Cell(row, 28 + i).Value = eleman.RThirdOctave.Count > i ? eleman.RThirdOctave[i] : "";
         ws.Cell(row, 44).Value = eleman.Hafiflik.ToString();
         ws.Cell(row, 45).Value = eleman.YapisalRtSn;
+        ws.Cell(row, 46).Value = eleman.Id.ToString("D");
+        ws.Cell(row, 47).Value = eleman.Uretici;
+        ws.Cell(row, 48).Value = eleman.UrunKodu;
+        ws.Cell(row, 49).Value = eleman.Kategori;
+        ws.Cell(row, 50).Value = eleman.PozNo;
+        ws.Cell(row, 51).Value = eleman.MetrajBirimi.ToString();
+        ws.Cell(row, 52).Value = eleman.BirimFiyat;
+        ws.Cell(row, 53).Value = eleman.ParaBirimi;
+        ws.Cell(row, 54).Value = eleman.FireYuzdesi;
+        if (eleman.BirimFiyatTarihi is { } fiyatTarihi)
+            ws.Cell(row, 55).Value = fiyatTarihi;
+        ws.Cell(row, 56).Value = eleman.SpektrumKaynagi.ToString();
+        ws.Cell(row, 57).Value = eleman.DarbeSpektrumKaynagi.ToString();
     }
 
     private static double GetDouble(IXLCell cell, double fallback)
@@ -236,6 +293,17 @@ public static class YapiElemaniExcelServisi
             return b;
         var s = cell.GetString().Trim().ToLowerInvariant();
         return s is "true" or "evet" or "1" or "yes";
+    }
+
+    private static decimal GetDecimal(IXLCell cell, decimal fallback)
+    {
+        if (cell.TryGetValue<decimal>(out var value))
+            return value;
+        var metin = cell.GetString();
+        return decimal.TryParse(metin, NumberStyles.Number, CultureInfo.CurrentCulture, out value) ||
+               decimal.TryParse(metin, NumberStyles.Number, CultureInfo.InvariantCulture, out value)
+            ? value
+            : fallback;
     }
 
     private static List<double> ReadThirdOctave(IXLRangeRow row, int startColumn)

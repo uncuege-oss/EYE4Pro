@@ -20,8 +20,10 @@ public partial class ProjectWindow : Window
 
         public ProjectWindow()
         {
-            DataContext = new ProjectWindowViewModel(ProjectFactory.CreateEmpty("Yeni Proje"));
+            var vm = new ProjectWindowViewModel(ProjectFactory.CreateEmpty("Yeni Proje"));
+            DataContext = vm;
             InitializeComponent();
+            vm.StartAutoSave();
         }
 
         public ProjectWindow(
@@ -59,6 +61,7 @@ public partial class ProjectWindow : Window
 
                 // Simülasyon bitince Sonuçlar sekmesine otomatik geç
                 vm.NavigateToResults += () => ModuleTabControl.SelectedIndex = 5;
+                vm.StartAutoSave();
             }
             catch (Exception ex)
             {
@@ -80,7 +83,31 @@ public partial class ProjectWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Key == Key.Escape && DataContext is ProjectWindowViewModel vm && vm.IsPlacementActive)
+        if (DataContext is not ProjectWindowViewModel vm) return;
+
+        var primaryModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) ||
+                              e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        if (primaryModifier && e.Key == Key.Z)
+        {
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) vm.RedoDocument();
+            else vm.UndoDocument();
+            e.Handled = true;
+            return;
+        }
+        if (primaryModifier && e.Key == Key.Y)
+        {
+            vm.RedoDocument();
+            e.Handled = true;
+            return;
+        }
+        if (primaryModifier && e.Key == Key.S)
+        {
+            _ = vm.SaveProjectAsync(this);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Escape && vm.IsPlacementActive)
         {
             vm.CancelPlacement();
             e.Handled = true;
@@ -128,6 +155,7 @@ public partial class ProjectWindow : Window
     }
 
     private readonly ProjectFileService _fileService = new();
+    private readonly ProjectPackageService _packageService = new();
     private bool _isOpeningProject;
 
     private async void OpenProjectButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -145,7 +173,8 @@ public partial class ProjectWindow : Window
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("EYE4PRO Akustik Proje") { Patterns = ["*.e4p01"] },
+                    new FilePickerFileType("EYE4PRO Akustik Proje") { Patterns = ["*.e4p01", "*.e4pkg"] },
+                    new FilePickerFileType("EYE4PRO Taşınabilir Paket") { Patterns = ["*.e4pkg"] },
                     new FilePickerFileType("JSON Dosyası") { Patterns = ["*.json"] }
                 ]
             });
@@ -156,26 +185,45 @@ public partial class ProjectWindow : Window
             if (DataContext is ProjectWindowViewModel current)
                 current.ReportError("Proje açılıyor...");
 
-            // Büyük .e4p01 dosyalarında UI thread'ini kilitlememek için senkron Load
-            // yerine LoadAsync kullanılır (Load = LoadAsync().GetAwaiter().GetResult()).
-            var loadResult = await _fileService.LoadWithStatusAsync(path);
+            // Büyük proje/paket dosyalarında UI thread'ini kilitlememek için
+            // senkron Load yerine asenkron, doğrulamalı akış kullanılır.
+            var isPackage = string.Equals(Path.GetExtension(path), ".e4pkg", StringComparison.OrdinalIgnoreCase);
+            ProjectLoadResult loadResult;
+            if (isPackage)
+            {
+                var package = await _packageService.LoadProjectAsync(path);
+                var libraryNote = ImportMissingPackageLibraries(package);
+                loadResult = new ProjectLoadResult(
+                    package.Project,
+                    false,
+                    [$"Taşınabilir paket doğrulandı ve açıldı.{libraryNote}"]);
+            }
+            else
+            {
+                loadResult = await _fileService.LoadWithStatusAsync(path);
+            }
             var project = loadResult.Project;
             var newWindow = new ProjectWindow(project, _parentVm, loadResult.SessionWarnings);
             if (newWindow.DataContext is ProjectWindowViewModel newVm)
             {
                 newVm.SetDocumentState(
-                    path,
-                    loadResult.RecoveredFromBackup,
+                    isPackage ? null : path,
+                    isPackage || loadResult.RecoveredFromBackup,
                     loadResult.RecoveredFromBackup);
                 if (loadResult.RecoveredFromBackup)
                     newVm.ReportError("Proje son sağlam yedekten kurtarıldı. İçeriği doğrulayıp yeniden kaydedin.");
+                else if (isPackage)
+                    newVm.ReportError("Taşınabilir paket açıldı. Çalışma kopyasını .e4p01 olarak kaydedin.");
             }
 
             // Yeni açılan belge artık "Kaydetmeden Çık" için de son sağlam baseline'dır.
             // Ebeveyn senkronlanmazsa kullanıcı daha sonra yaptığı bir düzenlemeyi atarken
             // açtığı projeden önceki belgeye geri döner.
             if (!loadResult.RecoveredFromBackup)
-                _parentVm?.UpdateProject(project, isDirty: false, savedProjectPath: path);
+                _parentVm?.UpdateProject(
+                    project,
+                    isDirty: isPackage,
+                    savedProjectPath: isPackage ? null : path);
             newWindow.Show();
             _forceClose = true;
             Close();
@@ -200,6 +248,136 @@ public partial class ProjectWindow : Window
     private async void SaveAsProjectButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is ProjectWindowViewModel vm) await vm.SaveAsProjectAsync(this);
+    }
+
+    private void UndoDocumentButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm) vm.UndoDocument();
+    }
+
+    private void RedoDocumentButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm) vm.RedoDocument();
+    }
+
+    private async void CreateProjectPackageButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not ProjectWindowViewModel vm || IsCreatingPackagePickerOpen) return;
+        IsCreatingPackagePickerOpen = true;
+        try
+        {
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Taşınabilir proje paketini kaydedin",
+                SuggestedFileName = MakePackageFileName(vm.ProjectName),
+                DefaultExtension = "e4pkg",
+                FileTypeChoices =
+                [
+                    new FilePickerFileType("EYE4PRO Taşınabilir Proje Paketi")
+                    {
+                        Patterns = ["*.e4pkg"]
+                    }
+                ]
+            });
+            var path = file?.TryGetLocalPath();
+            if (!string.IsNullOrWhiteSpace(path))
+                await vm.CreateProjectPackageAsync(path);
+        }
+        catch (Exception ex)
+        {
+            vm.ReportError($"Paket konumu seçilemedi: {ex.Message}");
+        }
+        finally
+        {
+            IsCreatingPackagePickerOpen = false;
+        }
+    }
+
+    private bool IsCreatingPackagePickerOpen { get; set; }
+
+    private static string MakePackageFileName(string projectName)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var cleaned = new string(projectName
+            .Select(character => invalid.Contains(character) ? '_' : character)
+            .ToArray()).Trim();
+        return $"{(string.IsNullOrWhiteSpace(cleaned) ? "YeniProje" : cleaned)}.e4pkg";
+    }
+
+    private static string ImportMissingPackageLibraries(ProjectPackageLoadResult package)
+    {
+        var materialCount = 0;
+        foreach (var material in package.Materials)
+        {
+            if (MaterialDatabase.Instance.FindById(material.Id) is null &&
+                MaterialDatabase.Instance.Add(material))
+                materialCount++;
+        }
+
+        var loudspeakerCount = 0;
+        foreach (var loudspeaker in package.Loudspeakers)
+        {
+            if (LoudspeakerDatabase.Instance.FindById(loudspeaker.Id) is null &&
+                LoudspeakerDatabase.Instance.Add(loudspeaker))
+                loudspeakerCount++;
+        }
+
+        return materialCount + loudspeakerCount == 0
+            ? string.Empty
+            : $" {materialCount} materyal ve {loudspeakerCount} hoparlör tanımı yerel kütüphaneye eklendi.";
+    }
+
+    private void PreviewAssistedPlacementButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm) vm.PreviewAssistedPointPlacement();
+    }
+
+    private void ApplyAssistedPlacementButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm) vm.ApplyAssistedPointPlacement();
+    }
+
+    private void ApplyMaterialMappingButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm) vm.ApplySelectedMaterialMappingTemplate();
+    }
+
+    private async void SaveMaterialMappingButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm)
+            await vm.SaveCurrentMaterialMappingTemplateAsync();
+    }
+
+    private async void DeleteMaterialMappingButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm)
+            await vm.DeleteSelectedMaterialMappingTemplateAsync();
+    }
+
+    private async void CreateProjectVersionButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm)
+            await vm.CreateProjectVersionAsync("Elle oluşturulan kontrol noktası");
+    }
+
+    private async void RefreshProjectVersionsButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm)
+            await vm.RefreshProjectVersionHistoryAsync();
+    }
+
+    private async void RestoreProjectVersionButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm &&
+            ProjectVersionDataGrid.SelectedItem is ProjectVersionInfo version)
+            await vm.RestoreProjectVersionAsync(version);
+    }
+
+    private async void DeleteProjectVersionButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ProjectWindowViewModel vm &&
+            ProjectVersionDataGrid.SelectedItem is ProjectVersionInfo version)
+            await vm.DeleteProjectVersionAsync(version);
     }
 
     private void ResetViewButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

@@ -26,7 +26,7 @@ public sealed partial class ProjectWindowViewModel
         }
 
         var sb = new StringBuilder();
-        var criteria = RoomTypeRegistry.All.FirstOrDefault(c => c.Type == _project.SelectedRoomType) ?? RoomTypeRegistry.All[0];
+        var criteria = RoomTypeRegistry.All.FirstOrDefault(c => c.Type == CurrentRoomType) ?? RoomTypeRegistry.All[0];
         var (minRt, maxRt) = criteria.GetTargetRtMid(RoomVolume);
 
         sb.AppendLine("================================================================");
@@ -196,7 +196,7 @@ public sealed partial class ProjectWindowViewModel
             }
 
             var exporter = new Kst.Acoustics.Core.Exporting.DxfExportService();
-            exporter.Export(path, _workingSurfaces);
+            exporter.Export(path, _workingSurfaces, _project.Unit);
             StatusMessage = $"DXF modeli kaydedildi: {Path.GetFileName(path)}";
         }
         catch (Exception ex)

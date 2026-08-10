@@ -47,10 +47,21 @@ public static class Salon3DGorunumServisi
         string duvarAd = KatmanAdi(salon, SalonKatmanTipi.DuvarSeyirci, "Duvar");
         string kapiAd = KatmanAdi(salon, SalonKatmanTipi.Kapi, "Kapı");
         string pencereAd = KatmanAdi(salon, SalonKatmanTipi.Pencere, "Pencere");
+        string sahneAd = KatmanAdi(salon, SalonKatmanTipi.Sahne, "Sahne");
+        var sahneYanKatmani = salon.Katmanlar.FirstOrDefault(k => k.Tip == SalonKatmanTipi.DuvarSahne);
+        string sahneYanAd = sahneYanKatmani is { Ad.Length: > 0 } &&
+                            !string.Equals(sahneYanKatmani.Ad, "Duvar-Sahne", StringComparison.OrdinalIgnoreCase)
+            ? sahneYanKatmani.Ad
+            : sahneAd + "-Yan";
+        string seyirciAd = KatmanAdi(salon, SalonKatmanTipi.Seyirci, "Seyirci");
+        string kornisAd = KatmanAdi(salon, SalonKatmanTipi.Kornis, "Korniş");
+        string balkonAd = KatmanAdi(salon, SalonKatmanTipi.Balkon, "Balkon");
+        string yansiticiAd = KatmanAdi(salon, SalonKatmanTipi.Yansitici, "Yansıtıcı");
 
         var kabukPoligonlari = new List<IReadOnlyList<Point2D>>();  // Zemin tipli kapalı öğeler
         var zeminBolgeleri = new List<(List<Point2D> Poly, string Kategori)>(); // z=0 bölge öğeleri
         var tavanBolgeleri = new List<(List<Point2D> Poly, string Kategori)>(); // z=h bölge öğeleri
+        var duvarlar = new List<(Point2D A, Point2D B, string Kategori)>();
 
         foreach (var oge in salon.CizimOgeleri)
         {
@@ -71,7 +82,7 @@ public static class Salon3DGorunumServisi
             {
                 string kategori = KategoriAdi(katman, duvarAd);
                 foreach (var (a, b) in oge.Segmentler(faset))
-                    DuvarYuzeyleriEkle(surfaces, ref id, salon, a, b, kategori, kapiAd, pencereAd);
+                    duvarlar.Add((a, b, kategori));
             }
         }
 
@@ -97,7 +108,8 @@ public static class Salon3DGorunumServisi
             foreach (var p in SalonPoligonServisi.BasitPoligonlaraAyir(
                          ClipperAdaptor.Fark(kabuk, zeminKirpici)))
                 surfaces.Add(new ProjectSurface(id++, zeminAd, zeminAd,
-                    p.Select(q => new Point3D(q.X, q.Y, taban)).ToList()));
+                    p.AsEnumerable().Reverse()
+                        .Select(q => new Point3D(q.X, q.Y, taban)).ToList()));
 
             // Tavan: profil yoksa düz tek yüzey; profil varsa Y bantlarına bölünmüş
             // eğik paneller (her bantta z, y'ye doğrusal bağlı → panel düzlemsel).
@@ -111,18 +123,47 @@ public static class Salon3DGorunumServisi
             // duvarı). Duvar üst kenarı tavan profilini izler; açıklıklar kesilir.
             foreach (var halka in kabuk)
                 for (int i = 0; i < halka.Count; i++)
-                    DuvarYuzeyleriEkle(surfaces, ref id, salon,
-                        halka[i], halka[(i + 1) % halka.Count], duvarAd, kapiAd, pencereAd);
+                    duvarlar.Add((halka[i], halka[(i + 1) % halka.Count], duvarAd));
+        }
+
+        // Her açıklığı bütün duvar adayları arasındaki tek en yakın segmente bağla.
+        // Önceki segment-içi tarama, köşe noktasındaki aynı açıklığı iki komşu
+        // duvarda birden keserek L biçimli kapı/pencere üretiyordu.
+        var duvarAcikliklari = Enumerable.Range(0, duvarlar.Count)
+            .Select(_ => new List<(DuvarAcikligi Aciklik, double S)>())
+            .ToList();
+        var duvarSegmentleri = duvarlar.Select(d => (d.A, d.B)).ToList();
+        foreach (var ac in salon.Acikliklar)
+        {
+            if (ac.GenislikM <= 1e-6 || ac.YukseklikM <= 1e-6) continue;
+            int duvar = EnYakinDuvarIndeksi(duvarSegmentleri, ac, out double s, out _, out _);
+            if (duvar >= 0) duvarAcikliklari[duvar].Add((ac, s));
+        }
+        for (int i = 0; i < duvarlar.Count; i++)
+        {
+            var d = duvarlar[i];
+            DuvarYuzeyleriEkle(surfaces, ref id, salon, d.A, d.B, d.Kategori,
+                kapiAd, pencereAd, duvarAcikliklari[i]);
         }
 
         // ── Bölge yüzeyleri (kabuk olsun olmasın üretilir)
-        foreach (var (poly, kategori) in zeminBolgeleri)
-            surfaces.Add(new ProjectSurface(id++, kategori, kategori,
-                poly.Select(p => new Point3D(p.X, p.Y, taban)).ToList()));
-        foreach (var (poly, kategori) in tavanBolgeleri)
-            foreach (var (panel, _) in TavanPanelleri(salon, new List<List<Point2D>> { poly }))
+        // Son çizilen bölge örtüşmede önceliklidir; önceki bölgeler daha sonraki
+        // footprint'lerden kırpılır. Böylece aynı düzlemde çift M01/DXF yüzeyi oluşmaz.
+        for (int i = 0; i < zeminBolgeleri.Count; i++)
+        {
+            var kategori = zeminBolgeleri[i].Kategori;
+            foreach (var poly in BolgeParcalari(zeminBolgeleri, i))
+                surfaces.Add(new ProjectSurface(id++, kategori, kategori,
+                    poly.AsEnumerable().Reverse()
+                        .Select(p => new Point3D(p.X, p.Y, taban)).ToList()));
+        }
+        for (int i = 0; i < tavanBolgeleri.Count; i++)
+        {
+            var kategori = tavanBolgeleri[i].Kategori;
+            foreach (var (panel, _) in TavanPanelleri(salon, BolgeParcalari(tavanBolgeleri, i)))
                 surfaces.Add(new ProjectSurface(id++, kategori, kategori,
                     panel.Select(p => new Point3D(p.X, p.Y, SalonTavanServisi.Kot(salon, p.Y))).ToList()));
+        }
 
         // ── Parametrik sahne → yükseltilmiş platform (üst yüzey + çevre etek).
         if (salon.Sahne is { } sahne)
@@ -133,12 +174,20 @@ public static class Salon3DGorunumServisi
                 double zAlt = sahne.TabanKotuM;
                 double zUst = sahne.TabanKotuM + (sahne.YukseklikM > 0 ? sahne.YukseklikM : 0.0);
 
-                surfaces.Add(new ProjectSurface(id++, "Sahne", "Sahne",
-                    poly.Select(p => new Point3D(p.X, p.Y, zUst)).ToList()));
+                var parcalar = kabukHalkalari is { Count: > 0 }
+                    ? SalonPoligonServisi.KabugaKirp(kabukHalkalari, poly)
+                    : SalonPoligonServisi.BasitPoligonlaraAyir(
+                        ClipperAdaptor.Birlestir(new[] { (IReadOnlyList<Point2D>)poly }));
+                foreach (var parca in parcalar)
+                {
+                    surfaces.Add(new ProjectSurface(id++, "Sahne", sahneAd,
+                        parca.Select(p => new Point3D(p.X, p.Y, zUst)).ToList()));
 
-                if (zUst - zAlt > 1e-6)
-                    for (int i = 0; i < poly.Count; i++)
-                        surfaces.Add(DuvarYuzeyi(id++, poly[i], poly[(i + 1) % poly.Count], zAlt, zUst - zAlt, "Sahne-Yan"));
+                    if (zUst - zAlt > 1e-6)
+                        for (int i = 0; i < parca.Count; i++)
+                            surfaces.Add(DuvarYuzeyi(id++, parca[i], parca[(i + 1) % parca.Count],
+                                zAlt, zUst - zAlt, sahneYanAd));
+                }
             }
         }
 
@@ -171,11 +220,25 @@ public static class Salon3DGorunumServisi
 
         // ── Kademeli seyirci alanları → basamak döşemeleri + korniş (kabuğa kırpılır)
         foreach (var sek in salon.SeyirciSekciyonlari)
-            surfaces.AddRange(SalonSeyirciServisi.Yuzeyler(sek, ref id, kabukHalkalari));
+            surfaces.AddRange(SalonSeyirciServisi.Yuzeyler(
+                sek, ref id, kabukHalkalari, seyirciAd, kornisAd));
 
         // ── Balkon/loca platformları (kabuğa kırpılır)
         foreach (var balkon in salon.Balkonlar)
-            surfaces.AddRange(SalonBalkonServisi.Yuzeyler(balkon, ref id, kabukHalkalari));
+            surfaces.AddRange(SalonBalkonServisi.Yuzeyler(
+                balkon, ref id, kabukHalkalari, balkonAd));
+
+        // ── Akustik bulut/reflektörler. Panel görünürlüğünün yanında bağlı katman
+        // görünürlüğü de geçerlidir; kategori daima katmanın kullanıcıca düzenlenmiş
+        // adından gelir. Kırık/boş eski bağ güvenli semantik Yansıtıcı katmanına düşer.
+        foreach (var panel in salon.YansiticiPaneller.Where(p => p.Gorunur))
+        {
+            var katman = salon.Katmanlar.FirstOrDefault(k => k.Id == panel.KatmanId)
+                          ?? salon.Katmanlar.FirstOrDefault(k => k.Tip == SalonKatmanTipi.Yansitici);
+            if (katman is { Gorunur: false }) continue;
+            string kategori = string.IsNullOrWhiteSpace(katman?.Ad) ? yansiticiAd : katman!.Ad;
+            surfaces.Add(SalonYansiticiServisi.YuzeyOlustur(panel, id++, kategori));
+        }
 
         return surfaces;
     }
@@ -222,9 +285,71 @@ public static class Salon3DGorunumServisi
         }
     }
 
+    /// Aynı düzlemdeki bölgelerde son çizilen öğeye öncelik verir; bu bölgenin daha
+    /// sonra gelen footprint'lerle örtüşmeyen basit parçalarını döndürür.
+    private static List<List<Point2D>> BolgeParcalari(
+        IReadOnlyList<(List<Point2D> Poly, string Kategori)> bolgeler, int index)
+    {
+        var ana = ClipperAdaptor.Birlestir(
+            new[] { (IReadOnlyList<Point2D>)bolgeler[index].Poly });
+        if (ana.Count == 0) return new();
+
+        var sonrakiler = ClipperAdaptor.Birlestir(
+            bolgeler.Skip(index + 1).Select(b => (IReadOnlyList<Point2D>)b.Poly));
+        return SalonPoligonServisi.BasitPoligonlaraAyir(
+            ClipperAdaptor.Fark(ana, sonrakiler));
+    }
+
     /// Açıklığın bir duvar segmentine bağlanması için merkezin segmente en fazla
     /// uzaklığı (m).
     public const double AciklikToleransM = 0.15;
+
+    /// Açıklığın bağlanacağı tek duvarı seçer. Uzaklık birincil ölçüttür; eşit
+    /// uzaklıkta açıklık genişliğinin daha az taştığı segment tercih edilir.
+    internal static int EnYakinDuvarIndeksi(
+        IReadOnlyList<(Point2D A, Point2D B)> segmentler,
+        DuvarAcikligi aciklik,
+        out double s,
+        out double boy,
+        out double uzaklik)
+    {
+        int enIyi = -1;
+        s = boy = 0;
+        uzaklik = double.MaxValue;
+        double enAzTasma = double.MaxValue;
+
+        for (int i = 0; i < segmentler.Count; i++)
+        {
+            var (a, b) = segmentler[i];
+            double dx = b.X - a.X, dy = b.Y - a.Y;
+            double boy2 = dx * dx + dy * dy;
+            if (boy2 < 1e-18) continue;
+            double adayBoy = Math.Sqrt(boy2);
+            double t = ((aciklik.MerkezX - a.X) * dx + (aciklik.MerkezY - a.Y) * dy) / boy2;
+            t = Math.Clamp(t, 0, 1);
+            double px = a.X + t * dx, py = a.Y + t * dy;
+            double adayUzaklik = Math.Sqrt(
+                (aciklik.MerkezX - px) * (aciklik.MerkezX - px)
+                + (aciklik.MerkezY - py) * (aciklik.MerkezY - py));
+            if (adayUzaklik > AciklikToleransM) continue;
+
+            double adayS = t * adayBoy;
+            double yari = Math.Max(0, aciklik.GenislikM) / 2;
+            double tasma = Math.Max(0, yari - adayS)
+                           + Math.Max(0, adayS + yari - adayBoy);
+            if (adayUzaklik < uzaklik - 1e-9
+                || (Math.Abs(adayUzaklik - uzaklik) <= 1e-9 && tasma < enAzTasma - 1e-9))
+            {
+                enIyi = i;
+                s = adayS;
+                boy = adayBoy;
+                uzaklik = adayUzaklik;
+                enAzTasma = tasma;
+            }
+        }
+
+        return enIyi;
+    }
 
     /// Tabanı z=0'da, üst kenarı tavan profilini izleyen düşey duvar üretir; üzerine
     /// düşen açıklıklar (kapı/pencere) duvardan kesilir ve kendi kategorileriyle yüzey
@@ -234,7 +359,8 @@ public static class Salon3DGorunumServisi
     /// tüm çokgenler düzlemseldir.
     private static void DuvarYuzeyleriEkle(List<ProjectSurface> surfaces, ref int id,
         SalonGeometri salon, Point2D a, Point2D b, string kategori,
-        string kapiAd, string pencereAd)
+        string kapiAd, string pencereAd,
+        IReadOnlyList<(DuvarAcikligi Aciklik, double S)> kesikler)
     {
         double dx = b.X - a.X, dy = b.Y - a.Y;
         double boy = Math.Sqrt(dx * dx + dy * dy);
@@ -264,20 +390,6 @@ public static class Salon3DGorunumServisi
                 hat.Add(new Point2D(s, kot));
         }
         hat.Add(new Point2D(0, SalonTavanServisi.Kot(salon, a.Y)));
-
-        // Bu duvara düşen açıklıklar (merkez segment üzerinde, tolerans içinde).
-        var kesikler = new List<(DuvarAcikligi Aciklik, double S)>();
-        foreach (var ac in salon.Acikliklar)
-        {
-            if (ac.GenislikM <= 1e-6 || ac.YukseklikM <= 1e-6) continue;
-            double t = ((ac.MerkezX - a.X) * dx + (ac.MerkezY - a.Y) * dy) / (boy * boy);
-            t = Math.Clamp(t, 0, 1);
-            double px = a.X + t * dx, py = a.Y + t * dy;
-            double uzaklik = Math.Sqrt((ac.MerkezX - px) * (ac.MerkezX - px)
-                                       + (ac.MerkezY - py) * (ac.MerkezY - py));
-            if (uzaklik <= AciklikToleransM)
-                kesikler.Add((ac, t * boy));
-        }
 
         if (kesikler.Count == 0)
         {

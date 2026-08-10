@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Salon.Views.SalonHizliTasarimWindow"
+        x:CompileBindings="False" Width="520" Height="470" MinWidth="460" MinHeight="420"
+        WindowStartupLocation="CenterOwner" Background="#0B1118" Title="Hızlı Salon Tasarımı">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="20" RowSpacing="16">
+    <StackPanel Spacing="5">
+      <TextBlock Text="Tek tık salon sihirbazı" FontSize="20" FontWeight="SemiBold" Foreground="#E6EEF6"/>
+      <TextBlock Text="Hedef kapasite, kullanım ve plan tipinden salon kabuğu, sahne, gerçek koltuklar, görüş ve akustik ön kontrol üretir."
+                 TextWrapping="Wrap" Foreground="#8FA7BA"/>
+    </StackPanel>
+    <StackPanel Grid.Row="1" Spacing="12">
+      <TextBlock Text="Hazır ayar" Foreground="#8FA7BA"/>
+      <ComboBox x:Name="OnAyarCombo" SelectionChanged="OnAyar_SelectionChanged"/>
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+        <StackPanel Spacing="5"><TextBlock Text="Hedef koltuk" Foreground="#8FA7BA"/>
+          <NumericUpDown x:Name="KoltukValue" Minimum="20" Maximum="5000" Increment="10" Value="300"/></StackPanel>
+        <StackPanel Grid.Column="1" Spacing="5"><TextBlock Text="Kullanım" Foreground="#8FA7BA"/>
+          <ComboBox x:Name="KullanimCombo" SelectedIndex="2">
+            <ComboBoxItem>Konuşma</ComboBoxItem><ComboBoxItem>Müzik</ComboBoxItem>
+            <ComboBoxItem>Çok amaçlı</ComboBoxItem><ComboBoxItem>Sinema</ComboBoxItem>
+          </ComboBox></StackPanel>
+      </Grid>
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+        <StackPanel Spacing="5"><TextBlock Text="Plan tipi" Foreground="#8FA7BA"/>
+          <ComboBox x:Name="PlanCombo" SelectedIndex="1">
+            <ComboBoxItem>Dikdörtgen</ComboBoxItem><ComboBoxItem>Yelpaze</ComboBoxItem>
+            <ComboBoxItem>At nalı</ComboBoxItem><ComboBoxItem>Oval</ComboBoxItem>
+          </ComboBox></StackPanel>
+        <StackPanel Grid.Column="1" Spacing="7" Margin="0,20,0,0">
+          <CheckBox x:Name="BalkonCheck" Content="Büyük salonda balkon ekle"/>
+          <CheckBox x:Name="YansiticiCheck" Content="Yansıtıcı bulut öner" IsChecked="True"/>
+        </StackPanel>
+      </Grid>
+      <TextBlock x:Name="DurumText" Foreground="#6FB7DE" TextWrapping="Wrap"/>
+    </StackPanel>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="İptal" Click="Iptal_OnClick" IsCancel="True" Padding="18,8"/>
+      <Button Content="Salonu Oluştur" Click="Olustur_OnClick" IsDefault="True" Padding="18,8"
+              Background="#176C98" Foreground="White"/>
+    </StackPanel>
+  </Grid>
+</Window>

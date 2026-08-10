@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Kst.Acoustics.Core.Common.Geometry;
 
 namespace Kst.Acoustics.Core.Bina.Models;
@@ -35,6 +38,9 @@ public class BinaAciklik : IBinaAciklik
 
     /// Tespit kaynağı: "arc" (kapı yayı), "gap" (duvar boşluğu), "manuel".
     public string? Kaynak { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? EkAlanlar { get; set; }
 
     /// Etkin eşik yüksekliği — kullanıcı tanımlı varsa onu, yoksa tip varsayılanını döner.
     public double EtkinEsikYuksekligiM =>

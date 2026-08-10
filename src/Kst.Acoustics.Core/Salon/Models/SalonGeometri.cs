@@ -9,7 +9,7 @@ namespace Kst.Acoustics.Core.Salon.Models;
 public class SalonGeometri : ISalonGeometri
 {
     /// Şema versiyon numarası — migrasyon tetikleyicisi.
-    public int SemaSurum { get; set; } = 1;
+    public int SemaSurum { get; set; } = 2;
 
     /// Her kayıtta artan revizyon sayacı. Tüketici modüller (M01) yükledikleri
     /// değeri saklar; fark varsa "salon geometrisi güncellenmiş" uyarısı gösterilir.
@@ -51,6 +51,18 @@ public class SalonGeometri : ISalonGeometri
     /// tavan (`SalonYuksekligiM`). ≥2 nokta = parçalı/eğimli tavan (X yönünde ekstrüde).
     public ObservableCollection<TavanKirilimNoktasi> TavanProfili { get; set; } = new();
 
+    /// Kalıcı, geometriyle ilişkili ölçülendirmeler.
+    public ObservableCollection<SalonOlculendirme> Olculendirmeler { get; set; } = new();
+
+    /// Parametrik çizim kısıtları.
+    public ObservableCollection<SalonGeometrikKisit> GeometrikKisitlar { get; set; } = new();
+
+    /// Kilitlenebilir DXF/PDF/görsel referans altlıkları.
+    public ObservableCollection<SalonReferansAltlik> ReferansAltliklar { get; set; } = new();
+
+    /// Tavan akustik bulutları ve yönlendirilebilir reflektör panelleri.
+    public ObservableCollection<SalonYansiticiPanel> YansiticiPaneller { get; set; } = new();
+
     // ISalonGeometri salt-okunur görünümleri
     IReadOnlyList<ISalonKatman> ISalonGeometri.Katmanlar => Katmanlar;
     IReadOnlyList<ISalonCizimOgesi> ISalonGeometri.CizimOgeleri => CizimOgeleri;
@@ -60,4 +72,8 @@ public class SalonGeometri : ISalonGeometri
     IReadOnlyList<IBalkonGeometri> ISalonGeometri.Balkonlar => Balkonlar;
     IReadOnlyList<IDuvarAcikligi> ISalonGeometri.Acikliklar => Acikliklar;
     IReadOnlyList<ITavanKirilimNoktasi> ISalonGeometri.TavanProfili => TavanProfili;
+    IReadOnlyList<SalonOlculendirme> ISalonGeometri.Olculendirmeler => Olculendirmeler;
+    IReadOnlyList<SalonGeometrikKisit> ISalonGeometri.GeometrikKisitlar => GeometrikKisitlar;
+    IReadOnlyList<SalonReferansAltlik> ISalonGeometri.ReferansAltliklar => ReferansAltliklar;
+    IReadOnlyList<SalonYansiticiPanel> ISalonGeometri.YansiticiPaneller => YansiticiPaneller;
 }

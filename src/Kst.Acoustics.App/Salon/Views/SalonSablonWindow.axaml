@@ -52,15 +52,15 @@
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                     <StackPanel Grid.Column="0" Spacing="3">
                         <TextBlock Classes="lbl" Text="Genişlik (m)"/>
-                        <TextBox x:Name="SalonGenislikText" Text="24"/>
+                        <TextBox x:Name="SalonGenislikText" Text="24" AutomationProperties.Name="Salon genişliği, metre"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="3">
                         <TextBlock Classes="lbl" Text="Derinlik (m)"/>
-                        <TextBox x:Name="SalonDerinlikText" Text="30"/>
+                        <TextBox x:Name="SalonDerinlikText" Text="30" AutomationProperties.Name="Salon derinliği, metre"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="3">
                         <TextBlock Classes="lbl" Text="Yükseklik (m)"/>
-                        <TextBox x:Name="SalonYukText" Text="10"/>
+                        <TextBox x:Name="SalonYukText" Text="10" AutomationProperties.Name="Salon yüksekliği, metre"/>
                     </StackPanel>
                 </Grid>
 
@@ -87,15 +87,15 @@
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                     <StackPanel Grid.Column="0" Spacing="3">
                         <TextBlock Classes="lbl" Text="Genişlik (m)"/>
-                        <TextBox x:Name="SahneGenislikText" Text="14"/>
+                        <TextBox x:Name="SahneGenislikText" Text="14" AutomationProperties.Name="Sahne genişliği, metre"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="3">
                         <TextBlock Classes="lbl" Text="Derinlik (m)"/>
-                        <TextBox x:Name="SahneDerinlikText" Text="8"/>
+                        <TextBox x:Name="SahneDerinlikText" Text="8" AutomationProperties.Name="Sahne derinliği, metre"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="3">
                         <TextBlock Classes="lbl" Text="Yükseklik (m)"/>
-                        <TextBox x:Name="SahneYukText" Text="1.0"/>
+                        <TextBox x:Name="SahneYukText" Text="1.0" AutomationProperties.Name="Sahne yüksekliği, metre"/>
                     </StackPanel>
                 </Grid>
 
@@ -105,22 +105,27 @@
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                     <StackPanel Grid.Column="0" Spacing="3">
                         <TextBlock Classes="lbl" Text="Kademe sayısı"/>
-                        <TextBox x:Name="SeyirciKademeText" Text="8"/>
+                        <TextBox x:Name="SeyirciKademeText" Text="8" AutomationProperties.Name="Seyirci kademe sayısı"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="3">
                         <TextBlock Classes="lbl" Text="Kademe yük. (m)"/>
-                        <TextBox x:Name="SeyirciYukText" Text="0.5"/>
+                        <TextBox x:Name="SeyirciYukText" Text="0.5" AutomationProperties.Name="Kademe yüksekliği, metre"/>
                     </StackPanel>
                 </Grid>
 
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,14,0,0">
-            <Button Content="İptal" Click="Iptal_OnClick"
-                    Background="#0D2535" BorderBrush="#1A5070" Foreground="#C8E4F4" Padding="16,8" CornerRadius="6"/>
-            <Button Content="Oluştur" Click="Olustur_OnClick"
-                    Background="#0E5B82" BorderBrush="#1A8BBF" Foreground="White" FontWeight="SemiBold" Padding="18,8" CornerRadius="6"/>
+        <StackPanel Grid.Row="2" Spacing="8" Margin="0,14,0,0">
+            <TextBlock x:Name="HataText" IsVisible="False" Foreground="#FFB0A8" TextWrapping="Wrap"
+                       AutomationProperties.Name="Şablon doğrulama hatası"
+                       AutomationProperties.LiveSetting="Assertive"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                <Button Content="İptal" Click="Iptal_OnClick" IsCancel="True"
+                        Background="#0D2535" BorderBrush="#1A5070" Foreground="#C8E4F4" Padding="16,8" CornerRadius="6"/>
+                <Button Content="Oluştur" Click="Olustur_OnClick" IsDefault="True"
+                        Background="#0E5B82" BorderBrush="#1A8BBF" Foreground="White" FontWeight="SemiBold" Padding="18,8" CornerRadius="6"/>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>

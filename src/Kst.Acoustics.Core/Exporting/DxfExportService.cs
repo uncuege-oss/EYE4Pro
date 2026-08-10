@@ -2,17 +2,41 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Kst.Acoustics.Core.Importing;
 using Kst.Acoustics.Core.Projects;
 
 namespace Kst.Acoustics.Core.Exporting;
 
 public sealed class DxfExportService
 {
+    /// <summary>
+    /// Metre tabanlı modeller için geriye uyumlu kısa yol.
+    /// Birimi metre olmayan projeler açıkça birim alan overload'u kullanmalıdır.
+    /// </summary>
     public void Export(string path, IReadOnlyList<ProjectSurface> surfaces)
+        => Export(path, surfaces, SurfaceImportUnit.Meters);
+
+    public void Export(
+        string path,
+        IReadOnlyList<ProjectSurface> surfaces,
+        SurfaceImportUnit unit)
     {
         var sb = new StringBuilder();
 
-        // DXF Header
+        // Birim bilgisini açıkça yaz. $INSUNITS olmadığında M01 ve birçok CAD aracı
+        // güvenli bir varsayım yapamaz; M01 kullanıcı onayına ve mm önerisine düşer.
+        sb.AppendLine("0");
+        sb.AppendLine("SECTION");
+        sb.AppendLine("2");
+        sb.AppendLine("HEADER");
+        sb.AppendLine("9");
+        sb.AppendLine("$INSUNITS");
+        sb.AppendLine("70");
+        sb.AppendLine(ToDxfInsUnits(unit).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        sb.AppendLine("0");
+        sb.AppendLine("ENDSEC");
+
+        // DXF entities
         sb.AppendLine("0");
         sb.AppendLine("SECTION");
         sb.AppendLine("2");
@@ -47,6 +71,16 @@ public sealed class DxfExportService
         // DXF R2007+ UTF-8 okur; BOM bazı parser'ları şaşırtmasın diye eklenmez.
         File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
     }
+
+    private static int ToDxfInsUnits(SurfaceImportUnit unit) => unit switch
+    {
+        SurfaceImportUnit.Inches => 1,
+        SurfaceImportUnit.Feet => 2,
+        SurfaceImportUnit.Millimeters => 4,
+        SurfaceImportUnit.Centimeters => 5,
+        SurfaceImportUnit.Meters => 6,
+        _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, "Desteklenmeyen DXF birimi.")
+    };
 
     private static void Write3dFace(StringBuilder sb, string layer, IReadOnlyList<Geometry.Point3D> v)
     {

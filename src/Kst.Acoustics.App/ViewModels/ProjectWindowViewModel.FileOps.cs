@@ -27,16 +27,20 @@ public sealed partial class ProjectWindowViewModel
     }
     private bool _isDirty;
 
-    public void MarkDirty()
+    public void MarkDirty(string description = "Proje değiştirildi")
     {
+        if (IsDocumentHistoryReplay) return;
         _revision++;
         IsDirty = true;
+        InvalidateModelHealthAnalysis();
+        RecordDocumentHistory(description);
     }
 
     private void MarkClean()
     {
         _savedRevision = _revision;
         IsDirty = false;
+        MarkDocumentHistoryBaseline();
     }
 
     internal string? SavedFilePath => _savedFilePath;
@@ -47,7 +51,14 @@ public sealed partial class ProjectWindowViewModel
         _backupPreservationPath = recoveredFromBackup && !string.IsNullOrWhiteSpace(path)
             ? Path.GetFullPath(path)
             : null;
-        if (isDirty) MarkDirty();
+        if (isDirty)
+        {
+            // Açılış snapshot'ının diskteki baseline olduğu bilinmiyor (yeni import
+            // veya .bak recovery). Undo aynı görüntüye dönse bile belge temiz
+            // sayılmamalı; ilk başarılı kayıt yeni baseline'ı kurar.
+            ForgetDocumentHistoryBaseline();
+            MarkDirty("Kaydedilmemiş proje durumu açıldı");
+        }
         else MarkClean();
     }
 
@@ -183,7 +194,7 @@ public sealed partial class ProjectWindowViewModel
     {
         var sources = BuildValidatedPointSnapshot(Sources, "kaynak");
         var receivers = BuildValidatedPointSnapshot(Receivers, "alıcı");
-        return _project with
+        var workingProject = _project with
         {
             Surfaces          = _workingSurfaces.Select(s => s with { Vertices = s.Vertices.ToArray() }).ToArray(),
             Sources           = sources,
@@ -191,12 +202,14 @@ public sealed partial class ProjectWindowViewModel
             CategoryMaterials = new Dictionary<string, string>(BuildCategoryMaterialMap(), StringComparer.OrdinalIgnoreCase),
             SurfaceMaterials  = new Dictionary<string, string>(BuildSurfaceMaterialMap(), StringComparer.OrdinalIgnoreCase),
             RoomVolume        = RoomVolume,
+            SelectedRoomType  = CurrentRoomType,
             VolumeOrigin      = VolumeOrigin,
             LastResult        = LastResult,
             SimulationSettings = BuildStoredSimulationSettings(),
             PanelKonfigurasyon = ClonePanelConfiguration(PanelKonfigurasyon),
             ImportWarnings    = _project.ImportWarnings.ToArray()
         };
+        return BuildScenarioAwareProject(workingProject);
     }
 
     private static IReadOnlyList<AcousticPoint> BuildValidatedPointSnapshot(

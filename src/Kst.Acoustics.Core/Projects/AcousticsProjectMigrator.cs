@@ -3,7 +3,7 @@ namespace Kst.Acoustics.Core.Projects;
 /// <summary>Uygulamanın bildiği en güncel M01 proje şema sürümü.</summary>
 public static class AcousticsProjectSchema
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 }
 
 /// <summary>
@@ -76,6 +76,7 @@ public static class AcousticsProjectMigrator
     {
         var panel = NormalizePanelConfiguration(project.PanelKonfigurasyon);
         var simulationSettings = project.SimulationSettings;
+        var scenarios = project.Scenarios?.ToArray() ?? [];
 
         // v1 dosyalarında UnitScale yoktu veya varsayılan 1 olarak kalabiliyordu.
         // ReceiverRadius zaten proje birimindedir; yalnız proje birimi→metre damgasını
@@ -94,7 +95,9 @@ public static class AcousticsProjectMigrator
             SemaSurum = AcousticsProjectSchema.CurrentVersion,
             PanelKonfigurasyon = panel,
             ImportWarnings = project.ImportWarnings?.ToArray() ?? [],
-            SimulationSettings = simulationSettings
+            SimulationSettings = simulationSettings,
+            Scenarios = scenarios,
+            ActiveScenarioId = project.SemaSurum < 3 ? null : project.ActiveScenarioId
         };
     }
 

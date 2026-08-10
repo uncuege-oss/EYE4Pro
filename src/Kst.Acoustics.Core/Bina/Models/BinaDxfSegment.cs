@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Kst.Acoustics.Core.Common.Geometry;
 
 namespace Kst.Acoustics.Core.Bina.Models;
@@ -8,6 +11,9 @@ public class BinaDxfSegment
     public Point2D A { get; set; }
     public Point2D B { get; set; }
     public string Layer { get; set; } = "";
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? EkAlanlar { get; set; }
 }
 
 /// JSON-uyumlu DXF ARC entity (kapı yayı tespiti için).
@@ -17,4 +23,7 @@ public class BinaDxfArc
     public double R { get; set; }
     public double BasAciDeg { get; set; }
     public double BitAciDeg { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? EkAlanlar { get; set; }
 }

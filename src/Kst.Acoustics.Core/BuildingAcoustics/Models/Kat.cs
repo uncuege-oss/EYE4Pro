@@ -21,6 +21,14 @@ public class Kat : INotifyPropertyChanged
         set { if (_katNo == value) return; _katNo = value; OnPropertyChanged(); }
     }
 
+    /// <summary>
+    /// M50 <c>BinaKat.Id</c> değerinin M08 tarafındaki kararlı karşılığı.
+    /// KatNo yalnız görüntü sırasıdır; katlar yeniden sıralandığında akustik
+    /// atamaların başka kata kaymaması için eşleştirme bu kimlikle yapılır.
+    /// Eski M08 belgelerinde boş olabilir ve ilk M50 içe aktarımında doldurulur.
+    /// </summary>
+    public string BinaGeometriKatId { get; set; } = "";
+
     private string _ad = "";
     public string Ad                              // kullanıcı tanımlı kat adı
     {

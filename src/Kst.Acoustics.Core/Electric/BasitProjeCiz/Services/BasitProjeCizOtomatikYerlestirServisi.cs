@@ -345,7 +345,9 @@ public class BasitProjeCizOtomatikYerlestirServisi
 
                 // 5.2 — Patlatılmış (tavanı açık) odada tavan montajlı otomatik
                 // yerleşim yapılmaz; elemanlar üst odanın tavanından servis eder.
-                bool tavanMontaj = montaj == "Tavan" || tanim.MontajTipi == "Tavan";
+                // Hücre/satır override'ı efektif montajı belirler. Tanımın varsayılanı
+                // yalnız override yokken EfektifAyarlar tarafından zaten kullanılır.
+                bool tavanMontaj = string.Equals(montaj, "Tavan", StringComparison.OrdinalIgnoreCase);
                 if (tavanMontaj && tavaniAcikOdalar is not null && tavaniAcikOdalar.Contains(oda.Id))
                 {
                     uyarilar.Add($"{oda.Ad}: tavanı açık (düşey birleşim) — tavan montajlı '{tanim.Ad}' otomatik yerleştirilmedi");

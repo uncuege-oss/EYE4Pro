@@ -118,7 +118,7 @@ public sealed class BinaGeometriCanvas : Control
     {
         AffectsRender<BinaGeometriCanvas>(KatProperty, SeciliOdaIdProperty, SeciliAciklikIdProperty,
             ReferansKatProperty, CetvelGosterProperty);
-        KatProperty.Changed.AddClassHandler<BinaGeometriCanvas>((c, _) => c.FitAll());
+        KatProperty.Changed.AddClassHandler<BinaGeometriCanvas>((c, _) => c.KatDegisti());
         ReferansKatProperty.Changed.AddClassHandler<BinaGeometriCanvas>((c, _) => c.FitAll());
     }
 
@@ -143,6 +143,8 @@ public sealed class BinaGeometriCanvas : Control
     // ── Köşe sürükleme durumu ─────────────────────────────────────────────────
 
     private int _dragVertexIdx = -1;
+    private bool _dragSnapshotAlindi;
+    private Point _dragPressScreen;
 
     // ── Kenar (duvar) sürükleme durumu ────────────────────────────────────────
 
@@ -163,10 +165,13 @@ public sealed class BinaGeometriCanvas : Control
     public void AciklikEkleBaslat(BinaAciklikTipi tip)
     {
         OdaCizimIptal();
+        var mod = new BinaEditorModDurumu(_odaCizimModu, _aciklikEkleModu)
+            .AciklikEklemeyiBaslat();
+        _odaCizimModu = mod.OdaCizim;
+        _aciklikEkleModu = mod.AciklikEkle;
         _aciklikEkleTipi = tip;
         _aciklikBas = null;
         _aciklikFare = null;
-        _aciklikEkleModu = true;
         Cursor = new Cursor(StandardCursorType.Cross);
         OnAciklikEkleModuDegisti?.Invoke(true);
         InvalidateVisual();
@@ -195,6 +200,8 @@ public sealed class BinaGeometriCanvas : Control
     public Action? OnVertexTasimaBasladi { get; set; }
     /// Seçili odanın index'inci köşesi (wx, wy)'ye taşındı.
     public Action<int, double, double>? OnVertexTasindi { get; set; }
+    /// Seçili odanın index kenarı iki uç noktasıyla atomik taşındı.
+    public Action<int, double, double, double, double>? OnKenarTasindi { get; set; }
     /// Köşe sürükleme bitti.
     public Action? OnVertexTasimaBitti { get; set; }
     /// Seçili odanın index'inci kenarına çift tık → araya köşe ekle.
@@ -217,9 +224,12 @@ public sealed class BinaGeometriCanvas : Control
     public void OdaCizimBaslat()
     {
         if (_aciklikEkleModu) AciklikEkleIptal();
+        var mod = new BinaEditorModDurumu(_odaCizimModu, _aciklikEkleModu)
+            .OdaCiziminiBaslat();
+        _odaCizimModu = mod.OdaCizim;
+        _aciklikEkleModu = mod.AciklikEkle;
         _cizimNoktalar.Clear();
         _cizimFare = null;
-        _odaCizimModu = true;
         Cursor = new Cursor(StandardCursorType.Cross);
         OnCizimModuDegisti?.Invoke(true);
         InvalidateVisual();
@@ -246,7 +256,29 @@ public sealed class BinaGeometriCanvas : Control
 
     public void FitAll()
     {
+        _layoutGecerli = false;
         _fitPending = true;
+        InvalidateVisual();
+    }
+
+    private void KatDegisti()
+    {
+        EtkilesimleriIptalEt();
+        FitAll();
+    }
+
+    public void EtkilesimleriIptalEt()
+    {
+        if (_odaCizimModu || _cizimNoktalar.Count > 0) OdaCizimIptal();
+        if (_aciklikEkleModu || _aciklikBas is not null) AciklikEkleIptal();
+        var mod = new BinaEditorModDurumu(_odaCizimModu, _aciklikEkleModu).TumunuIptalEt();
+        _odaCizimModu = mod.OdaCizim;
+        _aciklikEkleModu = mod.AciklikEkle;
+        _dragVertexIdx = -1;
+        _dragEdgeIdx = -1;
+        _dragSnapshotAlindi = false;
+        _isPanning = false;
+        Cursor = Cursor.Default;
         InvalidateVisual();
     }
 
@@ -484,7 +516,7 @@ public sealed class BinaGeometriCanvas : Control
     {
         var oda = SeciliOda();
         var kat = Kat;
-        if (oda is null || kat is null) return -1;
+        if (oda is null || kat is null || !kat.BloklariGoster) return -1;
         var bounds = Bounds;
         var (sc, ox, oy, minX, maxY) = GetLayout(bounds, kat);
         if (!double.IsFinite(sc) || sc <= 0) return -1;
@@ -503,7 +535,7 @@ public sealed class BinaGeometriCanvas : Control
     {
         var oda = SeciliOda();
         var kat = Kat;
-        if (oda is null || kat is null || oda.Poligon.Count < 3) return -1;
+        if (oda is null || kat is null || !kat.BloklariGoster || oda.Poligon.Count < 3) return -1;
         var bounds = Bounds;
         var (sc, ox, oy, minX, maxY) = GetLayout(bounds, kat);
         if (!double.IsFinite(sc) || sc <= 0) return -1;
@@ -522,7 +554,7 @@ public sealed class BinaGeometriCanvas : Control
     private BinaAciklik? HitTestAciklik(Point screen)
     {
         var kat = Kat;
-        if (kat is null || kat.Acikliklar.Count == 0) return null;
+        if (kat is null || !kat.BloklariGoster || kat.Acikliklar.Count == 0) return null;
         var bounds = Bounds;
         var (sc, ox, oy, minX, maxY) = GetLayout(bounds, kat);
         if (!double.IsFinite(sc) || sc <= 0) return null;
@@ -591,6 +623,32 @@ public sealed class BinaGeometriCanvas : Control
             }
         }
 
+        return (bestX, bestY);
+    }
+
+    /// Manuel açıklık noktalarını en yakın oda duvarına projekte eder.
+    private (double X, double Y) SnapAciklikNoktasi(double wx, double wy)
+    {
+        var temel = Snap(wx, wy);
+        double bestX = temel.X, bestY = temel.Y, bestD = 0.35;
+        var kat = Kat;
+        if (kat is null || !kat.BloklariGoster) return temel;
+
+        foreach (var oda in kat.Odalar)
+        {
+            for (int i = 0; i < oda.Poligon.Count; i++)
+            {
+                var a = oda.Poligon[i];
+                var b = oda.Poligon[(i + 1) % oda.Poligon.Count];
+                double dx = b.X - a.X, dy = b.Y - a.Y;
+                double len2 = dx * dx + dy * dy;
+                if (len2 < 1e-12) continue;
+                double t = Math.Clamp(((temel.X - a.X) * dx + (temel.Y - a.Y) * dy) / len2, 0, 1);
+                double px = a.X + t * dx, py = a.Y + t * dy;
+                double d = Math.Sqrt((px - temel.X) * (px - temel.X) + (py - temel.Y) * (py - temel.Y));
+                if (d < bestD) { bestD = d; bestX = px; bestY = py; }
+            }
+        }
         return (bestX, bestY);
     }
 
@@ -927,7 +985,7 @@ public sealed class BinaGeometriCanvas : Control
         var pos = e.GetPosition(this);
 
         // Sağ tık → köşe sil (seçili odada, çizim modu dışında)
-        if (pt.Properties.IsRightButtonPressed && !_odaCizimModu)
+        if (pt.Properties.IsRightButtonPressed && !_odaCizimModu && !_aciklikEkleModu)
         {
             int vi = HitTestVertex(pos);
             if (vi >= 0)
@@ -941,6 +999,16 @@ public sealed class BinaGeometriCanvas : Control
 
         if (pt.Properties.IsLeftButtonPressed)
         {
+            // Normal seçim modunda açıklık, aynı duvarın kenar-sürükleme
+            // hit-test'inden önce gelir.
+            if (!_odaCizimModu && !_aciklikEkleModu && HitTestAciklik(pos) is { } acHit)
+            {
+                SetCurrentValue(SeciliAciklikIdProperty, acHit.Id);
+                OnAciklikSecildi?.Invoke(acHit);
+                e.Handled = true;
+                return;
+            }
+
             // Çift tık: çizimde → poligonu bitir; seçili oda kenarında → köşe ekle
             if (e.ClickCount == 2)
             {
@@ -950,7 +1018,7 @@ public sealed class BinaGeometriCanvas : Control
                     e.Handled = true;
                     return;
                 }
-                int ei = HitTestEdge(pos);
+                int ei = _aciklikEkleModu ? -1 : HitTestEdge(pos);
                 if (ei >= 0 && TryGetWorldPoint(pos, out double ewx, out double ewy))
                 {
                     OnKenarCiftTiklandi?.Invoke(ei, ewx, ewy);
@@ -961,13 +1029,14 @@ public sealed class BinaGeometriCanvas : Control
             }
 
             // Köşe / kenar sürükleme başlat (çizim modu dışında)
-            if (!_odaCizimModu)
+            if (!_odaCizimModu && !_aciklikEkleModu)
             {
                 int vi = HitTestVertex(pos);
                 if (vi >= 0)
                 {
                     _dragVertexIdx = vi;
-                    OnVertexTasimaBasladi?.Invoke();
+                    _dragSnapshotAlindi = false;
+                    _dragPressScreen = pos;
                     e.Pointer.Capture(this);
                     e.Handled = true;
                     return;
@@ -982,7 +1051,8 @@ public sealed class BinaGeometriCanvas : Control
                     _edgeStartWorld = new Point2D(ewx, ewy);
                     _edgeP0Orig     = odaE.Poligon[ei];
                     _edgeP1Orig     = odaE.Poligon[(ei + 1) % odaE.Poligon.Count];
-                    OnVertexTasimaBasladi?.Invoke();
+                    _dragSnapshotAlindi = false;
+                    _dragPressScreen = pos;
                     e.Pointer.Capture(this);
                     e.Handled = true;
                     return;
@@ -1008,11 +1078,23 @@ public sealed class BinaGeometriCanvas : Control
         // Köşe sürükleme
         if (_dragVertexIdx >= 0)
         {
+            if (!_dragSnapshotAlindi)
+            {
+                var d = pos - _dragPressScreen;
+                if (d.X * d.X + d.Y * d.Y <= 9) { e.Handled = true; return; }
+            }
             if (TryGetWorldPoint(pos, out double wx, out double wy))
             {
                 var (sx, sy) = Snap(wx, wy, SeciliOdaId, _dragVertexIdx);
-                OnVertexTasindi?.Invoke(_dragVertexIdx, sx, sy);
-                InvalidateVisual();
+                var oda = SeciliOda();
+                bool gercekDegisim = oda is not null && _dragVertexIdx < oda.Poligon.Count &&
+                    (Math.Abs(oda.Poligon[_dragVertexIdx].X - sx) > 1e-9 ||
+                     Math.Abs(oda.Poligon[_dragVertexIdx].Y - sy) > 1e-9);
+                if (MutasyonKapisi(ref _dragSnapshotAlindi, gercekDegisim, OnVertexTasimaBasladi))
+                {
+                    OnVertexTasindi?.Invoke(_dragVertexIdx, sx, sy);
+                    InvalidateVisual();
+                }
             }
             e.Handled = true;
             return;
@@ -1023,6 +1105,11 @@ public sealed class BinaGeometriCanvas : Control
         // Magnetik snap yalnız normal bileşeni olarak uygulanır (paralellik bozulmaz).
         if (_dragEdgeIdx >= 0)
         {
+            if (!_dragSnapshotAlindi)
+            {
+                var d = pos - _dragPressScreen;
+                if (d.X * d.X + d.Y * d.Y <= 9) { e.Handled = true; return; }
+            }
             if (SeciliOda() is { } odaE && TryGetWorldPoint(pos, out double wx, out double wy))
             {
                 int i0 = _dragEdgeIdx, i1 = (i0 + 1) % odaE.Poligon.Count;
@@ -1054,9 +1141,24 @@ public sealed class BinaGeometriCanvas : Control
                 else if (snap1)                                        snapN = n1;
 
                 double ax = snapN * nx, ay = snapN * ny;
-                OnVertexTasindi?.Invoke(i0, c0x + ax, c0y + ay);
-                OnVertexTasindi?.Invoke(i1, c1x + ax, c1y + ay);
-                InvalidateVisual();
+                double y0x = c0x + ax, y0y = c0y + ay;
+                double y1x = c1x + ax, y1y = c1y + ay;
+                bool gercekDegisim =
+                    Math.Abs(odaE.Poligon[i0].X - y0x) > 1e-9 ||
+                    Math.Abs(odaE.Poligon[i0].Y - y0y) > 1e-9 ||
+                    Math.Abs(odaE.Poligon[i1].X - y1x) > 1e-9 ||
+                    Math.Abs(odaE.Poligon[i1].Y - y1y) > 1e-9;
+                if (MutasyonKapisi(ref _dragSnapshotAlindi, gercekDegisim, OnVertexTasimaBasladi))
+                {
+                    if (OnKenarTasindi is not null)
+                        OnKenarTasindi(i0, y0x, y0y, y1x, y1y);
+                    else
+                    {
+                        OnVertexTasindi?.Invoke(i0, y0x, y0y);
+                        OnVertexTasindi?.Invoke(i1, y1x, y1y);
+                    }
+                    InvalidateVisual();
+                }
             }
             e.Handled = true;
             return;
@@ -1078,7 +1180,7 @@ public sealed class BinaGeometriCanvas : Control
         {
             if (TryGetWorldPoint(pos, out double wx, out double wy))
             {
-                var (sx, sy) = Snap(wx, wy);
+                var (sx, sy) = SnapAciklikNoktasi(wx, wy);
                 _aciklikFare = new Point2D(sx, sy);
                 InvalidateVisual();
             }
@@ -1090,6 +1192,33 @@ public sealed class BinaGeometriCanvas : Control
         e.Handled = true;
     }
 
+    /// Drag eşiğinin aşılması tek başına history adımı değildir. Snapshot yalnız
+    /// snap sonrası hedef canlı koordinattan gerçekten farklıysa ve sürükleme başına
+    /// tam bir kez alınır. Ayrı kapı, bu kritik sıralamanın regresyon testini kolaylaştırır.
+    private static bool MutasyonKapisi(ref bool snapshotAlindi, bool gercekDegisim, Action? snapshotAl)
+    {
+        if (!gercekDegisim) return false;
+        if (!snapshotAlindi)
+        {
+            snapshotAl?.Invoke();
+            snapshotAlindi = true;
+        }
+        return true;
+    }
+
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
+        bool geometriDegisti = _dragSnapshotAlindi && (_dragVertexIdx >= 0 || _dragEdgeIdx >= 0);
+        _dragVertexIdx = -1;
+        _dragEdgeIdx = -1;
+        _dragSnapshotAlindi = false;
+        _isPanning = false;
+        Cursor = Cursor.Default;
+        if (geometriDegisti) OnVertexTasimaBitti?.Invoke();
+        InvalidateVisual();
+    }
+
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
@@ -1097,9 +1226,11 @@ public sealed class BinaGeometriCanvas : Control
         // Köşe sürükleme bitişi
         if (_dragVertexIdx >= 0)
         {
+            bool degisti = _dragSnapshotAlindi;
             _dragVertexIdx = -1;
+            _dragSnapshotAlindi = false;
             e.Pointer.Capture(null);
-            OnVertexTasimaBitti?.Invoke();
+            if (degisti) OnVertexTasimaBitti?.Invoke();
             e.Handled = true;
             return;
         }
@@ -1107,9 +1238,11 @@ public sealed class BinaGeometriCanvas : Control
         // Kenar (duvar) sürükleme bitişi
         if (_dragEdgeIdx >= 0)
         {
+            bool degisti = _dragSnapshotAlindi;
             _dragEdgeIdx = -1;
+            _dragSnapshotAlindi = false;
             e.Pointer.Capture(null);
-            OnVertexTasimaBitti?.Invoke();
+            if (degisti) OnVertexTasimaBitti?.Invoke();
             e.Handled = true;
             return;
         }
@@ -1149,7 +1282,7 @@ public sealed class BinaGeometriCanvas : Control
             // Manuel açıklık ekleme: 1. tık = başlangıç, 2. tık = bitiş
             if (_aciklikEkleModu)
             {
-                var (sx, sy) = Snap(wx, wy);
+                var (sx, sy) = SnapAciklikNoktasi(wx, wy);
                 if (_aciklikBas is null)
                 {
                     _aciklikBas = new Point2D(sx, sy);
@@ -1172,20 +1305,20 @@ public sealed class BinaGeometriCanvas : Control
                 var acHit = HitTestAciklik(now);
                 if (acHit is not null)
                 {
-                    SeciliAciklikId = acHit.Id;
+                    SetCurrentValue(SeciliAciklikIdProperty, acHit.Id);
                     OnAciklikSecildi?.Invoke(acHit);
                 }
                 else
                 {
                     if (SeciliAciklikId is not null)
                     {
-                        SeciliAciklikId = null;
+                        SetCurrentValue(SeciliAciklikIdProperty, null);
                         OnAciklikSecildi?.Invoke(null);
                     }
-                    var hit = kat.Odalar.FirstOrDefault(o =>
+                    var hit = kat.BloklariGoster ? kat.Odalar.FirstOrDefault(o =>
                         o.Poligon.Count >= 3 &&
-                        PoligonYardimci.IsPointInside(new Point2D(wx, wy), o.Poligon));
-                    SeciliOdaId = hit?.Id;
+                        PoligonYardimci.IsPointInside(new Point2D(wx, wy), o.Poligon)) : null;
+                    SetCurrentValue(SeciliOdaIdProperty, hit?.Id);
                     OnOdaSecildi?.Invoke(hit);
                 }
             }

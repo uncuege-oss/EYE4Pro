@@ -15,7 +15,7 @@ public static class SimulationInputFingerprint
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
-        Add(hash, "EYE4PRO-M01-SIM-V1");
+        Add(hash, "EYE4PRO-M01-SIM-V2");
         Add(hash, (int)project.Unit);
         Add(hash, project.RoomVolume);
 
@@ -93,8 +93,16 @@ public static class SimulationInputFingerprint
 
     private static void AddMap(IncrementalHash hash, IReadOnlyDictionary<string, string> map)
     {
-        Add(hash, map.Count);
-        foreach (var item in map.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
+        // UI her kategori için varsayılan materyali açıkça yazar; eski veya dışarıdan
+        // oluşturulan projeler ise aynı semantiği boş eşlemeyle taşıyabilir. Bu iki
+        // gösterim simülasyon girdisi açısından eşdeğerdir ve aynı izi üretmelidir.
+        var effective = map
+            .Where(kvp => !string.Equals(
+                kvp.Value, MaterialLibrary.Default.Id, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        Add(hash, effective.Length);
+        foreach (var item in effective)
         {
             Add(hash, item.Key);
             Add(hash, item.Value);

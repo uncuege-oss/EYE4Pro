@@ -21,6 +21,7 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Margin" Value="2"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
@@ -39,6 +40,7 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="11,6"/>
+            <Setter Property="Margin" Value="2"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
@@ -52,24 +54,40 @@
 
         <!-- Üst araç çubuğu -->
         <Border Grid.Row="0" Background="#101922" BorderBrush="#223040" BorderThickness="0,0,0,1" Padding="14,10">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="*,Auto">
+                <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="🎭 Salon Tasarla" Foreground="#E6EEF6" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <Button Classes="tool" Content="Yeni" Click="Yeni_OnClick"/>
                     <Button Classes="tool" Content="📐 Şablon" Click="Sablon_OnClick"/>
+                    <Button Classes="tool" Content="✨ Hızlı Tasarım" Click="HizliTasarim_OnClick"
+                            ToolTip.Tip="Koltuk hedefinden ölçülendirilmiş salon ve ön analiz üret"/>
                     <Button Classes="tool" Content="Aç" Click="Ac_OnClick"/>
                     <Button Classes="tool" Content="Kaydet" Click="Kaydet_OnClick"/>
                     <Button Classes="tool" Content="Farklı Kaydet" Click="FarkliKaydet_OnClick"/>
                     <Button Classes="tool" Content="DXF Dışa Aktar" Click="DxfDisaAktar_OnClick"/>
                     <Border Width="1" Background="#27465C" Margin="4,2"/>
-                    <Button Classes="tool" Content="↶" Click="GeriAl_OnClick" ToolTip.Tip="Geri al (Ctrl+Z)"/>
-                    <Button Classes="tool" Content="↷" Click="Yinele_OnClick" ToolTip.Tip="Yinele (Ctrl+Y / Ctrl+Shift+Z)"/>
+                    <Button Classes="tool" Content="↶" Click="GeriAl_OnClick" ToolTip.Tip="Geri al (Ctrl+Z)"
+                            IsEnabled="{Binding CanUndo}" AutomationProperties.Name="Geri al"/>
+                    <Button Classes="tool" Content="↷" Click="Yinele_OnClick" ToolTip.Tip="Yinele (Ctrl+Y / Ctrl+Shift+Z)"
+                            IsEnabled="{Binding CanRedo}" AutomationProperties.Name="Yinele"/>
                     <Border Width="1" Background="#27465C" Margin="4,2"/>
                     <Button Classes="tool" Content="🧊 3D Önizleme" Click="Onizleme3D_OnClick"/>
+                    <Button Classes="tool" Content="📊 Analiz" Click="Analiz_OnClick"
+                            ToolTip.Tip="Kesit, koltuk, görüş, RT60, kalite ve yansıtıcı araçları"/>
+                    <Button Classes="tool" Content="🛠 CAD+" Click="GelismisCad_OnClick"
+                            ToolTip.Tip="Pah/fillet, dizi, hizalama, grup, kalıcı ölçü ve kısıtlar"/>
+                    <Button Classes="tool" Content="🗺 Altlık" Click="AltlikEkle_OnClick"
+                            ToolTip.Tip="DXF, PDF veya görsel referans altlığı ekle"/>
+                    <Button Classes="tool" Content="🕘 Sürümler" Click="Surumler_OnClick"
+                            ToolTip.Tip="Otomatik kayıt ve sürüm geçmişi"/>
+                    <Button Classes="tool" Content="⌘ Komut" Click="KomutPaleti_OnClick"
+                            ToolTip.Tip="Komut paleti (Ctrl+K)"/>
                     <Button Classes="tool" Content="✔ Kontrol" Click="Kontrol_OnClick"
                             ToolTip.Tip="Geometri tutarlılık kontrolleri + kabuk sızıntı testi"/>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                </ScrollViewer>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="8,0,0,0">
                     <Button Classes="tool" Content="◀ Geri" Click="Geri_OnClick"/>
                 </StackPanel>
             </Grid>
@@ -85,22 +103,30 @@
                         <StackPanel Spacing="6">
                             <TextBlock Classes="panelHead" Text="SALON"/>
                             <TextBox x:Name="SalonAdiText" PlaceholderText="Salon adı"
+                                     AutomationProperties.Name="Salon adı"
                                      LostFocus="SalonAdi_LostFocus"
                                      Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                 <TextBox x:Name="YukseklikText" Grid.Column="0" PlaceholderText="Yükseklik (m)"
+                                         AutomationProperties.Name="Salon duvar yüksekliği, metre"
                                          LostFocus="Yukseklik_LostFocus" KeyDown="Yukseklik_KeyDown"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBlock Grid.Column="1" Text="m duvar yük." Foreground="#6F879D" FontSize="11" VerticalAlignment="Center"/>
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                 <TextBox x:Name="FasetText" Grid.Column="0" PlaceholderText="Faset (12-128)"
+                                         AutomationProperties.Name="Daire faset kenar sayısı, 12 ile 128 arası"
                                          LostFocus="Faset_LostFocus"
                                          ToolTip.Tip="Daire/oval fasetleme kenar sayısı — akustik hassasiyet ↔ yüzey sayısı dengesi"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBlock Grid.Column="1" Text="daire kenarı" Foreground="#6F879D" FontSize="11" VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
+
+                        <Button Classes="tool" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                IsVisible="{Binding UygulanmamisTaslakVar}"
+                                Content="Panel taslağını geri al" Click="TaslakVazgec_OnClick"
+                                AutomationProperties.Name="Uygulanmamış panel değişikliklerini geri al"/>
 
                         <Border Height="1" Background="#1D2B38"/>
 
@@ -121,7 +147,9 @@
                                                     Background="{Binding RenkHex}"/>
                                             <TextBlock Grid.Column="1" Text="{Binding Ad}" Foreground="#D2DEE8"
                                                        VerticalAlignment="Center"/>
-                                            <CheckBox Grid.Column="2" IsChecked="{Binding Gorunur}"
+                                            <CheckBox Grid.Column="2" IsChecked="{Binding Gorunur, Mode=OneWay}"
+                                                      Click="KatmanGorunurluk_OnClick"
+                                                      AutomationProperties.Name="Katman görünürlüğü"
                                                       ToolTip.Tip="Görünür"/>
                                         </Grid>
                                     </DataTemplate>
@@ -129,15 +157,18 @@
                             </ListBox>
 
                             <Button Classes="tool" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                    Content="Seçili öğeyi bu katmana ata" Click="OgeyiKatmanaAta_OnClick"/>
+                                    Content="Seçili öğeyi bu katmana ata" Click="OgeyiKatmanaAta_OnClick"
+                                    IsEnabled="{Binding SeciliKatmanVar}"/>
 
                             <Border Background="#0B131C" BorderBrush="#1D2B38" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,2,0,0">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="Seçili katmanı düzenle" Foreground="#7E99AD" FontSize="10.5" FontWeight="SemiBold"/>
                                     <TextBox x:Name="KatmanAdText" PlaceholderText="Ad (M01 kategorisi)"
+                                             AutomationProperties.Name="Katman adı ve M01 kategorisi"
                                              Background="#091018" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                                         <TextBox x:Name="KatmanRenkText" Grid.Column="0" PlaceholderText="#RRGGBB"
+                                                 AutomationProperties.Name="Katman rengi, onaltılık RRGGBB"
                                                  Background="#091018" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                         <ComboBox x:Name="KatmanTipCombo" Grid.Column="1" SelectedIndex="0"
                                                   HorizontalAlignment="Stretch" Background="#091018" Foreground="#DCE7F0">
@@ -151,13 +182,17 @@
                                             <ComboBoxItem>Korniş</ComboBoxItem>
                                             <ComboBoxItem>Balkon</ComboBoxItem>
                                             <ComboBoxItem>Orkestra</ComboBoxItem>
+                                            <ComboBoxItem>Kapı</ComboBoxItem>
+                                            <ComboBoxItem>Pencere</ComboBoxItem>
+                                            <ComboBoxItem>Yansıtıcı</ComboBoxItem>
                                         </ComboBox>
                                     </Grid>
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                                         <Button Grid.Column="0" Classes="tool" HorizontalAlignment="Stretch"
                                                 HorizontalContentAlignment="Center"
-                                                Content="Güncelle" Click="KatmanGuncelle_OnClick"/>
-                                        <Button Grid.Column="1" Classes="tool" Content="Sil" Click="KatmanSil_OnClick"/>
+                                                Content="Güncelle" Click="KatmanGuncelle_OnClick" IsEnabled="{Binding SeciliKatmanVar}"/>
+                                        <Button Grid.Column="1" Classes="tool" Content="Sil" Click="KatmanSil_OnClick"
+                                                IsEnabled="{Binding SeciliKatmanVar}"/>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -182,18 +217,24 @@
                             </Grid>
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
                                 <TextBox x:Name="SahneGenislikText" Grid.Column="0" PlaceholderText="Gen. (m)"
+                                         AutomationProperties.Name="Sahne genişliği, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="SahneDerinlikText" Grid.Column="1" PlaceholderText="Der. (m)"
+                                         AutomationProperties.Name="Sahne derinliği, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="SahneYukseklikText" Grid.Column="2" PlaceholderText="Yük. (m)"
+                                         AutomationProperties.Name="Sahne yüksekliği, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             </Grid>
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
                                 <TextBox x:Name="SahneMerkezXText" Grid.Column="0" PlaceholderText="Merkez X (m)"
+                                         AutomationProperties.Name="Sahne merkez X koordinatı, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="SahneMerkezYText" Grid.Column="1" PlaceholderText="Merkez Y (m)"
+                                         AutomationProperties.Name="Sahne merkez Y koordinatı, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="SahneKotText" Grid.Column="2" PlaceholderText="Taban kot"
+                                         AutomationProperties.Name="Sahne taban kotu, metre"
                                          ToolTip.Tip="Sahne taban kotu (m) — balkon üstü sahne vb."
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             </Grid>
@@ -237,18 +278,23 @@
                             <TextBlock Classes="panelHead" Text="SEYİRCİ ALANI"/>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                                 <TextBox x:Name="SeyirciGenislikText" Grid.Column="0" PlaceholderText="Gen. (m)"
+                                         AutomationProperties.Name="Seyirci alanı genişliği, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="SeyirciDerinlikText" Grid.Column="1" PlaceholderText="Der. (m)"
+                                         AutomationProperties.Name="Seyirci alanı derinliği, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             </Grid>
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
                                 <TextBox x:Name="SeyirciKademeText" Grid.Column="0" PlaceholderText="Kademe"
+                                         AutomationProperties.Name="Seyirci kademe sayısı"
                                          ToolTip.Tip="Kademe (basamak) sayısı"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="SeyirciYukText" Grid.Column="1" PlaceholderText="Kademe yük."
+                                         AutomationProperties.Name="Seyirci kademe yüksekliği, metre"
                                          ToolTip.Tip="Kademe başına yükselme (m)"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="SeyirciKotText" Grid.Column="2" PlaceholderText="Taban kot"
+                                         AutomationProperties.Name="Seyirci alanı taban kotu, metre"
                                          ToolTip.Tip="Ön kenar taban kotu (m) — balkon üstü seyirci için balkon kotu"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             </Grid>
@@ -258,6 +304,23 @@
                                 <TextBox x:Name="SeyirciMerkezYText" Grid.Column="1" PlaceholderText="Merkez Y (m)"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             </Grid>
+                            <TextBlock Text="Gerçek koltuk ve koridor yerleşimi" Foreground="#7E99AD" FontSize="10.5" FontWeight="SemiBold"/>
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                                <TextBox x:Name="KoltukGenislikText" Grid.Column="0" PlaceholderText="Koltuk gen."
+                                         ToolTip.Tip="Koltuk aks genişliği (m)" Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
+                                <TextBox x:Name="SiraAraligiText" Grid.Column="1" PlaceholderText="Sıra aralığı"
+                                         ToolTip.Tip="Sıra aks aralığı (m)" Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
+                                <TextBox x:Name="YanKoridorText" Grid.Column="2" PlaceholderText="Yan koridor"
+                                         ToolTip.Tip="Her iki yandaki koridor genişliği (m)" Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                                <TextBox x:Name="OrtaKoridorSayisiText" Grid.Column="0" PlaceholderText="Orta kor. ad."
+                                         ToolTip.Tip="Orta koridor sayısı" Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
+                                <TextBox x:Name="OrtaKoridorGenislikText" Grid.Column="1" PlaceholderText="Orta kor. gen."
+                                         ToolTip.Tip="Orta koridor genişliği (m)" Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
+                                <TextBox x:Name="ErisilebilirYerText" Grid.Column="2" PlaceholderText="Eriş. yer"
+                                         ToolTip.Tip="Tekerlekli sandalye yeri sayısı" Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
+                            </Grid>
                             <CheckBox x:Name="SeyirciTersCheck" Content="Yükselme yönünü çevir"
                                       Foreground="#B6C6D2" FontSize="11.5"/>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
@@ -266,14 +329,16 @@
                                         Content="Ekle" Click="SeyirciEkle_OnClick"/>
                                 <Button Grid.Column="1" Classes="tool" HorizontalAlignment="Stretch"
                                         HorizontalContentAlignment="Center"
-                                        Content="Seçiliyi Güncelle" Click="SeyirciGuncelle_OnClick"/>
+                                        Content="Seçiliyi Güncelle" Click="SeyirciGuncelle_OnClick"
+                                        IsEnabled="{Binding SeciliSeyirciVar}"/>
                             </Grid>
                             <ListBox x:Name="SeyirciList" ItemsSource="{Binding SeyirciSekciyonlari}"
                                      SelectedItem="{Binding SeciliSeyirci}"
                                      Background="Transparent" BorderThickness="0" MaxHeight="140"
                                      Foreground="#D2DEE8"/>
                             <Button Classes="tool" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                    Content="Seçili Seyirci Alanını Sil" Click="SeyirciSil_OnClick"/>
+                                    Content="Seçili Seyirci Alanını Sil" Click="SeyirciSil_OnClick"
+                                    IsEnabled="{Binding SeciliSeyirciVar}"/>
                         </StackPanel>
 
                         <Border Height="1" Background="#1D2B38"/>
@@ -287,16 +352,21 @@
                             </ComboBox>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                                 <TextBox x:Name="BalkonGenislikText" Grid.Column="0" PlaceholderText="Gen. (m)"
+                                         AutomationProperties.Name="Balkon veya loca genişliği, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="BalkonDerinlikText" Grid.Column="1" PlaceholderText="Der. (m)"
+                                         AutomationProperties.Name="Balkon veya loca derinliği, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             </Grid>
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
                                 <TextBox x:Name="BalkonKotText" Grid.Column="0" PlaceholderText="Kot (m)"
+                                         AutomationProperties.Name="Balkon veya loca kotu, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="BalkonKalinlikText" Grid.Column="1" PlaceholderText="Kalınlık"
+                                         AutomationProperties.Name="Balkon kalınlığı, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="BalkonParapetText" Grid.Column="2" PlaceholderText="Parapet"
+                                         AutomationProperties.Name="Balkon parapet yüksekliği, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             </Grid>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
@@ -311,14 +381,16 @@
                                         Content="Ekle" Click="BalkonEkle_OnClick"/>
                                 <Button Grid.Column="1" Classes="tool" HorizontalAlignment="Stretch"
                                         HorizontalContentAlignment="Center"
-                                        Content="Seçiliyi Güncelle" Click="BalkonGuncelle_OnClick"/>
+                                        Content="Seçiliyi Güncelle" Click="BalkonGuncelle_OnClick"
+                                        IsEnabled="{Binding SeciliBalkonVar}"/>
                             </Grid>
                             <ListBox x:Name="BalkonList" ItemsSource="{Binding Balkonlar}"
                                      SelectedItem="{Binding SeciliBalkon}"
                                      Background="Transparent" BorderThickness="0" MaxHeight="120"
                                      Foreground="#D2DEE8"/>
                             <Button Classes="tool" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                    Content="Seçili Balkon/Loca'yı Sil" Click="BalkonSil_OnClick"/>
+                                    Content="Seçili Balkon/Loca'yı Sil" Click="BalkonSil_OnClick"
+                                    IsEnabled="{Binding SeciliBalkonVar}"/>
                         </StackPanel>
 
                         <Border Height="1" Background="#1D2B38"/>
@@ -334,12 +406,15 @@
                                     <ComboBoxItem>Pencere</ComboBoxItem>
                                 </ComboBox>
                                 <TextBox x:Name="AciklikGenText" Grid.Column="1" PlaceholderText="Gen."
+                                         AutomationProperties.Name="Kapı veya pencere genişliği, metre"
                                          ToolTip.Tip="Duvar boyunca genişlik (m)"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="AciklikYukText" Grid.Column="2" PlaceholderText="Yük."
+                                         AutomationProperties.Name="Kapı veya pencere yüksekliği, metre"
                                          ToolTip.Tip="Açıklık yüksekliği (m)"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="AciklikKotText" Grid.Column="3" PlaceholderText="Alt kot"
+                                         AutomationProperties.Name="Kapı veya pencere alt kotu, metre"
                                          ToolTip.Tip="Zeminden açıklık altına (m) — kapı 0, pencere ör. 1,0"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                             </Grid>
@@ -356,10 +431,12 @@
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                                 <Button Grid.Column="0" Classes="tool" HorizontalAlignment="Stretch"
                                         HorizontalContentAlignment="Center"
-                                        Content="Seçiliyi Güncelle" Click="AciklikGuncelle_OnClick"/>
+                                        Content="Seçiliyi Güncelle" Click="AciklikGuncelle_OnClick"
+                                        IsEnabled="{Binding SeciliAciklikVar}"/>
                                 <Button Grid.Column="1" Classes="tool" HorizontalAlignment="Stretch"
                                         HorizontalContentAlignment="Center"
-                                        Content="Seçiliyi Sil" Click="AciklikSil_OnClick"/>
+                                        Content="Seçiliyi Sil" Click="AciklikSil_OnClick"
+                                        IsEnabled="{Binding SeciliAciklikVar}"/>
                             </Grid>
                         </StackPanel>
 
@@ -371,8 +448,10 @@
                                        Foreground="#5E7689" FontSize="10.5" TextWrapping="Wrap"/>
                             <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="6">
                                 <TextBox x:Name="TavanYText" Grid.Column="0" PlaceholderText="Y (m)"
+                                         AutomationProperties.Name="Tavan profili Y koordinatı, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <TextBox x:Name="TavanKotText" Grid.Column="1" PlaceholderText="Kot (m)"
+                                         AutomationProperties.Name="Tavan profili kotu, metre"
                                          Background="#0B131C" Foreground="#DCE7F0" BorderBrush="#27465C"/>
                                 <Button Grid.Column="2" Classes="tool" Content="+ Nokta" Padding="8,5" FontSize="11"
                                         Click="TavanNoktaEkle_OnClick"/>
@@ -384,7 +463,8 @@
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                                 <Button Grid.Column="0" Classes="tool" HorizontalAlignment="Stretch"
                                         HorizontalContentAlignment="Center"
-                                        Content="Seçiliyi Sil" Click="TavanNoktaSil_OnClick"/>
+                                        Content="Seçiliyi Sil" Click="TavanNoktaSil_OnClick"
+                                        IsEnabled="{Binding SeciliTavanNoktasiVar}"/>
                                 <Button Grid.Column="1" Classes="tool" HorizontalAlignment="Stretch"
                                         HorizontalContentAlignment="Center"
                                         Content="Düz Tavana Dön" Click="TavanDuz_OnClick"/>
@@ -398,21 +478,26 @@
             <!-- Çizim alanı: araç şeridi + canvas -->
             <Grid Grid.Column="1" RowDefinitions="Auto,*">
                 <Border Grid.Row="0" Background="#0C141C" BorderBrush="#1D2B38" BorderThickness="0,0,0,1" Padding="10,8">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
+                    <WrapPanel Orientation="Horizontal">
                         <ToggleButton x:Name="AracSec" Classes="arac" Content="🖱 Seç" Tag="Sec" Click="Arac_OnClick"
                                       ToolTip.Tip="Seç (V) — Shift+tık çoklu; boş alanda sürükle = pencere seçimi"/>
-                        <Border Width="1" Background="#27465C" Margin="3,2"/>
+                        <Border Width="1" Height="28" Background="#27465C" Margin="3,2"/>
                         <ToggleButton x:Name="AracCizgi" Classes="arac" Content="╱" Tag="Cizgi" Click="Arac_OnClick"
+                                      AutomationProperties.Name="Çizgi aracı"
                                       ToolTip.Tip="Çizgi (L) — uzunluk veya uzunluk&lt;açı yazıp Enter"/>
                         <ToggleButton x:Name="AracPolyline" Classes="arac" Content="⬡" Tag="Polyline" Click="Arac_OnClick"
+                                      AutomationProperties.Name="Polyline aracı"
                                       ToolTip.Tip="Polyline (P)"/>
                         <ToggleButton x:Name="AracDikdortgen" Classes="arac" Content="▭" Tag="Dikdortgen" Click="Arac_OnClick"
+                                      AutomationProperties.Name="Dikdörtgen aracı"
                                       ToolTip.Tip="Dikdörtgen (R)"/>
                         <ToggleButton x:Name="AracDaire" Classes="arac" Content="◯" Tag="Daire" Click="Arac_OnClick"
+                                      AutomationProperties.Name="Daire aracı"
                                       ToolTip.Tip="Daire (C)"/>
                         <ToggleButton x:Name="AracYay" Classes="arac" Content="⌒" Tag="Yay" Click="Arac_OnClick"
+                                      AutomationProperties.Name="Yay aracı"
                                       ToolTip.Tip="Yay (A) — başlangıç, bitiş, kavis noktası"/>
-                        <Border Width="1" Background="#27465C" Margin="3,2"/>
+                        <Border Width="1" Height="28" Background="#27465C" Margin="3,2"/>
                         <ToggleButton x:Name="AracTasi" Classes="arac" Content="✥ Taşı" Tag="Tasi" Click="Arac_OnClick"
                                       ToolTip.Tip="Taşı (M) — baz + hedef nokta; Ctrl = kopya"/>
                         <ToggleButton x:Name="AracAynala" Classes="arac" Content="⇋ Aynala" Tag="Aynala" Click="Arac_OnClick"
@@ -426,13 +511,16 @@
                         <ToggleButton x:Name="AracUzat" Classes="arac" Content="⇥ Uzat" Tag="Uzat" Click="Arac_OnClick"
                                       ToolTip.Tip="Uzat (E) — çizgi ucunu ilk kesişime uzat"/>
                         <ToggleButton x:Name="AracSil" Classes="arac" Content="🗑" Tag="Sil" Click="Arac_OnClick"
+                                      AutomationProperties.Name="Sil aracı"
                                       ToolTip.Tip="Sil — öğeye tıkla"/>
-                        <Border Width="1" Background="#27465C" Margin="3,2"/>
+                        <Border Width="1" Height="28" Background="#27465C" Margin="3,2"/>
                         <ToggleButton x:Name="AracOlcum" Classes="arac" Content="📐" Tag="Olcum" Click="Arac_OnClick"
+                                      AutomationProperties.Name="Ölçüm aracı"
                                       ToolTip.Tip="Ölçüm (X) — 2 nokta mesafe; kapalı öğeye tık = alan/çevre"/>
                         <ToggleButton x:Name="AracAciklik" Classes="arac" Content="🚪" Tag="Aciklik" Click="Arac_OnClick"
+                                      AutomationProperties.Name="Kapı ve pencere açıklığı aracı"
                                       ToolTip.Tip="Açıklık — duvar çizgisine tıkla, paneldeki ölçülerle kapı/pencere yerleşir"/>
-                        <Border Width="1" Background="#27465C" Margin="3,2"/>
+                        <Border Width="1" Height="28" Background="#27465C" Margin="3,2"/>
                         <ToggleButton x:Name="SnapBtn" Classes="arac" Content="◈ Snap" IsChecked="True" Click="Snap_OnClick"
                                       ToolTip.Tip="Nesne snap aç/kapa (F3)"/>
                         <ToggleButton x:Name="GridBtn" Classes="arac" Content="⋮⋮ Grid" Click="Grid_OnClick"
@@ -441,18 +529,26 @@
                                       ToolTip.Tip="Yatay/dikey kilit (F8)"/>
                         <ToggleButton x:Name="PolarBtn" Classes="arac" Content="∠ Polar" Click="Polar_OnClick"
                                       ToolTip.Tip="15° açı kilidi (F10) — orto kapalıyken"/>
-                        <Border Width="1" Background="#27465C" Margin="3,2"/>
+                        <Border Width="1" Height="28" Background="#27465C" Margin="3,2"/>
                         <Button Classes="tool" Content="⤢ Sığdır" Click="Sigdir_OnClick"/>
                         <Button Classes="tool" Content="↺ Görünüm" Click="GorunumSifirla_OnClick"/>
-                    </StackPanel>
+                    </WrapPanel>
                 </Border>
-                <salon:SalonCizimCanvas x:Name="CizimCanvas" Grid.Row="1"/>
+                <salon:SalonCizimCanvas x:Name="CizimCanvas" Grid.Row="1"
+                                         AutomationProperties.Name="Salon iki boyutlu çizim alanı"
+                                         AutomationProperties.HelpText="Orta tuşla kaydırın, tekerlekle yakınlaştırın; araç kısayolları V, L, P, R, C, A, T, E, M, O, N, D ve X."/>
             </Grid>
         </Grid>
 
         <!-- Durum çubuğu -->
         <Border Grid.Row="2" Background="#090F15" BorderBrush="#1D2B38" BorderThickness="0,1,0,0" Padding="14,8">
-            <TextBlock Text="{Binding DurumMesaji}" Foreground="#8AA0B2" FontSize="12"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <TextBlock Grid.Column="0" Text="{Binding DurumMesaji}" Foreground="#AFC2D1" FontSize="12"
+                           TextWrapping="Wrap" AutomationProperties.Name="Komut ve durum mesajı"
+                           AutomationProperties.LiveSetting="Polite"/>
+                <TextBlock Grid.Column="1" Text="{Binding KoordinatMesaji}" Foreground="#7F9AAF" FontSize="11.5"
+                           VerticalAlignment="Center" AutomationProperties.Name="İmleç koordinatı"/>
+            </Grid>
         </Border>
     </Grid>
 </Window>

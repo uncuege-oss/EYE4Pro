@@ -176,75 +176,28 @@ public partial class BasitProjeCizViewModel : ObservableObject
     private bool SeciliAciklikTipiAta(BpcAciklikTipi tip)
     {
         if (_seciliAciklik is null) return false;
-        if (ProjeKilitli)
-        {
-            DurumMesaji = "Proje kilitli — açıklık tipini değiştirmek için önce kilidi açın.";
-            OnPropertyChanged(nameof(SeciliAciklikTipi));
-            return false;
-        }
-        if (_seciliAciklik.Tip == tip) return true;
-
-        _seciliAciklik.Tip = tip;
-        DurumMesaji = $"Açıklık tipi {tip} olarak işaretlendi.";
+        DurumMesaji = "Açıklık geometrisi M50 Bina Geometrisi'nde düzenlenir.";
         OnPropertyChanged(nameof(SeciliAciklikTipi));
-        OnPropertyChanged(nameof(AciklikOzeti));
-        Guncelle3DGorunum();
-        return true;
+        return false;
     }
 
-    [RelayCommand]
     public void SeciliAcikligiKapiYap() => SeciliAciklikTipiAta(BpcAciklikTipi.Kapı);
 
-    [RelayCommand]
     public void SeciliAcikligiPencereYap() => SeciliAciklikTipiAta(BpcAciklikTipi.Pencere);
 
-    [RelayCommand]
     public void SeciliAciklikiSil()
-    {
-        if (_seciliAciklik is null || _seciliAciklikKat is null) return;
-        if (KilitliyseDur("açıklık silmek")) return;
-        _seciliAciklikKat.Acikliklar.Remove(_seciliAciklik);
-        _seciliAciklikKat = null;
-        SeciliAciklik = null;
-        DurumMesaji = "Açıklık silindi.";
-        OnPropertyChanged(nameof(AciklikOzeti));
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Açıklık silme M50 Bina Geometrisi'nde yapılır.";
 
     /// Seçili açıklığı listede tutar ama IptalEdildi=true yapar.
     /// Yeniden tarama sırasında manuel/iptal kayıtlar korunur → false-positive
     /// bir daha üretilmez.
-    [RelayCommand]
     public void SeciliAciklikiIptalEt()
-    {
-        if (_seciliAciklik is null || _seciliAciklikKat is null) return;
-        if (KilitliyseDur("açıklık iptal etmek")) return;
-        _seciliAciklik.IptalEdildi = true;
-        DurumMesaji = "Açıklık iptal edildi (yeniden taramada gelmez).";
-        OnPropertyChanged(nameof(AciklikOzeti));
-        OnPropertyChanged(nameof(RenderSeciliAciklikSegment));
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Açıklık iptali M50 Bina Geometrisi'nde yapılır.";
 
     /// Tüm katlarda otomatik gap kaynaklı (Kaynak="gap" ve manuel olmayan)
     /// açıklıkları siler. Kullanıcı toplu temizlik için.
-    [RelayCommand]
     public void OtomatikGapleriSil()
-    {
-        if (Katlar.Count == 0) { DurumMesaji = "Önce kat yükleyin."; return; }
-        if (KilitliyseDur("açıklıkları temizlemek")) return;
-        int silinen = 0;
-        foreach (var kat in Katlar)
-        {
-            silinen += kat.Acikliklar.RemoveAll(a =>
-                a.Kaynak == "gap" && !a.ManuelEklendi && !a.IptalEdildi);
-        }
-        SeciliAciklik = null;
-        _seciliAciklikKat = null;
-        DurumMesaji = $"{silinen} otomatik gap açıklığı silindi.";
-        OnPropertyChanged(nameof(AciklikOzeti));
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Otomatik açıklık temizliği M50 Bina Geometrisi'nde yapılır.";
 
     /// Tüm katlardaki açıklık özetini döner: "Açıklık: A aktif (G gap + R arc) / I iptal / M manuel".
     public string AciklikOzeti
@@ -1168,15 +1121,15 @@ public partial class BasitProjeCizViewModel : ObservableObject
     partial void OnKatOfsetXChanged(double value)
     {
         if (_katOfsetSyncing || SeciliKat == null) return;
-        SeciliKat.OriginOffset = new Point2D(value, SeciliKat.OriginOffset.Y);
-        Guncelle3DGorunum();
+        DurumMesaji = "Kat hizalama M50 Bina Geometrisi'nde yapılır.";
+        SyncKatOfset(SeciliKat);
     }
 
     partial void OnKatOfsetYChanged(double value)
     {
         if (_katOfsetSyncing || SeciliKat == null) return;
-        SeciliKat.OriginOffset = new Point2D(SeciliKat.OriginOffset.X, value);
-        Guncelle3DGorunum();
+        DurumMesaji = "Kat hizalama M50 Bina Geometrisi'nde yapılır.";
+        SyncKatOfset(SeciliKat);
     }
 
     partial void OnProjectionChanged(GeometryProjectionMode value) => Guncelle3DGorunum();
@@ -1200,12 +1153,9 @@ public partial class BasitProjeCizViewModel : ObservableObject
         get => SeciliKat?.KatYuksekligiM ?? 3.0;
         set
         {
-            var kat = SeciliKat;
-            if (kat == null || value <= 0 || double.IsNaN(value) || double.IsInfinity(value)) return;
-            if (System.Math.Abs(kat.KatYuksekligiM - value) < 1e-6) return;
-            kat.KatYuksekligiM = value;
+            if (SeciliKat is null) return;
+            DurumMesaji = "Kat yüksekliği M50 Bina Geometrisi'nde düzenlenir.";
             OnPropertyChanged();
-            Guncelle3DGorunum();
         }
     }
 
@@ -1223,65 +1173,22 @@ public partial class BasitProjeCizViewModel : ObservableObject
         SeciliEleman = null;
         ProjeDosyaYolu = null;
         TemizIsaretle();
-        DurumMesaji = "Yeni proje oluşturuldu. DXF yükleyin.";
+        DurumMesaji = "Yeni proje oluşturuldu. M50'de bina geometrisi hazırlayıp 'Bina Geo.' ile yükleyin.";
         Guncelle3DGorunum();
     }
 
     public void KatEkle(BasitProjeKat kat)
-    {
-        if (kat.KatNo <= 0)
-            kat.KatNo = Katlar.Any() ? Katlar.Max(k => k.KatNo) + 1 : 1;
-        Proje.Katlar.Add(kat);
-        OnPropertyChanged(nameof(KatlarTersSira));
-        SeciliKat = kat;
-        SeciliOda = kat.Odalar.FirstOrDefault();
-        DurumMesaji = $"{kat.Ad}: {kat.Odalar.Count} oda, {kat.DxfSegmentleri.Count} DXF çizgisi yüklendi.";
-    }
+        => DurumMesaji = "Kat ekleme M50 Bina Geometrisi'nde yapılır.";
 
     /// <summary>
     /// Tüm katlarda kapı (arc) + pencere (duvar boşluk) tespiti çalıştırır.
     /// Manuel eklenen ve "açıklık değil" işaretli kayıtlar korunur.
     /// Filtre parametreleri Aciklik* observable property'leri üzerinden geçer.
     /// </summary>
-    [RelayCommand]
-    public async System.Threading.Tasks.Task AcikliklariTespitEt()
+    public System.Threading.Tasks.Task AcikliklariTespitEt()
     {
-        if (Katlar.Count == 0) { DurumMesaji = "Önce kat yükleyin."; return; }
-        DurumMesaji = "Açıklık tespiti çalışıyor…";
-
-        var ayar = new Kst.Acoustics.Core.Electric.BasitProjeCiz.Services
-            .AciklikTespitServisi.Ayarlar
-        {
-            MinAciklikGenisM = AciklikMinGenisM,
-            SoveAramaUcM = AciklikSoveUcM,
-            MinSoveBoyuM = AciklikMinSoveBoyuM,
-            MaxKarsiDuvarM = AciklikMaxKarsiDuvarM
-        };
-
-        var ozet = await System.Threading.Tasks.Task.Run(() =>
-        {
-            int toplam = 0;
-            var satirlar = new List<string>();
-            foreach (var kat in Katlar)
-            {
-                var segs = kat.DxfSegmentleri.Select(s => (s.A, s.B)).ToList();
-                var arcs = kat.DxfArclari
-                    .Select(a => (a.Merkez, a.R, a.BasAciDeg, a.BitAciDeg))
-                    .ToList();
-                kat.Acikliklar = Kst.Acoustics.Core.Electric.BasitProjeCiz.Services
-                    .AciklikTespitServisi.Bul(segs, arcs, kat.Acikliklar, ayar);
-                Kst.Acoustics.Core.Electric.BasitProjeCiz.Services
-                    .AciklikYardimci.DisindaKalanlariSil(kat);
-                int aktif = kat.Acikliklar.Count(a => !a.IptalEdildi);
-                toplam += aktif;
-                satirlar.Add($"{kat.Ad}: {aktif}");
-            }
-            return (toplam, string.Join(", ", satirlar));
-        });
-
-        DurumMesaji = $"Açıklık tespiti tamam: {ozet.toplam} aktif (kat bazında — {ozet.Item2}).";
-        OnPropertyChanged(nameof(AciklikOzeti));
-        Guncelle3DGorunum();
+        DurumMesaji = "Açıklık tespiti M50 Bina Geometrisi'nde yapılır.";
+        return System.Threading.Tasks.Task.CompletedTask;
     }
 
     // ── Açıklık tespiti filtre parametreleri ─────────────────────────────────
@@ -1294,48 +1201,31 @@ public partial class BasitProjeCizViewModel : ObservableObject
     [ObservableProperty] private double _aciklikMaxKarsiDuvarM = 1.50;
 
     /// Sıkı preset: false-positive minimize edilir, bazı gerçek kapılar kaçabilir.
-    [RelayCommand]
     public void AciklikPresetSiki()
-    {
-        AciklikMinGenisM = 0.60;
-        AciklikSoveUcM = 0.30;
-        AciklikMinSoveBoyuM = 0.10;
-        AciklikMaxKarsiDuvarM = 1.50;
-        DurumMesaji = "Açıklık filtresi: Sıkı (Yeniden Tespit Et ile uygula).";
-    }
+        => DurumMesaji = "Açıklık tespit ayarları M50 Bina Geometrisi'nde yönetilir.";
 
     /// Dengeli preset: makul orta yol.
-    [RelayCommand]
     public void AciklikPresetDengeli()
-    {
-        AciklikMinGenisM = 0.50;
-        AciklikSoveUcM = 0.50;
-        AciklikMinSoveBoyuM = 0.08;
-        AciklikMaxKarsiDuvarM = 2.50;
-        DurumMesaji = "Açıklık filtresi: Dengeli (Yeniden Tespit Et ile uygula).";
-    }
+        => DurumMesaji = "Açıklık tespit ayarları M50 Bina Geometrisi'nde yönetilir.";
 
     /// Gevşek preset: gerçek kapıların hepsini yakalar ama false-positive artar.
-    [RelayCommand]
     public void AciklikPresetGevsek()
-    {
-        AciklikMinGenisM = 0.40;
-        AciklikSoveUcM = 0.80;
-        AciklikMinSoveBoyuM = 0.05;
-        AciklikMaxKarsiDuvarM = 4.00;
-        DurumMesaji = "Açıklık filtresi: Gevşek (Yeniden Tespit Et ile uygula).";
-    }
+        => DurumMesaji = "Açıklık tespit ayarları M50 Bina Geometrisi'nde yönetilir.";
 
     /// Manuel açıklık ekleme modu — true ise canvas iki-nokta seçim yapacak.
     [ObservableProperty] private bool _manuelAciklikModu;
-    private Point2D? _manuelAciklikIlkNokta;
 
-    [RelayCommand]
-    public void ManuelAciklikModuAcKapat() => ManuelAciklikModu = !ManuelAciklikModu;
+    public void ManuelAciklikModuAcKapat() =>
+        DurumMesaji = "Manuel açıklık ekleme M50 Bina Geometrisi'nde yapılır.";
 
     partial void OnManuelAciklikModuChanged(bool value)
     {
-        _manuelAciklikIlkNokta = null;
+        if (value)
+        {
+            ManuelAciklikModu = false;
+            DurumMesaji = "Manuel açıklık ekleme M50 Bina Geometrisi'nde yapılır.";
+            return;
+        }
         DurumMesaji = value
             ? "Manuel açıklık modu: iki nokta seçin (Esc iptal)."
             : "Manuel açıklık modu kapatıldı.";
@@ -1344,39 +1234,11 @@ public partial class BasitProjeCizViewModel : ObservableObject
     /// Canvas dünya koordinatından manuel açıklık tıklamasını işle. İki nokta toplanınca
     /// SeciliKat.Acikliklar'a ekler ve modu kapatır. İlk tıklamada başlangıcı kaydeder.
     public void ManuelAciklikTiklama(double worldX, double worldY)
-    {
-        if (!ManuelAciklikModu || SeciliKat is null) return;
-        if (KilitliyseDur("açıklık eklemek")) return;
-        var p = new Point2D(worldX, worldY);
-        if (_manuelAciklikIlkNokta is null)
-        {
-            _manuelAciklikIlkNokta = p;
-            DurumMesaji = "İlk nokta alındı — ikinci noktayı seç (Esc iptal).";
-            return;
-        }
-        var bas = _manuelAciklikIlkNokta.Value;
-        var aciklik = new Kst.Acoustics.Core.Electric.BasitProjeCiz.Models.BpcAciklik
-        {
-            Bas = bas, Bit = p, Tip = BpcAciklikTipi.Kapı, ManuelEklendi = true, Kaynak = "manuel"
-        };
-        SeciliKat.Acikliklar.Add(aciklik);
-
-        // Kapı iki odaya birden hizmet eder: komşu duvara otomatik yansıt.
-        var yansima = AciklikYardimci.KomsuDuvaraYansit(SeciliKat, aciklik);
-
-        // Modu kapatmadan devam et: kullanıcı butona tekrar basana (veya Esc) kadar
-        // arka arkaya açıklık ekleyebilsin.
-        _manuelAciklikIlkNokta = null;
-        DurumMesaji = yansima != null
-            ? "Manuel açıklık eklendi (komşu duvara da yansıtıldı) — yeni açıklık için iki nokta seçin (Esc/buton ile bitir)."
-            : "Manuel açıklık eklendi — yeni açıklık için iki nokta seçin (Esc/buton ile bitir).";
-        OnPropertyChanged(nameof(AciklikOzeti));
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Manuel açıklık ekleme M50 Bina Geometrisi'nde yapılır.";
 
     public void ManuelAciklikIptal()
     {
-        ManuelAciklikModu = false;         // OnManuelAciklikModuChanged → _ilkNokta = null
+        ManuelAciklikModu = false;
         DurumMesaji = "Manuel açıklık iptal edildi.";
     }
 
@@ -1384,103 +1246,33 @@ public partial class BasitProjeCizViewModel : ObservableObject
     /// Seçili katın DXF segmentlerinden odaları boşluk tarama (flood-fill) ile
     /// yeniden bulur. Mevcut oda isimlerini centroid eşleşmesiyle korur.
     /// </summary>
-    [RelayCommand]
-    public async System.Threading.Tasks.Task OdalariYenidenTara()
+    public System.Threading.Tasks.Task OdalariYenidenTara()
     {
-        if (SeciliKat == null) { DurumMesaji = "Önce bir kat seçin."; return; }
-        var kat = SeciliKat;
-        if (kat.DxfSegmentleri.Count == 0)
-        {
-            DurumMesaji = "Bu katta DXF çizgisi yok; tarama yapılamaz.";
-            return;
-        }
-
-        DurumMesaji = "Boşluk tarama çalışıyor…";
-        // Ağır flood-fill hesabını UI thread'inde yapma (donmayı önler).
-        int sayi = await System.Threading.Tasks.Task.Run(
-            () => BasitProjeCizDxfServisi.OdalariYenidenTara(kat));
-        if (sayi == 0)
-        {
-            DurumMesaji = "Boşluk tarama oda bulamadı. Hücre/kapı ayarları veya DXF duvarlarını kontrol edin.";
-            return;
-        }
-
-        OnPropertyChanged(nameof(Odalar));
-        OnPropertyChanged(nameof(ElemanFiltreOdaSecenekleri));
-        SeciliOda = kat.Odalar.FirstOrDefault();
-        DurumMesaji = $"Boşluk tarama: {sayi} oda bulundu.";
-        Guncelle3DGorunum();
+        DurumMesaji = "Oda tarama M50 Bina Geometrisi'nde yapılır.";
+        return System.Threading.Tasks.Task.CompletedTask;
     }
 
-    [RelayCommand]
     public void BenzerKatOlustur()
-    {
-        if (SeciliKat == null) return;
-        int yeniNo = Katlar.Max(k => k.KatNo) + 1;
-        var kopya = BasitProjeCizDxfServisi.KatiKopyala(SeciliKat, yeniNo, $"Kat {yeniNo}");
-        Proje.Katlar.Add(kopya);
-        OnPropertyChanged(nameof(KatlarTersSira));
-        SeciliKat = kopya;
-        SeciliOda = kopya.Odalar.FirstOrDefault();
-        DurumMesaji = $"Benzer kat oluşturuldu: {kopya.Ad}";
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Kat çoğaltma M50 Bina Geometrisi'nde yapılır.";
 
-    [RelayCommand]
     public void KatSil()
-    {
-        if (SeciliKat == null) return;
-        var silinen = SeciliKat;
-        int idx = Katlar.IndexOf(silinen);
-        Katlar.Remove(silinen);
-        KatlariYenidenNumaralandir();
-        OnPropertyChanged(nameof(KatlarTersSira));
-        SeciliKat = Katlar.Count > 0 ? Katlar[System.Math.Max(0, idx - 1)] : null;
-        SeciliOda = SeciliKat?.Odalar.FirstOrDefault();
-        DurumMesaji = $"{silinen.Ad} silindi.";
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Kat silme M50 Bina Geometrisi'nde yapılır.";
 
-    [RelayCommand]
     public void KatYukari()
-    {
-        if (SeciliKat == null) return;
-        int idx = Katlar.IndexOf(SeciliKat);
-        if (idx <= 0) return;
-        Katlar.Move(idx, idx - 1);
-        KatlariYenidenNumaralandir();
-        OnPropertyChanged(nameof(KatlarTersSira));
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Kat sıralama M50 Bina Geometrisi'nde yapılır.";
 
-    [RelayCommand]
     public void KatAsagi()
-    {
-        if (SeciliKat == null) return;
-        int idx = Katlar.IndexOf(SeciliKat);
-        if (idx >= Katlar.Count - 1) return;
-        Katlar.Move(idx, idx + 1);
-        KatlariYenidenNumaralandir();
-        OnPropertyChanged(nameof(KatlarTersSira));
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Kat sıralama M50 Bina Geometrisi'nde yapılır.";
 
-    [RelayCommand] public void KatSola()           => KatOfsetX -= 0.5;
-    [RelayCommand] public void KatSaga()           => KatOfsetX += 0.5;
-    [RelayCommand] public void KatYukar()          => KatOfsetY += 0.5;
-    [RelayCommand] public void KatAsag()           => KatOfsetY -= 0.5;
-    [RelayCommand] public void ToggleOfsetPaneli() => OfsetPaneliAcik = !OfsetPaneliAcik;
-    [RelayCommand] public void KatGorunumDegisti() => Guncelle3DGorunum();
+    public void KatSola()           => DurumMesaji = "Kat hizalama M50'de yapılır.";
+    public void KatSaga()           => DurumMesaji = "Kat hizalama M50'de yapılır.";
+    public void KatYukar()          => DurumMesaji = "Kat hizalama M50'de yapılır.";
+    public void KatAsag()           => DurumMesaji = "Kat hizalama M50'de yapılır.";
+    public void ToggleOfsetPaneli() => DurumMesaji = "Kat hizalama M50'de yapılır.";
+    public void KatGorunumDegisti() => Guncelle3DGorunum();
 
-    [RelayCommand]
     public void KatlariHizala()
-    {
-        foreach (var kat in Katlar)
-            kat.OriginOffset = new Point2D(0, 0);
-        SyncKatOfset(SeciliKat);
-        DurumMesaji = "Tüm katlar sıfır noktasına hizalandı.";
-        Guncelle3DGorunum();
-    }
+        => DurumMesaji = "Kat hizalama M50 Bina Geometrisi'nde yapılır.";
 
     [RelayCommand] public void Goster2D() => Projection = GeometryProjectionMode.Top2D;
     [RelayCommand] public void Goster3D() => Projection = GeometryProjectionMode.Isometric3D;
@@ -1543,6 +1335,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
 
         // Mahal-aktiflik migrasyonu: eski (sürümsüz) Grid/Duvar projelerini yeni
         // semantiğe taşı — eski "tüm odalara otomatik" görünümü korunur.
+        var semaOnce = Proje.SemaSurum;
         Kst.Acoustics.Core.Electric.BasitProjeCiz.Services
             .BasitProjeCizOtomatikYerlestirServisi.MahalGridAktiflikMigrasyonu(Proje);
 
@@ -1573,11 +1366,18 @@ public partial class BasitProjeCizViewModel : ObservableObject
 
         // 3.2 migrasyonu: eski (M50 bağlantısız) projenin gömülü geometrisi
         // otomatik .e4bina'ya dışa aktarılır. Veri kaybı yok; kalıcılaşması Kaydet ile.
+        var geometriMigrasyonuYapildi = false;
         try
         {
             if (Kst.Acoustics.Core.Electric.BasitProjeCiz.Services
                     .BinaGeometriExportServisi.EskiProjeyiMigrateEt(Proje, dosyaYolu) is { } geoMigrasyon)
+            {
+                geometriMigrasyonuYapildi = true;
+                if (!string.IsNullOrWhiteSpace(Proje.BinaGeometriYolu))
+                    Proje.BinaGeometriYolu = BinaGeometriYolunuSaklanabilirYap(
+                        Proje.BinaGeometriYolu, dosyaYolu);
                 DurumMesaji += $"  · {geoMigrasyon}";
+            }
         }
         catch (System.Exception ex)
         {
@@ -1588,9 +1388,20 @@ public partial class BasitProjeCizViewModel : ObservableObject
         if (BinaGeometriGuncellikUyarisi() is { } geoUyari)
             DurumMesaji += $"  ⚠ {geoUyari}";
 
-        // Açılış migrasyonları diskteki dosyayı değiştirmez; kapatıp yeniden açmak
-        // veri kaybetmez → yükleme sonrası proje temiz sayılır.
-        TemizIsaretle();
+        BinaGeometriDurumunuYenile();
+
+        // Bellekte belgeyi değiştiren her migrasyon kaydedilmeden kaybolabilir.
+        // Bu nedenle kullanıcıya normal kaydetme korumasını göster.
+        if (geometriMigrasyonuYapildi || semaOnce != Proje.SemaSurum ||
+            !string.IsNullOrWhiteSpace(migrasyonNotu) || !string.IsNullOrWhiteSpace(disiplinNotu))
+        {
+            Kirlet();
+            DurumMesaji += "  · Migrasyon değişikliklerini kalıcılaştırmak için projeyi kaydedin.";
+        }
+        else
+        {
+            TemizIsaretle();
+        }
         Guncelle3DGorunum();
     }
 
@@ -1611,6 +1422,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     /// Kat/oda Id'leri korunur; elemanlar/devreler/mahal listesi dokunulmaz.
     public void BinaGeometrisiYukle(string yol)
     {
+        if (KilitliyseDur("bina geometrisini yüklemek")) return;
         var geo = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Ac(yol);
         BinaGeometrisiUygula(geo, yol);
     }
@@ -1631,10 +1443,20 @@ public partial class BasitProjeCizViewModel : ObservableObject
 
     public void BinaGeometrisiUygula(Kst.Acoustics.Core.Bina.Models.BinaGeometri geo, string? yol)
     {
+        if (KilitliyseDur("bina geometrisini yüklemek")) return;
+
+        // Import servisi aday projede çalışır. Doğrulama ya da uygulama sırasında
+        // bir hata olursa canlı proje ve abonelikleri hiç değiştirilmez.
+        var adayProje = ProjeyiDerinKlonla(Proje);
+        var saklananYol = string.IsNullOrWhiteSpace(yol)
+            ? null
+            : BinaGeometriYolunuSaklanabilirYap(yol, ProjeDosyaYolu);
+        var sonuc = Kst.Acoustics.Core.Electric.BasitProjeCiz.Services
+            .BinaGeometriImportServisi.Uygula(adayProje, geo, saklananYol);
+
         UndoRedoYiginlariniTemizle();
         CozKatlarAbonelikleri();
-        var sonuc = Kst.Acoustics.Core.Electric.BasitProjeCiz.Services
-            .BinaGeometriImportServisi.Uygula(Proje, geo, yol);
+        Proje = adayProje;
         BaglaKatlarAbonelikleri();
 
         OnPropertyChanged(nameof(Katlar));
@@ -1649,26 +1471,118 @@ public partial class BasitProjeCizViewModel : ObservableObject
         if (sonuc.Uyarilar.Count > 0)
             ozet += "  ⚠ " + string.Join(" ", sonuc.Uyarilar);
         DurumMesaji = ozet;
+        Kirlet();
+        BinaGeometriDurumunuYenile();
         Guncelle3DGorunum();
+    }
+
+    private static BasitProjeCizProje ProjeyiDerinKlonla(BasitProjeCizProje proje)
+    {
+        var json = JsonSerializer.Serialize(proje, ProjeJsonAyarlari);
+        return JsonSerializer.Deserialize<BasitProjeCizProje>(json, ProjeJsonAyarlari)
+            ?? throw new InvalidOperationException("Proje işlem kopyası oluşturulamadı.");
+    }
+
+    /// Bağlı sidecar'ın gerçek yolunu proje dosyasına göre çözer.
+    public string? BinaGeometriDosyaYolunuCoz()
+    {
+        try
+        {
+            var yol = Proje.BinaGeometriYolu;
+            if (string.IsNullOrWhiteSpace(yol)) return null;
+            if (System.IO.Path.IsPathRooted(yol)) return System.IO.Path.GetFullPath(yol);
+            var projeDizini = !string.IsNullOrWhiteSpace(ProjeDosyaYolu)
+                ? System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(ProjeDosyaYolu))
+                : null;
+            return string.IsNullOrWhiteSpace(projeDizini)
+                ? System.IO.Path.GetFullPath(yol)
+                : System.IO.Path.GetFullPath(System.IO.Path.Combine(projeDizini, yol));
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or System.IO.PathTooLongException)
+        {
+            return null;
+        }
+    }
+
+    private static string BinaGeometriYolunuSaklanabilirYap(string yol, string? projeDosyaYolu)
+    {
+        var tamYol = System.IO.Path.GetFullPath(yol);
+        if (string.IsNullOrWhiteSpace(projeDosyaYolu)) return tamYol;
+        var dizin = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(projeDosyaYolu));
+        return string.IsNullOrWhiteSpace(dizin)
+            ? tamYol
+            : System.IO.Path.GetRelativePath(dizin, tamYol);
+    }
+
+    public bool BinaGeometriDosyasiVar =>
+        BinaGeometriDosyaYolunuCoz() is { } yol && System.IO.File.Exists(yol);
+    public bool BinaGeometriKurtarilabilir => Proje.BinaGeometriKopya is not null;
+
+    public string BinaGeometriDurumMetni
+    {
+        get
+        {
+            var bagliRev = Proje.BinaGeometriRevizyon ?? Proje.BinaGeometriKopya?.GeometriRevizyon;
+            var yol = BinaGeometriDosyaYolunuCoz();
+            if (!string.IsNullOrWhiteSpace(Proje.BinaGeometriYolu) && string.IsNullOrWhiteSpace(yol))
+                return bagliRev is { } gecersizRev
+                    ? $"Dosya yolu geçersiz · gömülü Rev. {gecersizRev}"
+                    : "Dosya yolu geçersiz";
+            if (string.IsNullOrWhiteSpace(yol) || !System.IO.File.Exists(yol))
+                return bagliRev is { } rev
+                    ? $"Dosya Yok · gömülü Rev. {rev}"
+                    : "Dosya Yok";
+            try
+            {
+                var dosya = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Ac(yol);
+                if (bagliRev is null) return $"Dosya Var · Rev. {dosya.GeometriRevizyon}";
+                if (dosya.GeometriRevizyon > bagliRev.Value)
+                    return $"Bayat · Rev. {bagliRev} → {dosya.GeometriRevizyon}";
+                if (dosya.GeometriRevizyon < bagliRev.Value)
+                    return $"Dosya geri revizyonda · dosya {dosya.GeometriRevizyon}, gömülü {bagliRev}";
+                return $"Güncel · Rev. {dosya.GeometriRevizyon}";
+            }
+            catch
+            {
+                return bagliRev is { } rev
+                    ? $"Dosya okunamıyor · gömülü Rev. {rev}"
+                    : "Dosya okunamıyor";
+            }
+        }
+    }
+
+    public void BinaGeometriDurumunuYenile()
+    {
+        OnPropertyChanged(nameof(BinaGeometriDurumMetni));
+        OnPropertyChanged(nameof(BinaGeometriDosyasiVar));
+        OnPropertyChanged(nameof(BinaGeometriKurtarilabilir));
     }
 
     /// Proje açılışında bağlı .e4bina'nın güncelliğini denetler; yeniyse uyarı döner.
     public string? BinaGeometriGuncellikUyarisi()
     {
-        if (string.IsNullOrWhiteSpace(Proje.BinaGeometriYolu) || Proje.BinaGeometriRevizyon is null)
+        if (string.IsNullOrWhiteSpace(Proje.BinaGeometriYolu))
+            return Proje.BinaGeometriKopya is null
+                ? null
+                : "Bina geometrisi yalnız gömülü kopyada; 'Gömülü Kurtar' ile taşınabilir sidecar oluşturun.";
+        if (Proje.BinaGeometriRevizyon is null)
             return null;
         try
         {
-            if (!System.IO.File.Exists(Proje.BinaGeometriYolu))
-                return "Bağlı .e4bina dosyası bulunamadı; gömülü geometri kopyası kullanılıyor.";
-            var guncel = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Ac(Proje.BinaGeometriYolu);
+            var cozulenYol = BinaGeometriDosyaYolunuCoz();
+            if (string.IsNullOrWhiteSpace(cozulenYol) || !System.IO.File.Exists(cozulenYol))
+                return "Bağlı .e4bina dosyası bulunamadı; gömülü geometri kullanılıyor. 'Gömülü Kurtar' ile yeniden oluşturabilirsiniz.";
+            var guncel = Kst.Acoustics.Core.Bina.Services.BinaGeometriServisi.Ac(cozulenYol);
             if (guncel.GeometriRevizyon > Proje.BinaGeometriRevizyon)
                 return $"Bina geometrisi güncellenmiş (Rev. {Proje.BinaGeometriRevizyon} → {guncel.GeometriRevizyon}). " +
-                       "Yeniden yüklemek için 'Bina Geometrisi Yükle'yi kullanın.";
+                       "Tek tıkla 'Güncelle'yi kullanın.";
+            if (guncel.GeometriRevizyon < Proje.BinaGeometriRevizyon)
+                return $"Bağlı dosya geri revizyonda (dosya Rev. {guncel.GeometriRevizyon}, proje Rev. {Proje.BinaGeometriRevizyon}); " +
+                       "gömülü kopya daha yeni. Gerekirse 'Gömülü Kurtar'ı kullanın.";
         }
-        catch
+        catch (Exception ex)
         {
-            // Denetim başarısızsa sessiz geç — proje açılışını engelleme.
+            return $"Bağlı .e4bina okunamıyor ({ex.Message}); gömülü kopya kullanılabilir.";
         }
         return null;
     }
@@ -1687,7 +1601,12 @@ public partial class BasitProjeCizViewModel : ObservableObject
         var gecici = dosyaYolu + ".tmp";
         try
         {
-            var json = JsonSerializer.Serialize(Proje, ProjeJsonAyarlari);
+            var kayitProjesi = ProjeyiDerinKlonla(Proje);
+            var cozulmusGeometriYolu = BinaGeometriDosyaYolunuCoz();
+            if (!string.IsNullOrWhiteSpace(cozulmusGeometriYolu))
+                kayitProjesi.BinaGeometriYolu = BinaGeometriYolunuSaklanabilirYap(
+                    cozulmusGeometriYolu, dosyaYolu);
+            var json = JsonSerializer.Serialize(kayitProjesi, ProjeJsonAyarlari);
             System.IO.File.WriteAllText(gecici, json);
             // Atomik değiştir: hedef varsa Replace, yoksa Move.
             if (System.IO.File.Exists(dosyaYolu))
@@ -1696,7 +1615,9 @@ public partial class BasitProjeCizViewModel : ObservableObject
                 System.IO.File.Move(gecici, dosyaYolu);
 
             ProjeDosyaYolu = dosyaYolu;
+            Proje.BinaGeometriYolu = kayitProjesi.BinaGeometriYolu;
             TemizIsaretle();
+            BinaGeometriDurumunuYenile();
             DurumMesaji = $"Proje kaydedildi: {System.IO.Path.GetFileName(dosyaYolu)}";
             return true;
         }

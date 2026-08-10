@@ -73,6 +73,8 @@ public static class SalonDonusumServisi
         AciBasDeg = oge.AciBasDeg,
         AciBitisDeg = oge.AciBitisDeg,
         Kapali = oge.Kapali,
-        KatmanId = oge.KatmanId
+        KatmanId = oge.KatmanId,
+        GrupId = oge.GrupId,
+        BlokAdi = oge.BlokAdi
     };
 }

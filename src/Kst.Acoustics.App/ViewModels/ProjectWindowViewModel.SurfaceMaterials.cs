@@ -219,8 +219,8 @@ public sealed partial class ProjectWindowViewModel
             row.Update(mat, isOverride: true);
         }
 
-        MarkDirty();
         InvalidateSimulationResult("Yüzey materyali değiştirildi.");
+        MarkDirty($"{selected.Count} yüzeye materyal atandı");
         RefreshSurfaceMaterialOverrideSummary();
         RefreshCategoryOverrideBadges();
         StatusMessage = $"{selected.Count} yüzeye {mat.DisplayName} atandı.";
@@ -245,8 +245,8 @@ public sealed partial class ProjectWindowViewModel
             row.Update(mat, isOverride);
         }
 
-        MarkDirty();
         InvalidateSimulationResult("Yüzey materyal override'ı kaldırıldı.");
+        MarkDirty($"{selected.Count} yüzey materyali varsayılana döndürüldü");
         RefreshSurfaceMaterialOverrideSummary();
         RefreshCategoryOverrideBadges();
         StatusMessage = $"{selected.Count} yüzey kategori varsayılanına döndürüldü.";
@@ -291,8 +291,8 @@ public sealed partial class ProjectWindowViewModel
     /// gösterimini güncelle.</summary>
     internal void OnCategoryMaterialChanged(string category)
     {
-        MarkDirty();
         InvalidateSimulationResult($"'{category}' kategori materyali değiştirildi.");
+        MarkDirty($"'{category}' kategori materyali değiştirildi");
         foreach (var row in _allSurfaceMaterialRows)
         {
             if (!row.Category.Equals(category, StringComparison.OrdinalIgnoreCase)) continue;

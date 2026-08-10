@@ -124,17 +124,25 @@ public static class BinaGeometriExportServisi
 
         if (File.Exists(hedef))
         {
-            var mevcut = BinaGeometriServisi.Ac(hedef);
-            if (mevcut.KaynakModul == "M12" &&
-                !string.IsNullOrWhiteSpace(mevcut.KaynakArtifactKimligi) &&
-                mevcut.KaynakArtifactKimligi == geo.KaynakArtifactKimligi)
+            try
             {
-                proje.BinaGeometriYolu = hedef;
-                proje.BinaGeometriRevizyon = mevcut.GeometriRevizyon;
-                // Yol/revizyon hangi dosyaya aitse gömülü kopya da o dosyanın
-                // içeriği olmalı; M50'de yapılmış güncellemeler korunur.
-                proje.BinaGeometriKopya = mevcut;
-                return $"Mevcut bina geometrisi bağlandı: {Path.GetFileName(hedef)} (Rev. {mevcut.GeometriRevizyon}).";
+                var mevcut = BinaGeometriServisi.Ac(hedef);
+                if (mevcut.KaynakModul == "M12" &&
+                    !string.IsNullOrWhiteSpace(mevcut.KaynakArtifactKimligi) &&
+                    mevcut.KaynakArtifactKimligi == geo.KaynakArtifactKimligi)
+                {
+                    proje.BinaGeometriYolu = hedef;
+                    proje.BinaGeometriRevizyon = mevcut.GeometriRevizyon;
+                    // Yol/revizyon hangi dosyaya aitse gömülü kopya da o dosyanın
+                    // içeriği olmalı; M50'de yapılmış güncellemeler korunur.
+                    proje.BinaGeometriKopya = mevcut;
+                    return $"Mevcut bina geometrisi bağlandı: {Path.GetFileName(hedef)} (Rev. {mevcut.GeometriRevizyon}).";
+                }
+            }
+            catch
+            {
+                // Bozuk/yarım sidecar mevcut projeye bağlanmaz ve üzerine
+                // yazılmaz; aşağıdaki benzersiz hedef kurtarma yolu olur.
             }
 
             // Kaynak kimliği uyuşmuyorsa başka projeye ait yan dosyayı koru.

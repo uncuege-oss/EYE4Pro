@@ -72,6 +72,16 @@
                 </ScrollViewer>
                 <!-- Sağ grup: Yönetmelik + HESAPLA -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                    <Button Height="36" Padding="12,4" Background="#153A46"
+                            BorderBrush="#20AFC3" BorderThickness="1"
+                            Click="ProfesyonelAraclar_OnClick"
+                            ToolTip.Tip="Revizyon, senaryo, optimizasyon, ölçüm, metraj, BIM, rapor onayı ve saha araçlarını aç">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🧰" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Text="PRO ARAÇLAR" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="#B9F3FA" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <!-- Yönetmelik butonu: açılır menüyle PDF ve EK -->
                     <Button x:Name="YonetmelikBtn"
                             Height="36" Padding="12,4" Background="#2A1F3A"
@@ -177,6 +187,7 @@
                             </Button>
                             <Button Command="{Binding BinaGeometrisiYukleCommand}"
                                     CommandParameter="{Binding $parent[Window]}"
+                                    IsEnabled="{Binding DuzenlemeEtkin}"
                                     HorizontalAlignment="Stretch" Padding="8,6" Background="#16424E"
                                     ToolTip.Tip="M50'de hazırlanan .e4bina bina geometrisini yükle — mekanlar/bölmeler güncellenir, malzeme atamaları korunur">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
@@ -193,6 +204,23 @@
                                     <TextBlock Text="M50'de Düzenle" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
+                            <Border Background="#0D2024" BorderBrush="#24515A" BorderThickness="1"
+                                    CornerRadius="4" Padding="7,5">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="{Binding BinaGeometriDurumMetni}" Foreground="#8EDCE8"
+                                               FontSize="10" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
+                                        <Button Grid.Column="0" Content="↻ Güncelle"
+                                                Click="BagliBinaGeometrisiniGuncelle_OnClick"
+                                                IsEnabled="{Binding DuzenlemeEtkin}"
+                                                Padding="6,4" FontSize="10"/>
+                                        <Button Grid.Column="1" Content="⤓ Gömülü Kurtar"
+                                                Click="GomuluBinaGeometrisiniKurtar_OnClick"
+                                                IsEnabled="{Binding DuzenlemeEtkin}"
+                                                Padding="6,4" FontSize="10"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <Button Command="{Binding KaydetCommand}"
                                         CommandParameter="{Binding $parent[Window]}"
@@ -244,6 +272,7 @@
                         <!-- 4.4: kat ekleme/çoğaltma M50'ye taşındı — geometri .e4bina'dan gelir -->
                         <Button Command="{Binding BinaGeometrisiYukleCommand}"
                                 CommandParameter="{Binding $parent[Window]}"
+                                IsEnabled="{Binding DuzenlemeEtkin}"
                                 HorizontalAlignment="Stretch" Padding="8,6" Background="#16424E" Margin="0,0,0,4"
                                 ToolTip.Tip="M50'de hazırlanan .e4bina bina geometrisini yükle (kat/oda/açıklık düzenleme M50'de yapılır)">
                             <StackPanel Orientation="Horizontal" Spacing="6">
@@ -514,34 +543,14 @@
                                     </Border>
                                     <Border Background="#13222B" CornerRadius="5" Padding="8" Margin="6,6,6,0">
                                         <StackPanel Spacing="6">
-                                            <TextBlock Text="DÜŞEY BİRLEŞİM" Foreground="#20C3D8" FontSize="10" FontWeight="Bold"/>
-                                            <TextBlock Text="Küçük hacmi seçip üst/alt katın kapsayan büyük odasına bağla."
+                                            <TextBlock Text="DÜŞEY BİRLEŞİM · M50" Foreground="#20C3D8" FontSize="10" FontWeight="Bold"/>
+                                            <TextBlock Text="Tavan/döşeme patlatma ve geri alma bina geometrisinin parçasıdır; M50 Bina Geometrisi içinde düzenlenir."
                                                        Foreground="#7894A8" FontSize="9" TextWrapping="Wrap"/>
-                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
-                                                <Button Grid.Column="0"
-                                                        Content="⬆ Tavan Patlat"
-                                                        Command="{Binding TavanPatlatCommand}"
-                                                        CommandParameter="{Binding $parent[Window]}"
-                                                        Background="#154A35" Foreground="#D8FFE8"
-                                                        Padding="6,5" FontSize="11"
-                                                        ToolTip.Tip="Seçili odanın tavanını üst kattaki kapsayan odaya bağla"
-                                                        HorizontalAlignment="Stretch"/>
-                                                <Button Grid.Column="1"
-                                                        Content="⬇ Döşeme Patlat"
-                                                        Command="{Binding DosemePatlatCommand}"
-                                                        CommandParameter="{Binding $parent[Window]}"
-                                                        Background="#1A3A4A" Foreground="#D6E8F5"
-                                                        Padding="6,5" FontSize="11"
-                                                        ToolTip.Tip="Seçili odanın döşemesini alt kattaki kapsayan odaya bağla"
-                                                        HorizontalAlignment="Stretch"/>
-                                            </Grid>
-                                            <Button Content="Patlatmayı Geri Al"
-                                                    Command="{Binding DuseyBirlesimiKaldirCommand}"
-                                                    Background="#3A2020" Foreground="#FFD8D8"
+                                            <Button Content="⬡ M50'de Düzenle"
+                                                    Click="M50DeDuzenle_OnClick"
+                                                    IsEnabled="{Binding DuzenlemeEtkin}"
+                                                    Background="#16424E" Foreground="#A8E4F0"
                                                     Padding="8,5" FontSize="11"/>
-                                            <TextBlock Text="{Binding DuseyBirlesimMesaji}"
-                                                       Foreground="#D6B15E" FontSize="10" TextWrapping="Wrap"
-                                                       IsVisible="{Binding DuseyBirlesimMesaji, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
@@ -575,7 +584,97 @@
                                          PlaceholderText="Sorumlu kişi ve kuruluş"
                                          Background="#0E2233" Foreground="White"
                                          BorderBrush="#203B50" BorderThickness="1"/>
-                                <TextBlock Text="Mimari Akustik Raporu kapağında gösterilir (Madde 5/5, EK-10 10.2)"
+                                <ComboBox ItemsSource="{Binding RaporBelgeTurleri}"
+                                          SelectedItem="{Binding SeciliRaporBelgeTuru, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" Background="#0E2233" Foreground="White"
+                                          BorderBrush="#20C3D8" BorderThickness="1">
+                                    <ComboBox.ItemTemplate><DataTemplate><StackPanel>
+                                        <TextBlock Text="{Binding Ad}" Foreground="#20C3D8" FontSize="11"/>
+                                        <TextBlock Text="{Binding Aciklama}" Foreground="#7894A8" FontSize="9" TextWrapping="Wrap"/>
+                                    </StackPanel></DataTemplate></ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                    <ComboBox Grid.Column="0" ItemsSource="{Binding RaporYayinDurumlari}"
+                                              SelectedItem="{Binding SeciliRaporYayinDurumu, Mode=TwoWay}"
+                                              Background="#0E2233" Foreground="White" BorderBrush="#203B50">
+                                        <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}"/></DataTemplate></ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding RaporYapiDurumlari}"
+                                              SelectedItem="{Binding SeciliRaporYapiDurumu, Mode=TwoWay}"
+                                              Background="#0E2233" Foreground="White" BorderBrush="#203B50">
+                                        <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}"/></DataTemplate></ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,90" ColumnSpacing="4">
+                                    <TextBox Grid.Column="0" Text="{Binding RaporNumarasi, Mode=TwoWay}"
+                                             PlaceholderText="Rapor numarası" Background="#0E2233" Foreground="White"/>
+                                    <TextBox Grid.Column="1" Text="{Binding RaporRevizyonKodu, Mode=TwoWay}"
+                                             PlaceholderText="Revizyon" Background="#0E2233" Foreground="White"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Yayın tarihi" Foreground="#7894A8" FontSize="9"/>
+                                        <DatePicker SelectedDate="{Binding RaporYayinTarihi, Mode=TwoWay}" Background="#0E2233" Foreground="White"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Belge geçerlilik sonu" Foreground="#7894A8" FontSize="9"/>
+                                        <DatePicker SelectedDate="{Binding RaporBelgeGecerlilikTarihi, Mode=TwoWay}" Background="#0E2233" Foreground="White"/>
+                                    </StackPanel>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                    <NumericUpDown Grid.Column="0" Value="{Binding RaporKapsamaEsasKatSayisi, Mode=TwoWay}"
+                                                   Minimum="0" Maximum="250" Increment="1" FormatString="F0"
+                                                   PlaceholderText="Kapsama esas kat" Background="#0E2233" Foreground="White"/>
+                                    <NumericUpDown Grid.Column="1" Value="{Binding RaporToplamInsaatAlaniM2, Mode=TwoWay}"
+                                                   Minimum="0" Maximum="10000000" Increment="100" FormatString="F0"
+                                                   PlaceholderText="Toplam inşaat m²" Background="#0E2233" Foreground="White"/>
+                                </Grid>
+                                <WrapPanel>
+                                    <CheckBox IsChecked="{Binding RaporBirdenFazlaIslevVar, Mode=TwoWay}" Content="Karma işlev"
+                                              Foreground="#FFD080" FontSize="10" Margin="0,0,8,0"/>
+                                    <CheckBox IsChecked="{Binding RaporOzelAkustikTasarimGerekli, Mode=TwoWay}" Content="Özel tasarım"
+                                              Foreground="#FFD080" FontSize="10" Margin="0,0,8,0"/>
+                                    <CheckBox IsChecked="{Binding RaporAkustikProjeHazirlandi, Mode=TwoWay}" Content="Pafta paketi tamam"
+                                              Foreground="#A8FFD0" FontSize="10"/>
+                                </WrapPanel>
+                                <Expander Header="Belge, imza ve kanıt ayrıntıları" Foreground="#9AB7CC">
+                                    <StackPanel Spacing="3" Margin="0,4,0,0">
+                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                                            <TextBox Grid.Column="0" Text="{Binding RaporAda, Mode=TwoWay}" PlaceholderText="Ada" Background="#0E2233" Foreground="White"/>
+                                            <TextBox Grid.Column="1" Text="{Binding RaporParsel, Mode=TwoWay}" PlaceholderText="Parsel" Background="#0E2233" Foreground="White"/>
+                                            <TextBox Grid.Column="2" Text="{Binding RaporRuhsatNumarasi, Mode=TwoWay}" PlaceholderText="Ruhsat no" Background="#0E2233" Foreground="White"/>
+                                        </Grid>
+                                        <TextBox Text="{Binding RaporHazirlayanAdi, Mode=TwoWay}" PlaceholderText="Hazırlayan adı" Background="#0E2233" Foreground="White"/>
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                            <TextBox Grid.Column="0" Text="{Binding RaporHazirlayanUnvani, Mode=TwoWay}" PlaceholderText="Unvan" Background="#0E2233" Foreground="White"/>
+                                            <TextBox Grid.Column="1" Text="{Binding RaporHazirlayanYetkiNo, Mode=TwoWay}" PlaceholderText="Yetki/sertifika no" Background="#0E2233" Foreground="White"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                            <TextBox Grid.Column="0" Text="{Binding RaporKontrolEdenAdi, Mode=TwoWay}" PlaceholderText="Kontrol eden" Background="#0E2233" Foreground="White"/>
+                                            <TextBox Grid.Column="1" Text="{Binding RaporOnaylayanAdi, Mode=TwoWay}" PlaceholderText="Onaylayan" Background="#0E2233" Foreground="White"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                            <TextBox Grid.Column="0" Text="{Binding RaporMimariRevizyonu, Mode=TwoWay}" PlaceholderText="Mimari proje rev." Background="#0E2233" Foreground="White"/>
+                                            <TextBox Grid.Column="1" Text="{Binding RaporMekanikRevizyonu, Mode=TwoWay}" PlaceholderText="Mekanik proje rev." Background="#0E2233" Foreground="White"/>
+                                        </Grid>
+                                        <TextBox Text="{Binding RaporDisGurultuYontemi, Mode=TwoWay}" PlaceholderText="Dış gürültü belirleme yöntemi" Background="#0E2233" Foreground="White"/>
+                                        <TextBox Text="{Binding RaporDisGurultuKonumu, Mode=TwoWay}" PlaceholderText="Ölçüm/hesap konumu" Background="#0E2233" Foreground="White"/>
+                                        <TextBox Text="{Binding RaporDisGurultuKaynakBelgesi, Mode=TwoWay}" PlaceholderText="Kaynak belge/dosya referansı" Background="#0E2233" Foreground="White"/>
+                                        <TextBlock Text="Dış gürültü veri tarihi" Foreground="#7894A8" FontSize="9"/>
+                                        <DatePicker SelectedDate="{Binding RaporDisGurultuVeriTarihi, Mode=TwoWay}" Background="#0E2233" Foreground="White"/>
+                                        <TextBox Text="{Binding RaporBinaFotografiYolu, Mode=TwoWay}" PlaceholderText="Bina fotoğrafı dosya yolu (EK-10)" Background="#0E2233" Foreground="White"/>
+                                        <Expander Header="Standart sürümleri" Foreground="#7894A8">
+                                            <StackPanel Spacing="3" Margin="0,3,0,0">
+                                                <TextBox Text="{Binding RaporHesapStandartlariSurumu, Mode=TwoWay}" PlaceholderText="TS EN 12354-1/-2/-3 sürümleri" Background="#0E2233" Foreground="White"/>
+                                                <TextBox Text="{Binding RaporDerecelendirmeStandartlariSurumu, Mode=TwoWay}" PlaceholderText="TS EN ISO 717-1/-2 sürümleri" Background="#0E2233" Foreground="White"/>
+                                                <TextBox Text="{Binding RaporOlcumStandartlariSurumu, Mode=TwoWay}" PlaceholderText="TS EN ISO 16283-1/-2/-3 sürümleri" Background="#0E2233" Foreground="White"/>
+                                                <TextBox Text="{Binding RaporServisOlcumStandartlariSurumu, Mode=TwoWay}" PlaceholderText="TS EN ISO 10052 / 16032 sürümleri" Background="#0E2233" Foreground="White"/>
+                                                <TextBox Text="{Binding RaporBelirsizlikStandardiSurumu, Mode=TwoWay}" PlaceholderText="ISO 12999-1 sürümü" Background="#0E2233" Foreground="White"/>
+                                            </StackPanel>
+                                        </Expander>
+                                    </StackPanel>
+                                </Expander>
+                                <TextBlock Text="Belge türü, Madde 5/6 yolu ve EK-10 yayın kapıları rapor öncesinde otomatik denetlenir."
                                            Foreground="#556677" FontSize="9" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
