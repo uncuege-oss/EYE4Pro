@@ -13,6 +13,9 @@ public static class SalonDonusumServisi
     /// Öğeyi (dx, dy) kadar öteler.
     public static void Tasi(SalonCizimOgesi oge, double dx, double dy)
     {
+        oge.IcBosluklar=oge.IcBosluklar.Select(r=>r.Select(p=>new Point2D(p.X+dx,p.Y+dy)).ToList()).ToList();
+        oge.KotReferansi = new(oge.KotReferansi.X + dx, oge.KotReferansi.Y + dy);
+        oge.SiraMerkezi = new(oge.SiraMerkezi.X + dx, oge.SiraMerkezi.Y + dy);
         for (int i = 0; i < oge.Noktalar.Count; i++)
             oge.Noktalar[i] = new Point2D(oge.Noktalar[i].X + dx, oge.Noktalar[i].Y + dy);
     }
@@ -29,6 +32,11 @@ public static class SalonDonusumServisi
                 merkez.X + px * cos - py * sin,
                 merkez.Y + px * sin + py * cos);
         }
+        Point2D Rotate(Point2D p) => new(merkez.X+(p.X-merkez.X)*cos-(p.Y-merkez.Y)*sin, merkez.Y+(p.X-merkez.X)*sin+(p.Y-merkez.Y)*cos);
+        oge.IcBosluklar=oge.IcBosluklar.Select(r=>r.Select(Rotate).ToList()).ToList();
+        oge.KotReferansi=Rotate(oge.KotReferansi); oge.SiraMerkezi=Rotate(oge.SiraMerkezi);
+        (oge.EgimX,oge.EgimY)=(oge.EgimX*cos-oge.EgimY*sin,oge.EgimX*sin+oge.EgimY*cos);
+        oge.YonDerece += aciDeg;
         if (oge.Tip == SalonCizimTipi.Yay)
         {
             oge.AciBasDeg += aciDeg;
@@ -54,6 +62,12 @@ public static class SalonDonusumServisi
         for (int i = 0; i < oge.Noktalar.Count; i++)
             oge.Noktalar[i] = Yansit(oge.Noktalar[i]);
 
+        oge.IcBosluklar=oge.IcBosluklar.Select(r=>r.Select(Yansit).ToList()).ToList();
+        oge.KotReferansi=Yansit(oge.KotReferansi);oge.SiraMerkezi=Yansit(oge.SiraMerkezi);
+        double axis=Math.Atan2(dy,dx)*180/Math.PI;
+        oge.YonDerece=2*axis-oge.YonDerece;
+        var v=Yansit(new(e1.X+oge.EgimX,e1.Y+oge.EgimY));oge.EgimX=v.X-e1.X;oge.EgimY=v.Y-e1.Y;
+        for(int i=0;i<oge.KenarKavisleri.Count;i++)oge.KenarKavisleri[i]=-oge.KenarKavisleri[i];
         if (oge.Tip == SalonCizimTipi.Yay)
         {
             double eksenDeg = Math.Atan2(dy, dx) * 180.0 / Math.PI;
@@ -65,14 +79,11 @@ public static class SalonDonusumServisi
     }
 
     /// Derin kopya (yeni Id; nokta listesi bağımsız). Katman bağı korunur.
-    public static SalonCizimOgesi Kopyala(SalonCizimOgesi oge) => new()
+    public static SalonCizimOgesi Kopyala(SalonCizimOgesi oge)
     {
-        Tip = oge.Tip,
-        Noktalar = oge.Noktalar.ToList(),
-        YariCapM = oge.YariCapM,
-        AciBasDeg = oge.AciBasDeg,
-        AciBitisDeg = oge.AciBitisDeg,
-        Kapali = oge.Kapali,
-        KatmanId = oge.KatmanId
-    };
+        var copy = System.Text.Json.JsonSerializer.Deserialize<SalonCizimOgesi>(System.Text.Json.JsonSerializer.Serialize(oge))!;
+        copy.Id = Guid.NewGuid().ToString("N");
+        copy.KenarKimlikleri = copy.Noktalar.Select(_=>Guid.NewGuid().ToString("N")).ToList();
+        return copy;
+    }
 }

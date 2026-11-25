@@ -13,6 +13,7 @@
   <Window.Resources>
     <vm:KaynakTipiRenkConverter x:Key="KaynakRenk"/>
     <vm:ElleDegisenRenkConverter x:Key="ElleDegisenRenk"/>
+    <vm:KontrolEdildiRenkConverter x:Key="TamamlandiRenk"/>
   </Window.Resources>
 
   <Window.Styles>
@@ -31,7 +32,10 @@
       <Setter Property="BorderBrush" Value="#168A38"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="CornerRadius" Value="6"/>
-      <Setter Property="Padding" Value="10,6"/>
+      <Setter Property="Padding" Value="6,3"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="MinWidth" Value="0"/>
+      <Setter Property="MinHeight" Value="26"/>
     </Style>
     <Style Selector="Button:pointerover">
       <Setter Property="Background" Value="#15572A"/>
@@ -42,6 +46,8 @@
       <Setter Property="Background" Value="#071108"/>
       <Setter Property="Foreground" Value="#E8F4E8"/>
       <Setter Property="BorderBrush" Value="#1E6A32"/>
+      <Setter Property="MinHeight" Value="26"/>
+      <Setter Property="Padding" Value="6,3"/>
     </Style>
     <Style Selector="DataGrid">
       <Setter Property="Background" Value="#071108"/>
@@ -49,6 +55,8 @@
       <Setter Property="GridLinesVisibility" Value="Horizontal"/>
       <Setter Property="BorderBrush" Value="#17351D"/>
       <Setter Property="FontSize" Value="11"/>
+      <Setter Property="RowHeight" Value="24"/>
+      <Setter Property="ColumnHeaderHeight" Value="26"/>
     </Style>
     <Style Selector="DataGridColumnHeader">
       <Setter Property="Background" Value="#0B1C0E"/>
@@ -59,50 +67,94 @@
   </Window.Styles>
 
   <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
-    <Border Grid.Row="0" Grid.ColumnSpan="1" Background="#0A170B" BorderBrush="#1A3020" BorderThickness="0,0,0,1" Padding="12">
-      <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
-        <WrapPanel Grid.Row="0" Orientation="Horizontal">
-          <Button Content="Geri" Click="Back_OnClick" Margin="0,0,8,0"/>
-          <Button Content="Yeni" Click="Yeni_OnClick" Margin="0,0,8,0"/>
-          <Button Content="Aç" Click="Ac_OnClick" Margin="0,0,8,0"/>
-          <Button Content="Kaydet" Click="Kaydet_OnClick" Margin="0,0,8,0" ToolTip.Tip="Kaydet (Ctrl/Cmd+S)"/>
-          <Button Content="Farklı Kaydet" Click="FarkliKaydet_OnClick" Margin="0,0,8,0" ToolTip.Tip="Farklı kaydet (Ctrl/Cmd+Shift+S)"/>
-          <Button Content="Ana İcmal" Click="IcmalGoster_OnClick" Margin="0,0,8,0"/>
-          <Button Content="Poz Atama" Click="PozAtama_OnClick" Margin="0,0,8,0"/>
-          <Button Content="Referanslar" Click="Referanslar_OnClick"/>
-        </WrapPanel>
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="16">
-          <StackPanel Spacing="2">
-            <TextBlock Text="{Binding Proje.Ad}" Foreground="#E8F4E8" FontSize="16" FontWeight="SemiBold"
-                       TextTrimming="CharacterEllipsis"/>
-            <TextBlock Text="{Binding DurumMesaji}" Foreground="#91B980" FontSize="12"
-                       TextWrapping="Wrap" MaxLines="2"/>
+    <Border Grid.Row="0" Grid.ColumnSpan="1" Background="#0A170B" BorderBrush="#1A3020" BorderThickness="0,0,0,1" Padding="8,6">
+      <Grid RowDefinitions="Auto,Auto" RowSpacing="4">
+        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <Button Content="Geri" Click="Back_OnClick"/>
+            <Button Content="Yeni" Click="Yeni_OnClick"/>
+            <Button Content="Aç" Click="Ac_OnClick"/>
+            <Button Content="Kaydet" Click="Kaydet_OnClick" ToolTip.Tip="Kaydet (Ctrl/Cmd+S)"/>
+            <Button Content="Farklı Kaydet" Click="FarkliKaydet_OnClick" ToolTip.Tip="Farklı kaydet (Ctrl/Cmd+Shift+S)"/>
+            <Button Content="Ana İcmal" Click="IcmalGoster_OnClick"/>
+            <Button Content="Poz Atama" Click="PozAtama_OnClick"/>
+            <Button Content="Referanslar" Click="Referanslar_OnClick"/>
+            <Button Content="Tablo Ekle" Command="{Binding TabloEkleCommand}"/>
+            <Button Content="Alt Tablo Ekle" Command="{Binding AltTabloEkleCommand}"/>
+            <Button Content="Özel Pozlar" Click="OzelPozlar_OnClick"
+                    ToolTip.Tip="Özel poz ekle, sil veya düzenle"/>
+
+            <!-- Pop-up/Flyout list for Birim Fiyat Listeleri -->
+            <Button Content="Birim Fiyat Listeleri" IsVisible="{Binding BirimFiyatModuAktif}">
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedLeft">
+                  <Border Background="#071108" BorderBrush="#1E6A32" BorderThickness="1" CornerRadius="6" Padding="12" Width="450" Height="380">
+                    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+                      <TextBlock Text="Birim Fiyat Listeleri" Foreground="#DFF1D9" FontSize="14" FontWeight="SemiBold"/>
+                      <TextBlock Grid.Row="1" Classes="subtle" Text="Yeni liste yüklenince eski listeler pasife alınır; istenen liste tekrar aktif edilebilir." TextWrapping="Wrap"/>
+                      <DataGrid Grid.Row="2"
+                                ItemsSource="{Binding BirimFiyatListeleri}"
+                                SelectedItem="{Binding SeciliBirimFiyatListesi}"
+                                AutoGenerateColumns="False"
+                                CanUserSortColumns="True"
+                                CanUserResizeColumns="True"
+                                IsReadOnly="False"
+                                CellEditEnded="ListGrid_CellEditEnded"
+                                MinHeight="120">
+                        <DataGrid.Columns>
+                          <DataGridTextColumn Header="↕ Liste" Binding="{Binding Ad}" SortMemberPath="Ad" Width="*" IsReadOnly="False"/>
+                          <DataGridTextColumn Header="↕ Aktif" Binding="{Binding AktifMi}" SortMemberPath="AktifMi" Width="60" IsReadOnly="True"/>
+                          <DataGridTextColumn Header="↕ Poz" Binding="{Binding PozSayisi}" SortMemberPath="PozSayisi" Width="60" IsReadOnly="True"/>
+                        </DataGrid.Columns>
+                      </DataGrid>
+                      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="6" ColumnSpacing="8">
+                        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                          <Button Content="BF Listesi Ekle" Click="ExcelIceAktar_OnClick"/>
+                          <Button Content="BF Listesi Sil" Command="{Binding BirimFiyatListesiSilCommand}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                          <Button Content="Aktif Yap" Command="{Binding BirimFiyatListesiniAktifYapCommand}"/>
+                          <Button Content="Pasife Al" Command="{Binding BirimFiyatListesiniPasifeAlCommand}"/>
+                        </StackPanel>
+                      </Grid>
+                    </Grid>
+                  </Border>
+                </Flyout>
+              </Button.Flyout>
+              </Button>
+              <Button Content="{Binding ToggleModuButonMetni}" Command="{Binding ToggleOzelPozModuCommand}"/>
+              <Button Content="Excel Çıktısı" Click="ExcelDisaAktar_OnClick"/>
           </StackPanel>
-          <TextBlock Grid.Column="1" Text="{Binding GenelToplam, StringFormat='Genel Toplam: {0:N2} ₺'}"
+        </ScrollViewer>
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+          <TextBlock Text="{Binding Proje.Ad}" Foreground="#E8F4E8" FontSize="14" FontWeight="SemiBold"
+                     MaxWidth="240" VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Proje.Ad}"/>
+          <TextBlock Grid.Column="1" Text="{Binding DurumMesaji}" Foreground="#91B980" FontSize="12"
+                     VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DurumMesaji}"/>
+          <TextBlock Grid.Column="2" Name="txtKayitDurumu" Text="Kaydedilmedi" IsVisible="False"
+                     Foreground="#FFBE55" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="3" Text="{Binding GenelToplam, StringFormat='Genel Toplam: {0:N2} ₺'}"
                      Foreground="#79F2A0" FontWeight="SemiBold" VerticalAlignment="Center"/>
         </Grid>
       </Grid>
     </Border>
 
     <!-- Column 0, Row 1: Split main area into Top (Keşif Tablosu) and Bottom (Birim Fiyat Pozları) -->
-    <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="*,5,*" Background="#081209">
-      
+    <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="3*,4,2*" Background="#081209">
+
       <!-- Upper Part: Keşif Tabloları -->
-      <Border Grid.Row="0" Background="#081209" Padding="12">
-        <Grid RowDefinitions="Auto,160,5,*,Auto" RowSpacing="8">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-            <StackPanel Spacing="4">
-              <TextBlock Classes="sectionTitle" Text="Keşif Tabloları"/>
-              <TextBlock Classes="subtle" Text="Tablo / alt tablo / alt-alt tablo (en çok 3 seviye). Satırlar yalnız alt (yaprak) tablolara eklenir."/>
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-              <Button Content="Tablo Ekle" Command="{Binding TabloEkleCommand}"/>
-              <Button Content="Alt Tablo Ekle" Command="{Binding AltTabloEkleCommand}"/>
-              <TextBlock Text="(Silmek için: Del / Backspace)" Classes="subtle" VerticalAlignment="Center"/>
-            </StackPanel>
+      <Border Grid.Row="0" Background="#081209" Padding="8,6">
+        <Grid RowDefinitions="Auto,124,4,*,Auto" RowSpacing="4">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <TextBlock Classes="sectionTitle" Text="Keşif Tabloları" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Classes="subtle" VerticalAlignment="Center"
+                       Text="En çok 3 seviye · Satırlar yaprak tablolara eklenir · Sil: Del / Backspace"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip.Tip="Tablo / alt tablo / alt-alt tablo (en çok 3 seviye). Satırlar yalnız alt (yaprak) tablolara eklenir. Silmek için Del / Backspace."/>
           </Grid>
 
-          <Grid Grid.Row="1" ColumnDefinitions="*,12,460">
+          <Grid Grid.Row="1" ColumnDefinitions="*,8,420">
             <!-- Sol: keşif tablo ağacı -->
             <Border Grid.Column="0" Background="#0A170B" BorderBrush="#17351D" BorderThickness="1" CornerRadius="4">
               <TreeView Name="tvTablolar" ItemsSource="{Binding Tablolar}"
@@ -113,7 +165,13 @@
                 <TreeView.Styles>
                   <Style Selector="TreeViewItem">
                     <Setter Property="IsExpanded" Value="True"/>
+                    <Setter Property="MinHeight" Value="26"/>
+                    <Setter Property="Padding" Value="2,0"/>
                     <Setter Property="Foreground" Value="#E8F4E8"/>
+                  </Style>
+                  <Style Selector="TreeViewItem /template/ ContentPresenter">
+                    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                   </Style>
                   <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
                     <Setter Property="Background" Value="#1B365D"/>
@@ -121,19 +179,32 @@
                 </TreeView.Styles>
                 <TreeView.ItemTemplate>
                   <TreeDataTemplate ItemsSource="{Binding AltTablolar}">
-                    <TextBlock Text="{Binding Ad}" Padding="2,3"/>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                      <CheckBox IsChecked="{Binding TamamlandiMi, Mode=OneWay}"
+                                MinHeight="0" Padding="0" VerticalAlignment="Center"
+                                ToolTip.Tip="Tamamlandı: düzenlemeyi kilitle. Düzenlemek için tiki kaldırın."
+                                AutomationProperties.Name="Tablo tamamlandı"
+                                Click="Tamamlandi_OnClick"
+                                DoubleTapped="Tamamlandi_DoubleTapped"/>
+                      <TextBlock Grid.Column="1" Text="{Binding Ad}" Padding="2,3" VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Ad}"
+                                 Foreground="{Binding TamamlandiMi, Converter={StaticResource TamamlandiRenk}}"/>
+                      <TextBlock Grid.Column="2" Text="{Binding Toplam, StringFormat={}{0:N2} ₺}"
+                                 Foreground="#DFF1D9" FontWeight="SemiBold" VerticalAlignment="Center"
+                                 TextAlignment="Right" Margin="8,0,8,0"/>
+                    </Grid>
                   </TreeDataTemplate>
                 </TreeView.ItemTemplate>
               </TreeView>
             </Border>
 
             <!-- Sağ: proje bilgileri künyesi -->
-            <Border Grid.Column="2" Background="#0A170B" BorderBrush="#17351D" BorderThickness="1" CornerRadius="4" Padding="10">
+            <Border Grid.Column="2" Background="#0A170B" BorderBrush="#17351D" BorderThickness="1" CornerRadius="4" Padding="6">
               <Grid RowDefinitions="Auto,*">
                 <TextBlock Text="Proje Bilgileri" Classes="sectionTitle" FontSize="13"/>
-                <Grid Grid.Row="1" Margin="0,6,0,0"
+                <Grid Grid.Row="1" Margin="0,4,0,0"
                       ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto"
-                      RowSpacing="6" ColumnSpacing="8">
+                      RowSpacing="3" ColumnSpacing="6">
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="İşveren" Classes="subtle" VerticalAlignment="Center"/>
                     <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ProjeBilgileri.Isveren, Mode=TwoWay}" FontSize="11" Padding="6,3"/>
                     <TextBlock Grid.Row="0" Grid.Column="2" Text="Yüklenici" Classes="subtle" VerticalAlignment="Center"/>
@@ -164,6 +235,8 @@
                     AutoGenerateColumns="False"
                     CanUserSortColumns="True"
                     CanUserResizeColumns="True"
+                    IsReadOnly="{Binding SeciliTabloSaltOkunur}"
+                    BeginningEdit="Grid_BeginningEdit"
                     CellEditEnded="Grid_CellEditEnded"
                     KeyDown="dgSatirlar_KeyDown"
                     DoubleTapped="dgSatirlar_DoubleTapped">
@@ -209,9 +282,10 @@
             </DataGrid.Columns>
           </DataGrid>
 
-          <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-            <TextBlock Text="Satır silmek için satırı seçip Del / Backspace tuşuna basın." Classes="subtle" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="2" Text="{Binding SeciliTabloToplam, StringFormat='Tablo Toplamı: {0:N2} ₺'}" Foreground="#79F2A0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+          <Grid Grid.Row="4" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Text="{Binding SeciliTabloKilitMesaji}" Classes="subtle" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SeciliTabloKilitMesaji}"/>
+            <TextBlock Grid.Column="1" Text="{Binding SeciliTabloToplam, StringFormat='Tablo Toplamı: {0:N2} ₺'}" Foreground="#79F2A0" FontWeight="SemiBold" VerticalAlignment="Center"/>
           </Grid>
         </Grid>
       </Border>
@@ -220,18 +294,16 @@
       <GridSplitter Grid.Row="1" Background="#15331C" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 
       <!-- Lower Part: Birim Fiyat Pozları -->
-      <Border Grid.Row="2" Background="#0B170D" Padding="12">
-        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
-          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-            <StackPanel Spacing="4">
-              <TextBlock Classes="sectionTitle" Text="{Binding ModTitle}"/>
-              <TextBlock Classes="subtle" Text="Pozları inceleyin veya çift tıklayarak aktif keşif tablosuna satır ekleyin."/>
-            </StackPanel>
+      <Border Grid.Row="2" Background="#0B170D" Padding="8,6">
+        <Grid RowDefinitions="Auto,*" RowSpacing="4">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <TextBlock Classes="sectionTitle" Text="{Binding ModTitle}" VerticalAlignment="Center"
+                       ToolTip.Tip="Pozları inceleyin veya çift tıklayarak aktif keşif tablosuna satır ekleyin."/>
+            <TextBox Grid.Column="1" Text="{Binding AramaMetni, Mode=TwoWay}"
+                     PlaceholderText="Poz no veya birim adı ile ara..."/>
           </Grid>
 
-          <TextBox Grid.Row="1" Text="{Binding AramaMetni, Mode=TwoWay}" PlaceholderText="Poz no veya birim adı ile ara..."/>
-
-          <DataGrid Grid.Row="2" Name="dgPozKutuphanesi"
+          <DataGrid Grid.Row="1" Name="dgPozKutuphanesi"
                     ItemsSource="{Binding FiltrelenmisPozKutuphane}"
                     SelectedItem="{Binding SeciliPoz}"
                     AutoGenerateColumns="False"
@@ -241,7 +313,18 @@
                     DoubleTapped="dgPozKutuphanesi_DoubleTapped">
             <DataGrid.Columns>
               <DataGridTextColumn Header="↕ Poz" Binding="{Binding PozNo}" SortMemberPath="PozNo" Width="80"/>
-              <DataGridTextColumn Header="↕ Birim Adı" Binding="{Binding BirimAdi}" SortMemberPath="BirimAdi" Width="*"/>
+              <DataGridTemplateColumn Header="↕ Birim Adı" SortMemberPath="BirimAdi" Width="*">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding BirimAdi}" TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" Margin="12,0" ToolTip.ShowDelay="350">
+                      <ToolTip.Tip>
+                        <TextBlock Text="{Binding BirimAdi}" TextWrapping="Wrap" MaxWidth="650"/>
+                      </ToolTip.Tip>
+                    </TextBlock>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
               <DataGridTextColumn Header="↕ Birim" Binding="{Binding Birim}" SortMemberPath="Birim" Width="55"/>
               <DataGridTemplateColumn Header="↕ Fiyat" SortMemberPath="BirimFiyat" Width="95">
                 <DataGridTemplateColumn.CellTemplate>
@@ -256,54 +339,7 @@
             </DataGrid.Columns>
           </DataGrid>
 
-          <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="Özel Poz Ekle" Command="{Binding OzelPozEkleCommand}" IsVisible="{Binding OzelPozModuAktif}"/>
-              <Button Content="Özel Poz Sil" Command="{Binding OzelPozSilCommand}" IsVisible="{Binding OzelPozModuAktif}"/>
-              <Button Content="Özel Poz Güncelle" Click="OzelPozGuncelle_OnClick" IsVisible="{Binding OzelPozModuAktif}"/>
-            
-            <!-- Pop-up/Flyout list for Birim Fiyat Listeleri -->
-              <Button Content="Birim Fiyat Listeleri" IsVisible="{Binding BirimFiyatModuAktif}">
-              <Button.Flyout>
-                <Flyout Placement="BottomEdgeAlignedLeft">
-                  <Border Background="#071108" BorderBrush="#1E6A32" BorderThickness="1" CornerRadius="6" Padding="12" Width="450" Height="380">
-                    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
-                      <TextBlock Text="Birim Fiyat Listeleri" Foreground="#DFF1D9" FontSize="14" FontWeight="SemiBold"/>
-                      <TextBlock Grid.Row="1" Classes="subtle" Text="Yeni liste yüklenince eski listeler pasife alınır; istenen liste tekrar aktif edilebilir." TextWrapping="Wrap"/>
-                      <DataGrid Grid.Row="2"
-                                ItemsSource="{Binding BirimFiyatListeleri}"
-                                SelectedItem="{Binding SeciliBirimFiyatListesi}"
-                                AutoGenerateColumns="False"
-                                CanUserSortColumns="True"
-                                CanUserResizeColumns="True"
-                                IsReadOnly="False"
-                                CellEditEnded="ListGrid_CellEditEnded"
-                                MinHeight="120">
-                        <DataGrid.Columns>
-                          <DataGridTextColumn Header="↕ Liste" Binding="{Binding Ad}" SortMemberPath="Ad" Width="*" IsReadOnly="False"/>
-                          <DataGridTextColumn Header="↕ Aktif" Binding="{Binding AktifMi}" SortMemberPath="AktifMi" Width="60" IsReadOnly="True"/>
-                          <DataGridTextColumn Header="↕ Poz" Binding="{Binding PozSayisi}" SortMemberPath="PozSayisi" Width="60" IsReadOnly="True"/>
-                        </DataGrid.Columns>
-                      </DataGrid>
-                      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="6" ColumnSpacing="8">
-                        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                          <Button Content="BF Listesi Ekle" Click="ExcelIceAktar_OnClick"/>
-                          <Button Content="BF Listesi Sil" Command="{Binding BirimFiyatListesiSilCommand}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                          <Button Content="Aktif Yap" Command="{Binding BirimFiyatListesiniAktifYapCommand}"/>
-                          <Button Content="Pasife Al" Command="{Binding BirimFiyatListesiniPasifeAlCommand}"/>
-                        </StackPanel>
-                      </Grid>
-                    </Grid>
-                  </Border>
-                </Flyout>
-              </Button.Flyout>
-              </Button>
-              <Button Content="{Binding ToggleModuButonMetni}" Command="{Binding ToggleOzelPozModuCommand}"/>
-            </StackPanel>
-            <Button Grid.Column="1" Content="Excel Çıktısı" Click="ExcelDisaAktar_OnClick"/>
-          </Grid>
+
         </Grid>
       </Border>
     </Grid>

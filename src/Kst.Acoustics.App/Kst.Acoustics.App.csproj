@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/eye4pro.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
@@ -43,6 +44,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="TerrainRender.Regression" />
+    <InternalsVisibleTo Include="TerrainComparison.Regression" />
     <ProjectReference Include="..\Kst.Acoustics.Core\Kst.Acoustics.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -7,7 +7,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#080F0A"
-        Title="Eye4Pro Electric - Tek Hat Şeması">
+        Title="Eye4Pro Elektrik - Tek Hat Şeması">
 
     <Window.Styles>
         <Style Selector="TextBlock.sectionTitle">
@@ -94,8 +94,8 @@
 
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-        <!-- ROW 0: HEADER BAR -->
-        <Border Grid.Row="0" BorderBrush="#1A3020" BorderThickness="0,0,0,1" Padding="16,10">
+        <!-- ROW 0: HEADER BAR — tek satır: başlık | sık kullanılan ayarlar | dosya/dışa aktar -->
+        <Border Grid.Row="0" BorderBrush="#1A3020" BorderThickness="0,0,0,1" Padding="16,6">
             <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
                     <GradientStop Color="#090F0B" Offset="0"/>
@@ -103,83 +103,119 @@
                     <GradientStop Color="#090F0B" Offset="1"/>
                 </LinearGradientBrush>
             </Border.Background>
-            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Border Width="32" Height="32" CornerRadius="6" Background="#163A10">
-                            <TextBlock Text="TH" Foreground="#8CDA50" FontSize="13" FontWeight="Bold"
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="4">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Border Width="28" Height="28" CornerRadius="6" Background="#163A10">
+                            <TextBlock Text="TH" Foreground="#8CDA50" FontSize="12" FontWeight="Bold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="Tek Hat Şeması" Foreground="#E0F0D0" FontSize="15" FontWeight="SemiBold"
                                    VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ProjeAdiText" Text="Yeni Proje" MaxWidth="240"
+                                   Foreground="#5A8A40" FontSize="12" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        <Border x:Name="KaydedilmediRozet" IsVisible="False"
+                                Background="#3A2A0C" BorderBrush="#E0A040" BorderThickness="1"
+                                CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                ToolTip.Tip="Projede kaydedilmemiş değişiklik var (Ctrl/Cmd+S ile kaydedin).">
+                            <TextBlock Text="● Kaydedilmedi" Foreground="#F0C060" FontSize="11" FontWeight="SemiBold"/>
+                        </Border>
                     </StackPanel>
 
-                    <TextBlock Grid.Column="1" x:Name="ProjeAdiText" Text="Yeni Proje"
-                               Foreground="#5A8A40" FontSize="12" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                    <!-- Sık kullanılan proje ayarları; seyrek olanlar Ayarlar açılır panelinde -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Border Width="1" Height="20" Background="#2A4A20" Margin="0,0,4,0"/>
+                        <TextBlock Text="Selektivite" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
+                        <ToggleSwitch x:Name="SelektiviteToggle" OnContent="" OffContent=""
+                                      IsChecked="False" MinWidth="0" VerticalAlignment="Center"
+                                      ToolTip.Tip="Selektivite (seçicilik) kontrolünü aç/kapat"
+                                      IsCheckedChanged="Selektivite_OnChanged"/>
+                        <Button x:Name="KontrolBtn" Classes="secondary" Content="✓ Kontrol"
+                                ToolTip.Tip="Panoları eksikliklerine göre renklendir"
+                                Click="Kontrol_OnClick"/>
+                        <Button Classes="secondary" Content="Ayarlar ▾"
+                                ToolTip.Tip="Gerilim düşümü sınırları ve UPS topolojisi">
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedLeft">
+                                    <Border Background="#0A140A" BorderBrush="#2A4A20" BorderThickness="1"
+                                            CornerRadius="6" Padding="12">
+                                        <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                                              ColumnSpacing="10" RowSpacing="8">
+                                            <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Proje Ayarları"
+                                                       Classes="sectionTitle"/>
+                                            <TextBlock Grid.Row="1" Text="Gerilim düşümü - segment (%)"
+                                                       Classes="labelText" VerticalAlignment="Center"/>
+                                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="GerilimDususBox" Text="3" Width="60"
+                                                     ToolTip.Tip="Her kablo/busbar segmentinin boyutlandırma sınırı (son devre tipik %3)."
+                                                     LostFocus="GerilimDusus_OnChanged"/>
+                                            <TextBlock Grid.Row="2" Text="Gerilim düşümü - toplam (%)"
+                                                       Classes="labelText" VerticalAlignment="Center"/>
+                                            <TextBox Grid.Row="2" Grid.Column="1" x:Name="ToplamGerilimDususBox" Text="5" Width="60"
+                                                     ToolTip.Tip="Kaynaktan en uçtaki yüke kadar izin verilen birikimli gerilim düşümü sınırı (tipik %5)."
+                                                     LostFocus="ToplamGerilimDusus_OnChanged"/>
+                                            <TextBlock Grid.Row="3" Text="UPS topolojisi"
+                                                       Classes="labelText" VerticalAlignment="Center"/>
+                                            <ComboBox Grid.Row="3" Grid.Column="1" x:Name="UpsTopolojiCombo" MinWidth="110" SelectedIndex="0"
+                                                      SelectionChanged="UpsTopoloji_OnChanged">
+                                                <ComboBoxItem Content="Lokal"/>
+                                                <ComboBoxItem Content="Merkezi"/>
+                                            </ComboBox>
+                                            <Button Grid.Row="4" Grid.ColumnSpan="2" x:Name="MerkeziUpsKurBtn" Classes="secondary"
+                                                    Content="Merkezi UPS Kur" HorizontalAlignment="Right"
+                                                    IsVisible="False" Click="MerkeziUpsKur_OnClick"/>
+                                        </Grid>
+                                    </Border>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
 
-                    <WrapPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Classes="secondary" Content="Yeni" Click="YeniProje_OnClick" Margin="0,0,6,0"/>
-                        <Button Classes="secondary" Content="Aç" Click="ProjeAc_OnClick" Margin="0,0,6,0"/>
-                        <Button Classes="secondary" Content="Kaydet" Click="Kaydet_OnClick" Margin="0,0,6,0"
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Button Classes="secondary" Content="Dosya ▾">
+                            <Button.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                    <MenuItem Header="Yeni" Click="YeniProje_OnClick"/>
+                                    <MenuItem Header="Aç..." Click="ProjeAc_OnClick"/>
+                                    <Separator/>
+                                    <MenuItem Header="Kaydet" InputGesture="Ctrl+S" Click="Kaydet_OnClick"/>
+                                    <MenuItem Header="Farklı Kaydet..." InputGesture="Ctrl+Shift+S" Click="FarkliKaydet_OnClick"/>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Classes="secondary" Content="Kaydet" Click="Kaydet_OnClick"
                                 ToolTip.Tip="Kaydet (Ctrl/Cmd+S)"/>
-                        <Button Classes="secondary" Content="Farklı Kaydet" Click="FarkliKaydet_OnClick" Margin="0,0,6,0"
-                                ToolTip.Tip="Farklı kaydet (Ctrl/Cmd+Shift+S)"/>
-                        <Button Classes="secondary" Content="Excel Dışa Aktar" Click="ExcelDisaAktar_OnClick" Margin="0,0,6,0"/>
-                        <Button Classes="secondary" Content="DXF Dışa Aktar" Click="DxfDisaAktar_OnClick" Margin="0,0,6,0"/>
-                        <Button Classes="primary" Content="Kütüphane" Click="Kutuphane_OnClick" Margin="0,0,6,0"/>
+                        <Button Classes="secondary" Content="Dışa Aktar ▾">
+                            <Button.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                    <MenuItem Header="Excel raporu..." Click="ExcelDisaAktar_OnClick"/>
+                                    <MenuItem Header="DXF çizimi..." Click="DxfDisaAktar_OnClick"/>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Border Width="1" Height="20" Background="#2A4A20" Margin="4,0"/>
+                        <Button Classes="primary" Content="Kütüphane" Click="Kutuphane_OnClick"/>
                         <Button Classes="secondary" Content="Modüller" Click="BackToLauncher_OnClick"/>
-                    </WrapPanel>
+                    </StackPanel>
                 </Grid>
 
-                <!-- Proje Ayarları: Selektivite + Gerilim Düşümü -->
-                <WrapPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,16,0">
-                        <TextBlock Text="Selektivite:" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
-                        <ToggleSwitch x:Name="SelektiviteToggle" OnContent="Açık" OffContent="Kapalı"
-                                      IsChecked="False" Foreground="#D0E8C0"
-                                      IsCheckedChanged="Selektivite_OnChanged"/>
-                    </StackPanel>
-                    <Button x:Name="KontrolBtn" Classes="secondary" Content="Kontrol"
-                            Click="Kontrol_OnClick" Margin="0,0,16,0"/>
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,16,0">
-                        <TextBlock Text="Gerilim Düşümü - Segment (%):" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
-                        <TextBox x:Name="GerilimDususBox" Text="3" Width="46"
-                                 ToolTip.Tip="Her kablo/busbar segmentinin boyutlandırma sınırı (son devre tipik %3)."
-                                 LostFocus="GerilimDusus_OnChanged"/>
-                        <TextBlock Text="Toplam (%):" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
-                        <TextBox x:Name="ToplamGerilimDususBox" Text="5" Width="46"
-                                 ToolTip.Tip="Kaynaktan en uçtaki yüke kadar izin verilen birikimli gerilim düşümü sınırı (tipik %5)."
-                                 LostFocus="ToplamGerilimDusus_OnChanged"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <TextBlock Text="UPS Topolojisi:" Foreground="#7AA060" FontSize="11" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="UpsTopolojiCombo" MinWidth="96" SelectedIndex="0"
-                                  SelectionChanged="UpsTopoloji_OnChanged">
-                            <ComboBoxItem Content="Lokal"/>
-                            <ComboBoxItem Content="Merkezi"/>
-                        </ComboBox>
-                        <Button x:Name="MerkeziUpsKurBtn" Classes="secondary" Content="Merkezi UPS Kur"
-                                IsVisible="False" Click="MerkeziUpsKur_OnClick"/>
-                    </StackPanel>
-                </WrapPanel>
-
-                <TextBlock Grid.Row="2" x:Name="KontrolLegend" IsVisible="False" FontSize="11"
+                <TextBlock Grid.Row="1" x:Name="KontrolLegend" IsVisible="False" FontSize="11"
                            Text="Kırmızı: açıklama eksik, gerilim düşümü aşımı veya kesit yetersiz. Sarı: kablo mesafesi varsayılan. Boşluğa tıklayın: kontrolden çık."
                            TextWrapping="Wrap" Foreground="#C0D0A0"/>
             </Grid>
         </Border>
 
-        <!-- ROW 1: PANO ÇUBUĞU — aç/kapatılabilir -->
-        <Border Grid.Row="1" Background="#0A140A" BorderBrush="#1A3018" BorderThickness="0,0,0,1" Padding="16,10">
+        <!-- ROW 1: PANO ÇUBUĞU — aç/kapatılabilir; geniş ekranda tek satır, darda alta sarar -->
+        <Border Grid.Row="1" Background="#0A140A" BorderBrush="#1A3018" BorderThickness="0,0,0,1" Padding="16,6">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                <Grid x:Name="PanoMenuFields" Grid.Column="0" RowDefinitions="Auto,Auto" RowSpacing="8">
-                    <WrapPanel Grid.Row="0" Orientation="Horizontal">
-                        <TextBlock Text="Pano:" Foreground="#7AA060" FontSize="12" FontWeight="SemiBold"
-                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBox x:Name="YeniPanoAd" PlaceholderText="Pano adı" Width="120" Margin="0,0,8,0"/>
-                        <ComboBox x:Name="YeniPanoKat" Width="80" Margin="0,0,8,0"/>
-                        <ComboBox x:Name="YeniPanoTipi" SelectedIndex="0" Width="150" Margin="0,0,8,0"
+                <WrapPanel x:Name="PanoMenuFields" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Yeni pano -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,2,14,2">
+                        <TextBlock Text="Yeni pano:" Foreground="#7AA060" FontSize="11" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <TextBox x:Name="YeniPanoAd" PlaceholderText="Pano adı" Width="110"/>
+                        <ComboBox x:Name="YeniPanoKat" Width="76"/>
+                        <ComboBox x:Name="YeniPanoTipi" SelectedIndex="0" Width="140"
                                   SelectionChanged="YeniPanoTipi_OnChanged">
                             <ComboBoxItem Content="Tali Pano"/>
                             <ComboBoxItem Content="Ana Pano"/>
@@ -188,36 +224,33 @@
                             <ComboBoxItem Content="Kontrol Panosu"/>
                             <ComboBoxItem Content="Yangın Panosu"/>
                         </ComboBox>
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,8,0">
-                            <CheckBox x:Name="AydinlatmaSayacliCheck" Content="Sayaçlı"
-                                      IsVisible="False" Foreground="#A0C888" FontSize="11"/>
-                            <CheckBox x:Name="HarmonikFiltreliCheck" Content="Harmonik Filtreli"
-                                      IsVisible="False" Foreground="#A0C888" FontSize="11"/>
-                        </StackPanel>
-                        <Button Classes="primary" Content="+ Pano" Click="PanoEkle_OnClick" Margin="0,0,8,0"/>
-                        <Button Classes="secondary" Content="+ Busbar" Click="BusbarEkle_OnClick" Margin="0,0,8,0"/>
-                        <Button Classes="secondary" Content="Jeneratör" Click="Jenerator_OnClick" Margin="0,0,8,0"/>
-                        <Button Classes="secondary" Content="OG / Trafo" Click="OrtaGerilim_OnClick" Margin="0,0,8,0"/>
+                        <CheckBox x:Name="AydinlatmaSayacliCheck" Content="Sayaçlı"
+                                  IsVisible="False" Foreground="#A0C888" FontSize="11"/>
+                        <CheckBox x:Name="HarmonikFiltreliCheck" Content="Harmonik Filtreli"
+                                  IsVisible="False" Foreground="#A0C888" FontSize="11"/>
+                        <Button Classes="primary" Content="+ Pano" Click="PanoEkle_OnClick"/>
+                    </StackPanel>
+
+                    <!-- Sistem bileşenleri -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,2,14,2">
+                        <Border Width="1" Height="20" Background="#2A4A20" Margin="0,0,8,0"/>
+                        <Button Classes="secondary" Content="+ Busbar" Click="BusbarEkle_OnClick"/>
+                        <Button Classes="secondary" Content="Jeneratör" Click="Jenerator_OnClick"/>
+                        <Button Classes="secondary" Content="OG / Trafo" Click="OrtaGerilim_OnClick"/>
                         <Button Classes="secondary" Content="Bina" Click="Bina_OnClick"/>
-                    </WrapPanel>
+                    </StackPanel>
 
-                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock x:Name="BagliText" Text="" Foreground="#A0C888" FontSize="11"
-                                       FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Text="Seçili:" Foreground="#5A7A44" FontSize="11" VerticalAlignment="Center"/>
-                            <ComboBox x:Name="PanoSecici" MinWidth="220" SelectionChanged="PanoSecim_OnChanged"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="Kablo (m):" Foreground="#5A7A44" FontSize="11" VerticalAlignment="Center"/>
-                            <TextBox x:Name="KabloMesafe" Text="10" Width="60"/>
-                            <Button Classes="secondary" Content="Ata" Click="KabloMesafeAta_OnClick"/>
-                        </StackPanel>
-                    </Grid>
-                </Grid>
+                    <!-- Seçili pano + besleme kablosu -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,2,0,2">
+                        <Border Width="1" Height="20" Background="#2A4A20" Margin="0,0,8,0"/>
+                        <TextBlock Text="Seçili:" Foreground="#5A7A44" FontSize="11" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="PanoSecici" MinWidth="220" SelectionChanged="PanoSecim_OnChanged"/>
+                        <TextBlock x:Name="BagliText" Text="" Foreground="#A0C888" FontSize="11"
+                                   FontWeight="SemiBold" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                    </StackPanel>
+                </WrapPanel>
                 <Button Grid.Column="1" x:Name="PanoMenuToggleBtn" Content="▾" Width="26" Height="26"
-                        Padding="0" FontSize="13" Click="PanoMenuToggle_OnClick"
+                        Padding="0" FontSize="13" Click="PanoMenuToggle_OnClick" VerticalAlignment="Top"
                         Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
             </Grid>
         </Border>
@@ -228,7 +261,10 @@
             <!-- SOL PANEL: Ağaç Şeması -->
             <Border Grid.Column="0" Background="#060C07" BorderBrush="#1A3018" BorderThickness="0,0,1,0" ClipToBounds="True">
                 <Panel x:Name="SemaViewport" Background="Transparent">
-                    <Canvas x:Name="SemaCanvas" Background="Transparent" RenderTransformOrigin="0,0"/>
+                    <!-- Sol üste sabit: zoom/pan dönüşümü kanvas orijinini viewport (0,0) varsayar;
+                         ortalanırsa viewport'tan büyük şema ekran dışına kayar. -->
+                    <Canvas x:Name="SemaCanvas" Background="Transparent" RenderTransformOrigin="0,0"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"/>
                 </Panel>
             </Border>
 
@@ -244,9 +280,20 @@
                 <!-- Linye Giriş Formu — 2 satır halinde -->
                 <Border x:Name="LinyeFormPanel" Background="#0C160C" CornerRadius="8" BorderBrush="#1A3018" BorderThickness="1" Padding="12" Margin="0,0,0,8" KeyDown="LinyeForm_OnKeyDown">
                     <StackPanel Spacing="8">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
                             <TextBlock Grid.Column="0" Classes="sectionTitle" Text="Linye Ekle" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" x:Name="LinyeToggleBtn" Content="▾" Width="26" Height="26"
+                            <!-- Seçili panoya Excel ile toplu linye aktarımı -->
+                            <Button Grid.Column="1" Classes="secondary" Content="Excel ▾" Height="26" Padding="8,0"
+                                    VerticalContentAlignment="Center"
+                                    ToolTip.Tip="Seçili panoya Excel ile toplu linye aktarımı">
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                        <MenuItem Header="Excel şablonu oluştur..." Click="LinyeExcelSablon_OnClick"/>
+                                        <MenuItem Header="Excelden seçili panoya aktar..." Click="LinyeExcelIceAktar_OnClick"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Button Grid.Column="2" x:Name="LinyeToggleBtn" Content="▾" Width="26" Height="26"
                                     Padding="0" FontSize="13" Click="LinyeToggle_OnClick"
                                     Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
                         </Grid>
@@ -288,26 +335,6 @@
                 </Border>
 
                 <StackPanel Grid.Row="1" Spacing="6">
-                <Border Background="#0C160C" CornerRadius="4" Padding="8,5"
-                        BorderBrush="#1A3018" BorderThickness="1">
-                    <StackPanel Spacing="6">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="Seçili panoya Excel ile toplu linye aktarımı"
-                                       Classes="labelText" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" x:Name="LinyeExcelToggleBtn" Content="▾" Width="24" Height="24"
-                                    Padding="0" FontSize="12" Click="LinyeExcelToggle_OnClick"
-                                    Background="#162A10" Foreground="#A0C888" BorderBrush="#2A4A20"/>
-                        </Grid>
-                        <Grid x:Name="LinyeExcelFields" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                            <TextBlock Grid.Column="0" Text="" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Classes="secondary" Content="Excel Şablonu"
-                                    Click="LinyeExcelSablon_OnClick"/>
-                            <Button Grid.Column="2" Classes="secondary" Content="Excelden Aktar"
-                                    Click="LinyeExcelIceAktar_OnClick"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
                 <!-- Faz Dağılımı Bar -->
                 <Border x:Name="FazDagilimPanel" Background="#0C160C" CornerRadius="4" Padding="8,5"
                         BorderBrush="#1A3018" BorderThickness="1">
@@ -572,11 +599,15 @@
                           VerticalScrollBarVisibility="Auto"
                           HeadersVisibility="Column"
                           RowHeight="28"
+                          SelectionMode="Extended"
+                          ClipboardCopyMode="None"
                           KeyDown="LinyeGrid_OnKeyDown"
                           DoubleTapped="LinyeGrid_OnDoubleTapped">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="Düzenle" Click="LinyeDuzenle_OnClick"/>
+                            <MenuItem Header="Kopyala" InputGesture="Ctrl+C" Click="LinyeKopyalaMenu_OnClick"/>
+                            <MenuItem Header="Yapıştır" InputGesture="Ctrl+V" Click="LinyeYapistirMenu_OnClick"/>
                             <MenuItem Header="Tekrarla Ekle" Click="LinyeTekrarlaEkleMenu_OnClick"/>
                             <MenuItem Header="Sil" Click="LinyeSilMenu_OnClick"/>
                         </ContextMenu>
@@ -878,7 +909,7 @@
 
         <!-- ROW 3: FOOTER -->
         <Border Grid.Row="3" BorderBrush="#112010" BorderThickness="0,1,0,0" Background="#060C07" Padding="0,6">
-            <TextBlock Text="Eye4Pro Electric — Tek Hat Şeması v1.0"
+            <TextBlock Text="Eye4Pro Elektrik — Tek Hat Şeması v1.0"
                        FontSize="10" Foreground="#3A5A28" HorizontalAlignment="Center"/>
         </Border>
     </Grid>

@@ -10,6 +10,7 @@ public class SalonGeometri : ISalonGeometri
 {
     /// Şema versiyon numarası — migrasyon tetikleyicisi.
     public int SemaSurum { get; set; } = 1;
+    public bool SerbestTasarim { get; set; }
 
     /// Her kayıtta artan revizyon sayacı. Tüketici modüller (M01) yükledikleri
     /// değeri saklar; fark varsa "salon geometrisi güncellenmiş" uyarısı gösterilir.

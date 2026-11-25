@@ -1,5 +1,7 @@
 # M21 Codex — Kanal Hesabı
 
+> **5 Kasım 2026 kod denetimi:** Mekanik başlatıcı mevcut; `Core/Mechanical`, M21 hesap motoru, proje modeli ve `.e4p21` kayıt akışı kaynak kodda bulunmuyor. Aşağıdaki aktif kapsam maddeleri hedef kapsamdır; uygulanmış özellik olarak değerlendirilmemelidir. Ayrıntı: [modül denetimi](../../modul-denetimi-2026-11-05.md).
+
 Bu dosya yeni oturum başlangıcında hızlı referans için tutulur. Ayrıntılı kronolojik günlük değildir; yalnızca güncel kararlar, kapsam, sistem davranışları, kritik teknik notlar ve önemli kaynak alanları yazılır.
 
 ---

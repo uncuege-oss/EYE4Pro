@@ -664,3 +664,9 @@ Son bilinen genel hedef:
 5. Layout/çizim değişikliği için layout servisi, `ELVSematikControl` ve `ElvDataSemaControl` dosyalarını incele.
 6. DXF değişikliği için `ZayifAkimTekHatDxfServisi` ve ilgili testleri kontrol et.
 7. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+12 V akülerin seri dizi sayısı sistem geriliminden hesaplanıyor; 48 V kapasite iki kat sayılmıyor (A11).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

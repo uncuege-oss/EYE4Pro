@@ -29,6 +29,35 @@ Bu dosya yeni oturum başlangıcında hızlı referans için tutulur. Ayrıntıl
 
 ## 2. Modül Kapsamı
 
+### M50 planı üzerinde aydınlatma tasarımı
+
+İlk bina yüklemesinde **Pano yerleşimi** açılır. Ana, tali ve alt panolar planda konumlandırılır. Mahal içinde sağ tıklanarak o kattaki panolardan biri seçilir. Pano değişirse önceki aydınlatma çıkışı kaldırılır ve 5. adımda yeniden çizilebilir.
+
+| Adım | Planda yapılan işlem |
+|------|-----------------------|
+| 1 · Armatürler | Mahal listesinde armatür tipleri, yerleşim kuralları ve odaya özel ayarlar seçilir. |
+| 2 · Anahtarlar | Mahal listesinde anahtar, komütatör, darbe anahtarı, sensör ve diğer kumandalar seçilir. Duvar anahtarları için kapı yanı kuralı uygulanır. |
+| 3 · Buatlar | Her mahalde mevcut aydınlatma buatları sayılır ve her dört kumanda için bir buat olacak şekilde eksikler tamamlanır. |
+| 4 · Mahal içi kablolar | Armatürler, anahtarlar, sensörler ve buatlar mahal içinde otomatik veya elle bağlanır. |
+| 5 · Buat → pano | Buatlar mahallere atanmış panolara bağlanır. Geçiş mahalleri rotayı belirler. |
+
+**Aydınlatmayı tamamla** proje genelinde yükleri ve bağlantıları denetleyip pano giriş ve çıkış sigortalarını oluşturur. **Pano sigortaları** adımında değerler elle düzenlenebilir. Aşamalar arasında geri dönülebilir. Projeyi kaydetmek son aşamayı da saklar.
+
+Aydınlatmada varsayılan yerleşim yalnızca eksikleri tamamlar. Tam yenileme seçilirse işlem o adımın otomatik elemanlarını yeniler. Elle yerleştirilen, taşınan veya özellikleri düzenlenen elemanlar korunur.
+
+### Priz tasarımı
+
+Sistem listesinden **Priz** seçilerek veya aydınlatmanın son adımında **Priz planına geç** düğmesiyle açılır. `.e4p12` dosyası her iki tasarımın seçili adımını saklar. Proje yeniden açıldığında son çalışılan tasarım paftası gösterilir.
+
+1. **Priz yerleşimi** adımında mahal listesi yalnız priz çeşitlerini içerir. Odaya göre tip, adet ve yerleşim kuralı belirlenir. Tek bir priz, çizim üzerinde sembol seçilerek de eklenebilir.
+2. **Priz buatları** adımında mahale yerleştirilen normal priz sembolleri sayılır. Bir buat en fazla yedi priz besler. Kattaki mevcut priz buatları bu sayıya dahil edilir.
+3. **Mahal içi kablolar** adımında normal prizler kendi mahallerindeki priz buatlarına bağlanır. Elle kablolamada önce buat, ardından prizler seçilir.
+4. **Buat → pano** adımında kullanılan buatlar ve doğrudan beslenen müstakil, trifaze, kombine ve UPS prizleri, ilgili mahale atanmış panoya bağlanır. Eksik pano ataması veya güzergâh varsa uygulama ilgili mahali ya da hattı bildirir.
+
+Tüm katların bağlantıları hazır olduğunda **Priz projesini tamamla** her priz linyesine yüküne göre bir çıkış sigortası atar. Pano girişi, panonun beslediği aydınlatma ve priz yüklerinin toplamından hesaplanır. Üst panoda bu toplama beslenen alt panolar da dahildir.
+
+**Pano sigortaları** adımındaki **Sigortaları düzenle** penceresinde pano girişi veya istenen linye seçilerek anma akımı değiştirilebilir. **Sigortaları güncelle** yükleri yeniden hesaplar ve elle seçilmiş değerleri korur. **Otomatiğe dön** yalnız seçili sigortanın elle girilmiş değerini kaldırır.
+
 > **M50 yönlendirmesi (2026-06-13):** Bina geometrisi (DXF kat yükleme, kat/oda/açıklık
 > düzenleme, kat hizalama, döşeme/tavan patlatma) **M50 Bina Geometrisi** modülüne taşındı —
 > bkz. `ortak-moduller/50-bina-geometri/codex50.md`. M12 geometriyi `.e4bina` dosyasından
@@ -113,10 +142,10 @@ Model sınırları:
 - **"Açıklık Yanı" semantiği (2026-07-18):** Adaylar TÜM kapılara göre en-yakın-kapı mesafesiyle sıralanır ve kapıya en yakın boş adaylardan başlanarak seçilir (`AdaylardenSecDagit` eşit-aralık dağıtımı bu modda kullanılmaz — prizleri kapıdan uzağa savuruyordu).
 - **Aydınlatma buatı sayımı (2026-07-18):** `OtomatikAydinlatmaBuatiTamamla` mevcut buatları `PaftaTipi == Aydinlatma` filtresiyle sayar; priz buatları sayıma girmez (girerse ikinci yerleştirmede aydınlatma buatı eksik kalır).
 - **Mahal satır toplam sütunu (2026-07-18):** Tabloda sol blokta "Toplam" sütunu satır başına aktif oda sayısı + toplam adet + (genel güç girildiyse) toplam W gösterir.
-- **SadecaEksikleriEkle senkronu (2026-07-18):** VM varsayılanı işaretsiz (tam yenileme, §5 kararı). MahalListesiWindow checkbox'ı VM ile iki yönlü senkrondur; ana penceredeki "Mahalden Otomatik Yerleştir" butonu aynı değeri kullanır ve tooltip'i aktif modu gösterir. Tam yenileme kablo/devre sildiyse `UyariGoster` paneliyle bildirilir + bayat rota bandı yanar.
+- **Sadece eksikleri ekle** tercihi mahal listesinde ve ana pencerede ortaktır. İlk açılışta M12 aydınlatma adımlarında bu seçenek işaretlidir. Düğmenin araç ipucu geçerli tercihi gösterir.
 - **Elle taşınan otomatik eleman (2026-07-18):** `ManuelElemanKonumGuncelle`/`ManuelCokElemanKonumGuncelle` taşınan elemanın `OtomatikYerlesimKaynak` alanını temizler → tam yenileme kullanıcının taşıdığı elemanı silmez/eski konuma döndürmez.
 - Genel mahal yerleşim modu grid veya duvar aralıklı ise tek tek hücre aktif etme gerekmeden satırlar efektif aktif sayılabilir.
-- `Sadece eksikleri ekle` açıkken mevcut otomatik elemanlar korunur; kapalıysa (tam yenilemede) eski otomatik elemanlar silinir ancak manuel yerleştirilmiş elemanlar korunur. **Varsayılan: işaretsiz** (tam yenileme = sil + mahal listesine göre yeniden yerleştir).
+- Tam yenileme seçildiğinde silinen otomatik elemanların bağlı kablo ve devreleri de temizlenir. Kablo silinirse uygulama uyarı gösterir.
 - **Mahal listesi düzenlemeleri anında yerleştirme TETİKLEMEZ** (2026-06-17). Hücre tıklama, adet, grid/duvar aralığı, montaj/yerleşim tipi, güç vb. değişiklikler yalnız mahal listesi durumunu ve tablo görselini günceller (`GorselleriGuncelle`/`TabloKur`). Asıl yerleşim **yalnız "🗺 Yerleştir" butonuyla** yapılır. Sebep: her tıklamada `MahalSatiriYenidenYerlestir` çağrısı elemanları silip yeniden ürettiği için mevcut armatürler kayboluyordu. Eski otomatik-tetikleme yolları (`TetikleYenidenYerlestir`, `AdetDegisti`/`GridAlanLostFocus`/`AyarCombo`/`AyarCheckbox`/`GelenGucWDegisti` içindeki yerleştirme çağrıları) kaldırıldı. `MahalSatiriYenidenYerlestir` VM'de durur ama artık çağrılmaz (tek-satır yeniden yerleştirme için rezerv).
 - Kilitli projede mahal listesinden otomatik yerleştirme yapılmaz.
 - Duvar aralığı küçüldükçe yerleşen eleman sayısı artar; duvar aralığı ve otomatik kaynak işareti yeni elemanlara yazılır.
@@ -320,7 +349,7 @@ Son bilinen genel hedef:
 
 ## 14. Tali Pano Mantığı
 
-**Tali pano yalnız kendi odasına hizmet eder** (2026-06-17).
+Aşağıdaki otomatik pano seçimi kuralları eski kablolama akışına aittir. Güncel aydınlatma ve priz tasarımında §2'deki mahal ataması kullanılır.
 
 - `BuatIcinHedefPano`: buatın odası tali pano içeriyorsa direkt o tali panoya yönlendirilir; başka odalar tali panoyu seçemez (bu mantık değiştirilmemeli).
 - Tali panonun kendisi bir **kat panosuna** bağlanır. Bağlantı önceliği:
@@ -581,3 +610,9 @@ sadeleştirme + rakam/noktalama atma) — katlar arası Id farklı olduğu için
   buat-pano bağlantısı/kablosu da kaldırılır; çizilemeyen rota başarı mesajı üretmez.
 - 10 yeni M12 güvenilirlik regresyonu eklendi. Tam koşucu: **709 geçti**;
   Core koşucusu: **121 geçti**; çözüm derlemesi: 0 hata / 0 uyarı.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+M12/M16 disiplin sayımı mahal listesi, tava, besleme ve topraklama içeriğini de algılıyor (A10).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

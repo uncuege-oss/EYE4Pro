@@ -7,7 +7,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#060E0A"
-        Title="EYE4PRO Terrain — M61 Bina Temeli Kota Oturtma">
+        Title="EYE4PRO Arazi — M61 Bina Temeli Kota Oturtma">
 
     <Grid RowDefinitions="Auto,*,Auto">
 

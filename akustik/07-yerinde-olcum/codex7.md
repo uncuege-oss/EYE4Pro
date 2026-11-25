@@ -347,3 +347,9 @@ Son bilinen genel hedef:
 7. UI değişikliği için `MeasurementWindow` ve `MeasurementViewModel` partial dosyalarını kontrol et.
 8. Risk varsa regresyon testi ekle veya mevcut M07 testlerini çalıştır.
 9. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Ölçüm matrisi satırları eşit uzunlukta olmak zorunda; sessiz kırpma kaldırıldı. Oturum kaydı atomik ve yedekli (A04, A08).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

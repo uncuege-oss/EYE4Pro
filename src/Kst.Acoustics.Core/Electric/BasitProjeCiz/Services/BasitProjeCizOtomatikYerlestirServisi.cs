@@ -117,7 +117,9 @@ public class BasitProjeCizOtomatikYerlestirServisi
         if (oda.Poligon.Count < 3) return sonuc;
 
         var mevcutNoktalar = mevcutElemanlar.Select(e => new Point2D(e.X, e.Y)).ToList();
-        var tip = BasitProjeCizKutuphaneServisi.TipBlokAdindan(tanim.BlokAdi) ?? BpcElemanTipi.Armatür;
+        var tip = BasitProjeCizKutuphaneServisi.TanimTipi(tanim);
+        int MevcutAdet() => mevcutElemanlar.Count(e => e.OdaId == oda.Id && e.BlokAdi == tanim.BlokAdi
+            && (tip != BpcElemanTipi.Sensör || !e.SensorKontrollu));
 
         List<Point2D> secilen = new();
 
@@ -142,7 +144,7 @@ public class BasitProjeCizOtomatikYerlestirServisi
             if (eklenecek <= 0) return sonuc;
             if (sadecaEksikleri)
             {
-                int mevcut = mevcutElemanlar.Count(e => e.OdaId == oda.Id && e.BlokAdi == tanim.BlokAdi);
+                int mevcut = MevcutAdet();
                 eklenecek = Math.Max(0, eklenecek - mevcut);
             }
             if (eklenecek <= 0) return sonuc;
@@ -160,7 +162,7 @@ public class BasitProjeCizOtomatikYerlestirServisi
             if (eklenecek <= 0) return sonuc;
             if (sadecaEksikleri)
             {
-                int mevcut = mevcutElemanlar.Count(e => e.OdaId == oda.Id && e.BlokAdi == tanim.BlokAdi);
+                int mevcut = MevcutAdet();
                 eklenecek = Math.Max(0, eklenecek - mevcut);
             }
             if (eklenecek <= 0) return sonuc;
@@ -195,7 +197,7 @@ public class BasitProjeCizOtomatikYerlestirServisi
             
             if (sadecaEksikleri)
             {
-                int mevcut = mevcutElemanlar.Count(e => e.OdaId == oda.Id && e.BlokAdi == tanim.BlokAdi);
+                int mevcut = MevcutAdet();
                 if (mevcut >= eklenecek) eklenecek = 0;
                 else eklenecek = eklenecek - mevcut;
 
@@ -208,7 +210,7 @@ public class BasitProjeCizOtomatikYerlestirServisi
             // hiç yoksa en az 1 eleman oda içine (tercihen merkeze) yerleştirilir.
             if (secilen.Count == 0)
             {
-                int mevcutBuBlok = mevcutElemanlar.Count(e => e.OdaId == oda.Id && e.BlokAdi == tanim.BlokAdi);
+                int mevcutBuBlok = MevcutAdet();
                 if (mevcutBuBlok == 0)
                 {
                     Point2D nokta;
@@ -235,7 +237,7 @@ public class BasitProjeCizOtomatikYerlestirServisi
             if (eklenecek <= 0) return sonuc;
             if (sadecaEksikleri)
             {
-                int mevcut = mevcutElemanlar.Count(e => e.OdaId == oda.Id && e.BlokAdi == tanim.BlokAdi);
+                int mevcut = MevcutAdet();
                 eklenecek = Math.Max(0, eklenecek - mevcut);
             }
             if (eklenecek <= 0) return sonuc;
@@ -268,7 +270,7 @@ public class BasitProjeCizOtomatikYerlestirServisi
 
         if (eklenecek <= 0) return sonuc;
 
-        var pafta = PaftaForBlok(tanim.BlokAdi);
+        var pafta = isPriz ? BpcPaftaTipi.Priz : PaftaForBlok(tanim.BlokAdi);
 
         foreach (var p in secilen)
         {
@@ -296,6 +298,26 @@ public class BasitProjeCizOtomatikYerlestirServisi
 
     // ── Tüm mahal listesi orkestratörü ───────────────────────────────────────
 
+    private static bool AsamaKalemiMi(BpcAydinlatmaAsamasi asama, BpcElemanTipi tip) => asama switch
+    {
+        BpcAydinlatmaAsamasi.Armatur => BasitProjeCizKabloServisi.ElemanArmaturMi(tip),
+        BpcAydinlatmaAsamasi.Anahtar => BasitProjeCizKabloServisi.ElemanAnahtarMi(tip),
+        BpcAydinlatmaAsamasi.Buat => tip == BpcElemanTipi.Buat,
+        _ => false
+    };
+
+    public static bool MahalKalemiMi(BpcElemanTipi tip, BpcAydinlatmaAsamasi? asama, BpcPaftaTipi? pafta)
+    {
+        if (asama.HasValue) return AsamaKalemiMi(asama.Value, tip);
+        return pafta switch
+        {
+            BpcPaftaTipi.Priz => BasitProjeCizKabloServisi.ElemanPrizMi(tip),
+            BpcPaftaTipi.Mekanik => tip is BpcElemanTipi.KlimaIcUnite or BpcElemanTipi.KlimaDisUnite,
+            null => true,
+            _ => false
+        };
+    }
+
     /// <param name="tavaniAcikOdalar">5.2 kararı — M50 düşey birleşiminde TAVANI AÇIK
     /// olan oda Id'leri. Bu odalarda tavan montajlı otomatik yerleşim atlanır
     /// (fiziksel tavan yok); duvar montajlı yerleşim ve elle ekleme etkilenmez.</param>
@@ -303,13 +325,30 @@ public class BasitProjeCizOtomatikYerlestirServisi
         BasitProjeKat kat,
         BasitProjeCizKutuphaneServisi kutuphane,
         bool sadecaEksikleri,
-        IReadOnlySet<string>? tavaniAcikOdalar = null)
+        IReadOnlySet<string>? tavaniAcikOdalar = null,
+        BpcAydinlatmaAsamasi? asama = null, BpcPaftaTipi? pafta = null,
+        BpcPrizAsamasi? prizAsamasi = null)
     {
         var yeni     = new List<BasitProjeEleman>();
         var uyarilar = new List<string>();
 
+        if (prizAsamasi.HasValue)
+        {
+            if (prizAsamasi == BpcPrizAsamasi.Buat)
+                OtomatikPrizBuatiTamamla(kat, yeni, uyarilar, mevcutUyelikleriGuncelle: false);
+            if (prizAsamasi != BpcPrizAsamasi.Priz) return (yeni, uyarilar);
+            pafta = BpcPaftaTipi.Priz;
+        }
+
+        if (asama == BpcAydinlatmaAsamasi.Buat)
+        {
+            OtomatikAydinlatmaBuatiTamamla(kat, yeni, mevcutUyelikleriGuncelle: false);
+            return (yeni, uyarilar);
+        }
+
         foreach (var satir in kat.MahalListesi)
         {
+            if (!MahalKalemiMi(satir.Tip, asama, pafta)) continue;
             BpcArmatürTanim? tanim = null;
 
             if (satir.ArmatürTanimId is not null)
@@ -337,11 +376,21 @@ public class BasitProjeCizOtomatikYerlestirServisi
             {
                 if (!oda.MahalListesineDahil) continue;
                 
+                if (!satir.HucreAyarlari.ContainsKey(oda.Id) && !satir.Sayilar.ContainsKey(oda.Id)) continue;
                 var ayar = satir.HucreGetirVeyaOlustur(oda.Id);
                 if (!satir.EfektifAktif(oda.Id)) continue;
 
                 var (yerlesim, montaj, gridM, duvarM) = satir.EfektifAyarlar(oda.Id);
                 var gridYM = satir.EfektifGridY(oda.Id);
+                // Duvar anahtarlarında eski projelerde farklı bir yerleşim kuralı
+                // kayıtlı olsa da adet ve kapı yanı yerleşimi bu adımda geçerlidir.
+                int adet = ayar.Adet;
+                if (asama == BpcAydinlatmaAsamasi.Anahtar)
+                {
+                    if (yerlesim != "Adet" && adet == 0) adet = 1;
+                    yerlesim = "Adet";
+                    montaj = satir.Tip == BpcElemanTipi.Sensör ? "Tavan" : "Duvar";
+                }
 
                 // 5.2 — Patlatılmış (tavanı açık) odada tavan montajlı otomatik
                 // yerleşim yapılmaz; elemanlar üst odanın tavanından servis eder.
@@ -353,9 +402,9 @@ public class BasitProjeCizOtomatikYerlestirServisi
                 }
 
                 var placed = OdayaYerlestir(
-                    oda, tanim, yerlesim, montaj, gridM, gridYM, duvarM, ayar.Adet, kat.Acikliklar,
+                    oda, tanim, yerlesim, montaj, gridM, gridYM, duvarM, adet, kat.Acikliklar,
                     kat.Elemanlar.Concat(yeni),
-                    sadecaEksikleri,
+                    sadecaEksikleri || asama.HasValue || prizAsamasi.HasValue,
                     out string? uyari);
 
                 foreach (var eleman in placed)
@@ -368,24 +417,44 @@ public class BasitProjeCizOtomatikYerlestirServisi
                 // anahtarı almaz.
                 if (satir.EfektifSensorlu(oda.Id) && BasitProjeCizKabloServisi.ElemanArmaturMi(satir.Tip))
                 {
-                    var sensorler = SensorleriEsleEkle(placed, oda);
-                    yeni.AddRange(placed);
-                    yeni.AddRange(sensorler);
+                    foreach (var armatur in placed) armatur.SensorKontrollu = true;
+                    if (!asama.HasValue) yeni.AddRange(SensorleriEsleEkle(placed, oda));
                 }
-                else
-                {
-                    yeni.AddRange(placed);
-                }
+                yeni.AddRange(placed);
 
                 if (uyari is not null) uyarilar.Add(uyari);
             }
         }
 
-        OtomatikAnahtarTamamla(kat, yeni, uyarilar);
-        OtomatikAydinlatmaBuatiTamamla(kat, yeni);
-        OtomatikPrizBuatiTamamla(kat, yeni);
+        if (asama == BpcAydinlatmaAsamasi.Anahtar)
+            EksikArmaturSensorleriniEkle(kat, yeni, tavaniAcikOdalar);
+        if (asama == BpcAydinlatmaAsamasi.Anahtar || (asama is null && pafta is null))
+            OtomatikAnahtarTamamla(kat, yeni, uyarilar);
+        if (asama is null && pafta is null)
+            OtomatikAydinlatmaBuatiTamamla(kat, yeni);
+        if (!prizAsamasi.HasValue && asama is null && pafta is null or BpcPaftaTipi.Priz)
+            OtomatikPrizBuatiTamamla(kat, yeni, uyarilar);
 
         return (yeni, uyarilar);
+    }
+
+    private static void EksikArmaturSensorleriniEkle(
+        BasitProjeKat kat, List<BasitProjeEleman> yeni, IReadOnlySet<string>? tavaniAcikOdalar)
+    {
+        foreach (var oda in kat.Odalar.Where(o => o.MahalListesineDahil))
+        {
+            if (tavaniAcikOdalar?.Contains(oda.Id) == true) continue;
+            var armaturler = kat.Elemanlar.Where(e => e.OdaId == oda.Id && e.SensorKontrollu &&
+                BasitProjeCizKabloServisi.ElemanArmaturMi(e.Tip)).ToList();
+            foreach (var sensor in kat.Elemanlar.Where(e =>
+                e.OdaId == oda.Id && e.Tip == BpcElemanTipi.Sensör && e.SensorKontrollu))
+            {
+                if (armaturler.Count == 0) break;
+                var enYakin = armaturler.MinBy(a => Math.Pow(a.X - sensor.X, 2) + Math.Pow(a.Y - sensor.Y, 2));
+                armaturler.Remove(enYakin!);
+            }
+            yeni.AddRange(SensorleriEsleEkle(armaturler, oda));
+        }
     }
 
     /// Her armatürü SensorKontrollu işaretler ve hemen yanına bir sensör elemanı
@@ -400,8 +469,6 @@ public class BasitProjeCizOtomatikYerlestirServisi
 
         foreach (var arm in armaturler)
         {
-            arm.SensorKontrollu = true;
-
             // Armatürden oda merkezine doğru küçük bir ofset
             double dx = merkez.X - arm.X, dy = merkez.Y - arm.Y;
             double len = Math.Sqrt(dx * dx + dy * dy);
@@ -432,7 +499,8 @@ public class BasitProjeCizOtomatikYerlestirServisi
     /// Aydınlatma anahtarları oluştuktan sonra anahtar sayısına göre buat üretir:
     /// her 4 anahtar için 1 buat. Buatlar, ait oldukları anahtar grubunun yanına
     /// (grubun ağırlık merkezinden oda içine doğru ofsetli) yerleştirilir.
-    private static void OtomatikAydinlatmaBuatiTamamla(BasitProjeKat kat, List<BasitProjeEleman> yeni)
+    private static void OtomatikAydinlatmaBuatiTamamla(BasitProjeKat kat, List<BasitProjeEleman> yeni,
+        bool mevcutUyelikleriGuncelle = true)
     {
         const int AnahtarBasinaBuat = 4;
 
@@ -442,11 +510,10 @@ public class BasitProjeCizOtomatikYerlestirServisi
         {
             if (!oda.MahalListesineDahil) continue;
 
-            // Buat ihtiyacı: duvar anahtarları + sensör kontrollü sensörler (her ikisi de
-            // buattan beslenir). Sensör kontrollü gruplar duvar anahtarı almasa da buat ister.
+            // Her duvar anahtarı ve tavan sensörü bir kumanda noktası olarak sayılır.
             var odadakiAnahtarlar = tumElemanlar
                 .Where(e => e.OdaId == oda.Id &&
-                            (AnahtarMi(e.Tip) || (e.Tip == BpcElemanTipi.Sensör && e.SensorKontrollu)))
+                            BasitProjeCizKabloServisi.ElemanAnahtarMi(e.Tip))
                 .OrderBy(e => e.X).ThenBy(e => e.Y)
                 .ToList();
             if (odadakiAnahtarlar.Count == 0) continue;
@@ -457,15 +524,15 @@ public class BasitProjeCizOtomatikYerlestirServisi
             // sayıma girerse ikinci çalıştırmada aydınlatma buatı eksik üretilir.
             var odaGrupIds = tumElemanlar
                 .Where(e => e.OdaId == oda.Id &&
-                            (AnahtarMi(e.Tip) || BasitProjeCizKabloServisi.ElemanArmaturMi(e.Tip) ||
-                             e.Tip == BpcElemanTipi.Sensör))
+                            (BasitProjeCizKabloServisi.ElemanAnahtarMi(e.Tip) ||
+                             BasitProjeCizKabloServisi.ElemanArmaturMi(e.Tip)))
                 .SelectMany(e => e.OtomatikYerlesimGrupIds ?? new())
                 .Distinct()
                 .ToList();
 
             var mevcutBuatlar = tumElemanlar.Where(e => e.OdaId == oda.Id &&
                 e.Tip == BpcElemanTipi.Buat && e.PaftaTipi == BpcPaftaTipi.Aydinlatma).ToList();
-            foreach (var buat in mevcutBuatlar.Where(b => b.OtomatikYerlesimKaynak == MahalListesiKaynak))
+            foreach (var buat in mevcutBuatlar.Where(b => mevcutUyelikleriGuncelle && b.OtomatikYerlesimKaynak == MahalListesiKaynak))
             {
                 buat.OtomatikYerlesimGrupIds ??= new();
                 foreach (var grupId in odaGrupIds)
@@ -545,10 +612,9 @@ public class BasitProjeCizOtomatikYerlestirServisi
 
     /// Her 7 buat-gerektiren priz için 1 priz buatı (PaftaTipi=Priz) üretir.
     /// Müstakil/trifaze/kombine/UPS prizler buat almaz.
-    private static void OtomatikPrizBuatiTamamla(BasitProjeKat kat, List<BasitProjeEleman> yeni)
+    private void OtomatikPrizBuatiTamamla(BasitProjeKat kat, List<BasitProjeEleman> yeni, List<string> uyarilar,
+        bool mevcutUyelikleriGuncelle = true)
     {
-        const int PrizBasinaBuat = 7;
-
         var tumElemanlar = kat.Elemanlar.Concat(yeni).ToList();
 
         foreach (var oda in kat.Odalar)
@@ -564,7 +630,7 @@ public class BasitProjeCizOtomatikYerlestirServisi
 
             if (buatGerektirenPrizler.Count == 0) continue;
 
-            int gerekenBuat = (int)Math.Ceiling(buatGerektirenPrizler.Count / (double)PrizBasinaBuat);
+            int gerekenBuat = (int)Math.Ceiling(buatGerektirenPrizler.Count / (double)BasitProjeCizKabloServisi.PrizBuatKapasitesi);
             var odaGrupIds = buatGerektirenPrizler
                 .SelectMany(e => e.OtomatikYerlesimGrupIds ?? new())
                 .Distinct()
@@ -574,7 +640,7 @@ public class BasitProjeCizOtomatikYerlestirServisi
                 .Where(e => e.OdaId == oda.Id && e.Tip == BpcElemanTipi.Buat &&
                             e.PaftaTipi == BpcPaftaTipi.Priz)
                 .ToList();
-            foreach (var buat in mevcutPrizBuatlar.Where(b => b.OtomatikYerlesimKaynak == MahalListesiKaynak))
+            foreach (var buat in mevcutPrizBuatlar.Where(b => mevcutUyelikleriGuncelle && b.OtomatikYerlesimKaynak == MahalListesiKaynak))
             {
                 buat.OtomatikYerlesimGrupIds ??= new();
                 foreach (var grupId in odaGrupIds)
@@ -584,10 +650,16 @@ public class BasitProjeCizOtomatikYerlestirServisi
             int mevcutPrizBuat = mevcutPrizBuatlar.Count;
             if (gerekenBuat <= mevcutPrizBuat) continue;
 
-            var merkez = PoligonMerkez(oda.Poligon);
-
             int baz = buatGerektirenPrizler.Count / gerekenBuat;
             int kalan = buatGerektirenPrizler.Count % gerekenBuat;
+            // Duvar adayları poligonun sarım yönünden üretilir ve içeride oldukları doğrulanır.
+            // İçbükey mahalde ağırlık merkezi duvarın yanlış tarafında kalabilir.
+            var duvarAdaylari = _geometri.DuvarAdaylariUret(oda.Poligon, DuvarTaramaAdimi, BuatDuvarOfset);
+            if (duvarAdaylari.Count == 0)
+                duvarAdaylari = _geometri.DuvarAdaylariUret(oda.Poligon, DuvarTaramaAdimi, DuvarGiris);
+            var doluNoktalar = tumElemanlar.Where(e => e.OdaId == oda.Id || e.OdaId == null)
+                .Select(e => new Point2D(e.X, e.Y)).ToList();
+            duvarAdaylari.RemoveAll(p => doluNoktalar.Any(dolu => Mesafe(dolu, p) < ElemanMinAralik));
 
             for (int i = mevcutPrizBuat; i < gerekenBuat; i++)
             {
@@ -600,15 +672,14 @@ public class BasitProjeCizOtomatikYerlestirServisi
                 if (n == 0) continue;
                 gx /= n; gy /= n;
 
-                var (wallX2, wallY2, wux2, wuy2) = EnYakinDuvarNoktasi(oda.Poligon, gx, gy);
-                double wnx2 = -wuy2, wny2 = wux2;
-                double tox3 = merkez.X - wallX2, toy3 = merkez.Y - wallY2;
-                if (wnx2 * tox3 + wny2 * toy3 < 0) { wnx2 = -wnx2; wny2 = -wny2; }
-                double bx = wallX2 + wnx2 * BuatDuvarOfset;
-                double by = wallY2 + wny2 * BuatDuvarOfset;
-
-                // Çakışma önleme: priz/buat üstüne binmesin
-                (bx, by) = CakismayiGider(bx, by, wnx2, wny2, oda.Poligon, tumElemanlar);
+                if (duvarAdaylari.Count == 0)
+                {
+                    uyarilar.Add($"{oda.Ad}: {gerekenBuat - i} priz buatı için mahal içinde boş yer bulunamadı. Konumu elle belirleyin.");
+                    break;
+                }
+                var grupMerkezi = new Point2D(gx, gy);
+                var konum = duvarAdaylari.MinBy(p => Mesafe(p, grupMerkezi));
+                duvarAdaylari.RemoveAll(p => Mesafe(p, konum) < ElemanMinAralik);
 
                 var buat = new BasitProjeEleman
                 {
@@ -620,8 +691,8 @@ public class BasitProjeCizOtomatikYerlestirServisi
                     PaftaTipi = BpcPaftaTipi.Priz,  // Aydınlatma buatından bu şekilde ayrışır
                     MontajTipi = "Tavan",
                     OdaId = oda.Id,
-                    X = bx,
-                    Y = by,
+                    X = konum.X,
+                    Y = konum.Y,
                     OtomatikYerlesimKaynak = MahalListesiKaynak,
                     OtomatikYerlesimGrupIds = odaGrupIds.ToList()
                 };
@@ -726,7 +797,8 @@ public class BasitProjeCizOtomatikYerlestirServisi
             if (odadakiArmaturler.Count == 0) continue;
 
             var gruplar = odadakiArmaturler.GroupBy(a => a.BlokAdi).ToList();
-            var odadakiAnahtarlar = tumElemanlar.Where(e => e.OdaId == oda.Id && AnahtarMi(e.Tip)).ToList();
+            var odadakiAnahtarlar = tumElemanlar.Where(e => e.OdaId == oda.Id && !e.SensorKontrollu &&
+                BasitProjeCizKabloServisi.ElemanAnahtarMi(e.Tip)).ToList();
 
             if (odadakiAnahtarlar.Count == 0)
             {
@@ -901,10 +973,8 @@ public class BasitProjeCizOtomatikYerlestirServisi
 
     // ── Strateji C: Anahtar/komütatör → açıklık yanı ────────────────────────
 
-    private static bool AnahtarMi(BpcElemanTipi tip) => tip is
-        BpcElemanTipi.Anahtar or BpcElemanTipi.Komütatör or BpcElemanTipi.UcluKomutator or BpcElemanTipi.DarbeAnahtari
-        or BpcElemanTipi.Vavien or BpcElemanTipi.KomütatörVavien or BpcElemanTipi.Deviatör
-        or BpcElemanTipi.Dimmer or BpcElemanTipi.IkiKutupluAnahtar;
+    private static bool AnahtarMi(BpcElemanTipi tip) =>
+        tip != BpcElemanTipi.Sensör && BasitProjeCizKabloServisi.ElemanAnahtarMi(tip);
 
     /// Her anahtarı bu odanın duvarındaki bir kapı açıklığının hemen yanına koyar.
     /// Açıklık yetmezse genel duvar adaylarından dağıtarak tamamlar.

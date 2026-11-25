@@ -35,7 +35,7 @@ public static partial class KesifOtomatikPozEslemeServisi
         IEnumerable<KesifPoz> pozlar)
     {
         var adaylar = pozlar
-            .Where(p => p.AktifMi && p.BirimFiyat > 0 && !string.IsNullOrWhiteSpace(p.BirimAdi))
+            .Where(p => p.AktifMi && p.BirimFiyat > 0 && !string.IsNullOrWhiteSpace(p.PozNo) && !string.IsNullOrWhiteSpace(p.BirimAdi))
             .Select(p => new HazirPoz(p))
             .ToList();
 
@@ -120,6 +120,18 @@ public static partial class KesifOtomatikPozEslemeServisi
     {
         bool Adayda(params string[] tokenlar) => tokenlar.Any(aday.TumTokenlar.Contains);
 
+        // Anma değerleri metin puanıyla telafi edilemez. Akım/kA/pano alanında mevcut
+        // üst sınır/bant kuralları, diğer fiziksel büyüklüklerde sayısal eşitlik aranır.
+        foreach (var spec in kalem.Spesifikasyonlar)
+        {
+            var match = TypedSpecRegex().Match(spec);
+            if (!match.Success) continue;
+            var uygun = match.Groups["unit"].Value is "a" or "ka" or "m2"
+                ? SpesifikasyonBenzerligi(spec, aday.Spesifikasyonlar) > 0
+                : aday.Spesifikasyonlar.Any(s => AyniAnmaDegeri(spec, s));
+            if (!uygun) return false;
+        }
+
         if (kalem.AnaGrup == "kablo")
         {
             if (!Adayda("kablo", "kablolar"))
@@ -203,6 +215,15 @@ public static partial class KesifOtomatikPozEslemeServisi
         return true;
     }
 
+    private static bool AyniAnmaDegeri(string kaynak, string aday)
+    {
+        var k = TypedSpecRegex().Match(kaynak);
+        var a = TypedSpecRegex().Match(aday);
+        return k.Success && a.Success && k.Groups["unit"].Value == a.Groups["unit"].Value &&
+               decimal.TryParse(k.Groups["value"].Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var kv) &&
+               decimal.TryParse(a.Groups["value"].Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var av) && kv == av;
+    }
+
     private static bool ModelEslesiyor(string model, HazirPoz aday)
         => model switch
         {
@@ -214,7 +235,7 @@ public static partial class KesifOtomatikPozEslemeServisi
 
     private static double SpesifikasyonBenzerligi(string kaynak, HashSet<string> adaylar)
     {
-        if (adaylar.Contains(kaynak))
+        if (adaylar.Contains(kaynak) || adaylar.Any(a => AyniAnmaDegeri(kaynak, a)))
             return 1;
 
         var kaynakMatch = TypedSpecRegex().Match(kaynak);

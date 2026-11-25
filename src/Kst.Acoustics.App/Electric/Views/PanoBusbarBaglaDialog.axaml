@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Kst.Acoustics.App.Electric.Views.PanoBusbarBaglaDialog"
-        Width="520" Height="450"
+        Width="520" Height="410"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Background="#080F0A"
@@ -29,12 +29,7 @@
             </StackPanel>
 
             <StackPanel Spacing="4">
-                <TextBlock Classes="lbl" Text="Mesafe Tipi"/>
-                <ComboBox x:Name="MesafeTipiCombo" HorizontalAlignment="Stretch"/>
-            </StackPanel>
-
-            <StackPanel Spacing="4">
-                <TextBlock x:Name="PozisyonLabel" Classes="lbl" Text="Çıkış Kutusu Pozisyonu (m, üst panodan)"/>
+                <TextBlock x:Name="PozisyonLabel" Classes="lbl" Text="Bu Kattaki Çıkış Kutusu Konumu (m)"/>
                 <TextBox x:Name="PozisyonBox" Text="5"/>
                 <TextBlock x:Name="PozisyonYardimText" Text=""
                            Foreground="#8AA868" FontSize="11" TextWrapping="Wrap"/>

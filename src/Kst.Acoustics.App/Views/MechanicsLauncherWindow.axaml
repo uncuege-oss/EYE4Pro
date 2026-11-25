@@ -6,7 +6,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0D1117"
-        Title="Eye4Pro Mechanics - Modül Merkezi">
+        Title="Eye4Pro Mekanik - Modül Merkezi">
 
     <Window.Styles>
         <Style Selector="Button.moduleAction">
@@ -61,7 +61,7 @@
                         </Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
                             <TextBlock Text="EYE4PRO" Foreground="#603B13" FontSize="18" FontWeight="Bold"/>
-                            <TextBlock Text="MECHANICS" Foreground="#D78623" FontSize="10" FontWeight="SemiBold"/>
+                            <TextBlock Text="MEKANİK" Foreground="#D78623" FontSize="10" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -77,18 +77,8 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <Button Content="⬡ Bina Geometrisi"
-                            Click="OpenBinaGeometrisi_OnClick"
-                            Background="#0C2235"
-                            BorderBrush="#1A5A82"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="12,7"
-                            Foreground="#60C0E8"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            ToolTip.Tip="M50 — Bina geometrisi oluştur / düzenle"/>
-                    <Button Content="Complete Engineering"
+
+                    <Button Content="Ana Sayfa"
                             Click="BackToEngineeringHome_OnClick"
                             Background="#15120E"
                             BorderBrush="#2D2012"
@@ -103,7 +93,7 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12,7">
-                        <TextBlock Text="Mechanics Engine v0.1"
+                        <TextBlock Text="Mekanik Engine v0.1"
                                    Foreground="#D19B55"
                                    FontSize="12"
                                    FontWeight="SemiBold"/>

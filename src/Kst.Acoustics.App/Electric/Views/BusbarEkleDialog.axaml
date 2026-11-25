@@ -44,7 +44,7 @@
             </StackPanel>
 
             <StackPanel Spacing="4">
-                <TextBlock Classes="lbl" Text="Toplam Busbar Boyu (m)"/>
+                <TextBlock Classes="lbl" Text="Toplam Busbar Boyu (kat yerleşimi yoksa, m)"/>
                 <TextBox x:Name="UzunlukBox" Text="20"/>
             </StackPanel>
 
@@ -56,7 +56,7 @@
                                Foreground="#8AA868" FontSize="11"/>
                     <TextBlock Text="• Toplam boy, elle girilen en uzaktaki çıkış kutusunu kapsayacak değerin altına düşmez"
                                Foreground="#8AA868" FontSize="11"/>
-                    <TextBlock Text="• Çıkış kutusu mesafeleri kutunun üstüne tıklanarak elle düzenlenir"
+                    <TextBlock Text="• Kat uzunlukları ve çıkış konumları şemadaki busbar adına tıklanarak düzenlenir"
                                Foreground="#8AA868" FontSize="11"/>
                 </StackPanel>
             </Border>

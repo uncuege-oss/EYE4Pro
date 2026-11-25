@@ -19,15 +19,27 @@ public static class RoomModeCalculator
             return result;
 
         double c = CalculateSpeedOfSound(input.Temperature);
+        // Bound work before integer conversion/allocation. Large finite inputs can
+        // otherwise overflow indices or keep the UI busy for billions of iterations.
+        double nxLimit = Math.Ceiling(input.MaxFrequency * 2 * input.LengthX / c);
+        double nyLimit = Math.Ceiling(input.MaxFrequency * 2 * input.LengthY / c);
+        double nzLimit = Math.Ceiling(input.MaxFrequency * 2 * input.LengthZ / c);
+        double candidates = (nxLimit + 1) * (nyLimit + 1) * (nzLimit + 1);
+        if (!double.IsFinite(input.Volume) || input.Volume <= 0 || !double.IsFinite(candidates) ||
+            c <= 0 || candidates > 2_000_000)
+        {
+            result.Warnings.Add("Hesap boyutu güvenli sınırı aşıyor; oda boyutlarını veya üst frekansı azaltın, sıcaklığı kontrol edin.");
+            return result;
+        }
         result.SpeedOfSound = c;
 
         var modes = new List<RoomMode>();
 
         // Üst sınır tayini: n = f * 2 * L / c
         // Her eksen için maksimum n değerini frekans sınırına göre hesapla
-        int maxNx = (int)Math.Ceiling(input.MaxFrequency * 2 * input.LengthX / c);
-        int maxNy = (int)Math.Ceiling(input.MaxFrequency * 2 * input.LengthY / c);
-        int maxNz = (int)Math.Ceiling(input.MaxFrequency * 2 * input.LengthZ / c);
+        int maxNx = (int)nxLimit;
+        int maxNy = (int)nyLimit;
+        int maxNz = (int)nzLimit;
 
         for (int nx = 0; nx <= maxNx; nx++)
         {

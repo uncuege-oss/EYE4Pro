@@ -48,6 +48,8 @@
                     <ComboBoxItem Content="Kompanzasyon"/>
                     <ComboBoxItem Content="Kontrol Panosu"/>
                     <ComboBoxItem Content="Yangın Panosu"/>
+                    <ComboBoxItem Content="UPS Panosu"/>
+                    <ComboBoxItem Content="Transfer Panosu"/>
                 </ComboBox>
             </StackPanel>
 

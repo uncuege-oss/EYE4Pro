@@ -1,3 +1,4 @@
+using System.Linq;
 using Avalonia.Controls;
 using Kst.Acoustics.App.Electric.ViewModels;
 using Kst.Acoustics.Core.Electric.Models;
@@ -51,12 +52,22 @@ public partial class KutuphaneWindow : Window
         TransferSalterGrid.ItemsSource = _vm.TransferSalterTipleri;
         TrafoGrid.ItemsSource = _vm.TrafoTipleri;
         OgHucreGrid.ItemsSource = _vm.OgHucreTipleri;
+
+        // Pencere Kaydet'e basılmadan kapatılsa da düzenlemeler diske yazılır; aksi halde
+        // oturum boyunca görünen yeni kayıtlar program kapanınca kayboluyordu.
+        Closing += (_, _) =>
+        {
+            foreach (var grid in Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(this)
+                         .OfType<DataGrid>())
+                grid.CommitEdit();
+            _vm.KutuphaneyiKaydet();
+        };
     }
 
     // === Yük Tipleri ===
     private void YukYeni_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var yeni = new YukTipiTanim { Ad = "Yeni Yük", BirimGucW = 100, SigortaCinsi = "B", TalepFaktoru = 1.0 };
+        var yeni = new YukTipiTanim { Ad = "Yeni Yük", BirimGucW = 100, SigortaCinsi = "B", TalepFaktoru = 1.0, VarsayilanFazTipi = FazTipi.Monofaze };
         _vm.Kutuphane.YukTipleri.Add(yeni);
         _vm.YukTipleri.Add(yeni);
     }

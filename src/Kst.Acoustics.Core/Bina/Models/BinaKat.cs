@@ -41,8 +41,25 @@ public class BinaKat : IBinaKat, INotifyPropertyChanged
         set => Set(ref _katYuksekligiM, value);
     }
 
+    private double? _tabanKotuM;
+    /// Proje kotuna göre mutlak kat tabanı (m). null ise eski dosyalardaki
+    /// davranış korunur: bir alttaki katın yüksekliği üzerinden istiflenir.
+    public double? TabanKotuM
+    {
+        get => _tabanKotuM;
+        set => Set(ref _tabanKotuM, value);
+    }
+
     public string DxfFilePath { get; set; } = "";
     public string? UnitWarning { get; set; }
+    public List<string> IceriAktarimNotlari { get; set; } = new();
+
+    /// Üretimde kullanılan kaynak CAD katmanları. null = eski, katman seçimsiz kayıt.
+    public List<string>? KaynakKatmanlari { get; set; }
+
+    /// Seçili katmanlardan kalan, katın yerel koordinatındaki tam tespit çizgileri.
+    /// Yeniden açıp Tara yapıldığında kapalı katmanların geri gelmesini önler.
+    public List<BinaDxfSegment>? KayitliTespitSegmentleri { get; set; }
 
     /// Farklı DXF orijinleri için manuel hizalama ofseti (m).
     public Point2D OriginOffset { get; set; } = new(0, 0);
@@ -84,6 +101,10 @@ public class BinaKat : IBinaKat, INotifyPropertyChanged
     /// yalnız yükleme sırasında parser tarafından doldurulur.
     [JsonIgnore]
     public List<(Point2D A, Point2D B)> HamSegmentler { get; set; } = new();
+
+    /// Ölçü, tarama ve tefriş içermeyen oda sınırı adayları.
+    [JsonIgnore]
+    public List<(Point2D A, Point2D B)> HamTespitSegmentler { get; set; } = new();
 
     /// Ham TEXT/MTEXT etiketleri — oda ismi ataması için. JSON'a yazılmaz.
     [JsonIgnore]

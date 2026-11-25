@@ -6,7 +6,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0D1117"
-        Title="EYE4PRO Landscape - Modül Merkezi">
+        Title="EYE4PRO Peyzaj - Modül Merkezi">
 
     <Window.Styles>
         <Style Selector="Button.moduleAction">
@@ -46,7 +46,7 @@
                 </LinearGradientBrush>
             </Border.Background>
             <StackPanel Spacing="3">
-                <TextBlock Text="EYE4PRO LANDSCAPE" Foreground="#7BD3A0" FontSize="20" FontWeight="Bold"/>
+                <TextBlock Text="EYE4PRO Peyzaj" Foreground="#7BD3A0" FontSize="20" FontWeight="Bold"/>
                 <TextBlock Text="Park ve peyzaj tasarım modülleri" Foreground="#6FB78E" FontSize="12"/>
             </StackPanel>
         </Border>

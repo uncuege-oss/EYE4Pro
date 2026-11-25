@@ -86,7 +86,21 @@ public partial class TekHatSemasiWindow
         bool harmonikFiltreli = tip == PanoTipi.Kompanzasyon && (HarmonikFiltreliCheck?.IsChecked ?? false);
         var harmonikFiltre = harmonikFiltreli ? _vm.HarmonikFiltreTipleri.FirstOrDefault() : null;
 
-        _vm.YeniPanoEkle(ad, kat, tip, sayacli, harmonikFiltreli, harmonikFiltre);
+        if (!_vm.PanoAdiKullanilabilir(ad))
+        {
+            PanoOzetText.Text = $"⚠ '{ad}' adlı pano zaten var. Pano adları benzersiz olmalıdır.";
+            return;
+        }
+
+        try
+        {
+            _vm.YeniPanoEkle(ad, kat, tip, sayacli, harmonikFiltreli, harmonikFiltre);
+        }
+        catch (InvalidOperationException ex)
+        {
+            PanoOzetText.Text = $"⚠ {ex.Message}";
+            return;
+        }
 
         PanoSeciciGuncelle();
 
@@ -113,8 +127,13 @@ public partial class TekHatSemasiWindow
         SemaCiz();
     }
 
+    private bool _panoSeciciGuncelleniyor;
+
     private void PanoSeciciGuncelle()
     {
+        _panoSeciciGuncelleniyor = true;
+        try
+        {
         _panoIsimleri.Clear();
         foreach (var p in _vm.Panolar)
         {
@@ -140,6 +159,11 @@ public partial class TekHatSemasiWindow
             PanoSecici.SelectedIndex = idx;
 
         BagliBilgiGuncelle();
+        }
+        finally
+        {
+            _panoSeciciGuncelleniyor = false;
+        }
     }
 
     /// <summary>
@@ -169,8 +193,10 @@ public partial class TekHatSemasiWindow
         }
     }
 
+
     private void PanoSecim_OnChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (_panoSeciciGuncelleniyor) return;
         var idx = PanoSecici.SelectedIndex;
         if (idx >= 0 && idx < _vm.Panolar.Count)
         {
@@ -227,8 +253,9 @@ public partial class TekHatSemasiWindow
         if (YukTipiCombo.SelectedItem is YukTipiTanim tanim)
         {
             GucBox.Text = tanim.BirimGucW.ToString("0.##");
-            if (tanim.Ad.Equals("Mekanik", StringComparison.OrdinalIgnoreCase) && FazTipiCombo != null)
-                FazTipiCombo.SelectedIndex = 0;
+            // Faz kütüphanedeki yük tipi varsayılanıyla gelir; kullanıcı formda değiştirebilir.
+            if (FazTipiCombo != null)
+                FazTipiCombo.SelectedIndex = tanim.VarsayilanFaz == FazTipi.Trifaze ? 1 : 0;
         }
     }
 
@@ -273,10 +300,12 @@ public partial class TekHatSemasiWindow
         if (LinyeNoBox != null) LinyeNoBox.Text = "";
         if (SortiBox != null) SortiBox.Text = "1";
         if (TalepBox != null) TalepBox.Text = "1,0";
-        if (FazTipiCombo != null) FazTipiCombo.SelectedIndex = 0;
-        // Yük tipi varsayılan güce dön
-        if (YukTipiCombo?.SelectedItem is YukTipiTanim yt2 && GucBox != null)
-            GucBox.Text = yt2.BirimGucW.ToString("0.##");
+        // Yük tipi varsayılan güç ve faza dön
+        if (YukTipiCombo?.SelectedItem is YukTipiTanim yt2)
+        {
+            if (GucBox != null) GucBox.Text = yt2.BirimGucW.ToString("0.##");
+            if (FazTipiCombo != null) FazTipiCombo.SelectedIndex = yt2.VarsayilanFaz == FazTipi.Trifaze ? 1 : 0;
+        }
 
         // Klavyeyle seri giriş için odağı Yük Tipi'ne geri ver
         YukTipiCombo?.Focus();
@@ -302,12 +331,6 @@ public partial class TekHatSemasiWindow
         TogglePanelContent(PanoMenuFields, PanoMenuToggleBtn);
     }
 
-    private void LinyeExcelToggle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (LinyeExcelFields == null) return;
-        TogglePanelContent(LinyeExcelFields, LinyeExcelToggleBtn);
-    }
-
     private void CikisSigortalariToggle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (CikisSigortaGrid == null) return;
@@ -315,11 +338,92 @@ public partial class TekHatSemasiWindow
     }
 
     // Linye satırına sağ tıklayınca o satırı seç (DataGrid sağ-tıkta otomatik seçmez).
+    // Satır zaten çoklu seçimin parçasıysa seçim korunur (Kopyala hepsine uygulanır).
     private void LinyeGrid_OnRightClickSelect(object? sender, PointerPressedEventArgs e)
     {
         var p = e.GetCurrentPoint(LinyeGrid);
-        if (p.Properties.IsRightButtonPressed && (e.Source as Control)?.DataContext is Linye l)
+        if (p.Properties.IsRightButtonPressed && (e.Source as Control)?.DataContext is Linye l
+            && !LinyeGrid.SelectedItems.Contains(l))
             LinyeGrid.SelectedItem = l;
+    }
+
+    // Ctrl+C / Ctrl+V: pencere seviyesinde (tünel) yakalanır; böylece başka bir pano seçilip
+    // odak şemaya geçtikten sonra da yapıştırılabilir. Metin kutularında normal metin
+    // kopyala/yapıştır bozulmasın diye TextBox kaynaklı tuşlara dokunulmaz.
+    private void Window_LinyePanoKisayolu(object? sender, KeyEventArgs e)
+    {
+        bool komut = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        if (!komut || e.KeyModifiers.HasFlag(KeyModifiers.Shift) || e.KeyModifiers.HasFlag(KeyModifiers.Alt)) return;
+        if (e.Key != Key.C && e.Key != Key.V) return;
+        if (TextBoxKaynakliMi(e.Source)) return;
+
+        if (e.Key == Key.C)
+        {
+            if (SeciliLinyeleriKopyala()) e.Handled = true;
+        }
+        else if (_vm.PanodakiLinyeSayisi > 0)
+        {
+            LinyeleriYapistir();
+            e.Handled = true;
+        }
+    }
+
+    private void LinyeKopyalaMenu_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        SeciliLinyeleriKopyala();
+    }
+
+    private void LinyeYapistirMenu_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        LinyeleriYapistir();
+    }
+
+    private bool SeciliLinyeleriKopyala()
+    {
+        var pano = _vm.SeciliPano;
+        if (pano == null) return false;
+        // Seçim sırası tıklama sırasıdır; kopya tablodaki sırayı korusun.
+        var secili = LinyeGrid.SelectedItems.OfType<Linye>()
+            .Where(pano.Linyeler.Contains)
+            .OrderBy(pano.Linyeler.IndexOf)
+            .ToList();
+        if (secili.Count == 0) return false;
+
+        int adet = _vm.LinyeleriKopyala(secili);
+        PanoOzetText.Text = adet == 1
+            ? $"✓ '{secili[0].LinyeNo}' linyesi kopyalandı. Yapıştırmak için pano seçip Ctrl+V."
+            : $"✓ {adet} linye kopyalandı. Yapıştırmak için pano seçip Ctrl+V.";
+        return true;
+    }
+
+    private void LinyeleriYapistir()
+    {
+        var pano = _vm.SeciliPano;
+        if (_vm.PanodakiLinyeSayisi == 0)
+        {
+            PanoOzetText.Text = "⚠ Yapıştırılacak linye yok. Önce linye seçip Ctrl+C ile kopyalayın.";
+            return;
+        }
+        if (pano == null)
+        {
+            PanoOzetText.Text = "⚠ Yapıştırmak için önce bir pano seçin.";
+            return;
+        }
+        if (pano.PanoTipi is PanoTipi.KontrolPanosu or PanoTipi.Kompanzasyon)
+        {
+            PanoOzetText.Text = $"⚠ '{pano.Ad}' panosuna linye yapıştırılamaz.";
+            return;
+        }
+
+        var eklenen = _vm.LinyeleriYapistir();
+        TabloGuncelle();
+        PanoSeciciGuncelle();
+        SemaCiz();
+
+        LinyeGrid.SelectedItems.Clear();
+        foreach (var l in eklenen) LinyeGrid.SelectedItems.Add(l);
+        if (eklenen.Count > 0) LinyeGrid.ScrollIntoView(eklenen[^1], null);
+        PanoOzetText.Text = $"✓ {eklenen.Count} linye '{pano.Ad}' panosuna yapıştırıldı.";
     }
 
     // Merkezi modda: seçili linyeyi aynı kattaki bir kritik panoya taşı (alt menüden seç).
@@ -635,7 +739,7 @@ public partial class TekHatSemasiWindow
 
         try
         {
-            var (linyeler, hatalar) = TekHatLinyeExcelServisi.IceriAktar(path);
+            var (linyeler, hatalar) = TekHatLinyeExcelServisi.IceriAktar(path, _vm.YukTipleri);
             var adet = _vm.LinyeleriIceAktar(linyeler);
             TabloGuncelle();
             PanoSeciciGuncelle();
@@ -654,20 +758,84 @@ public partial class TekHatSemasiWindow
 
     // === KABLO / HESAPLA ===
 
-    private void KabloMesafeAta_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    // Şemadaki besleme kablosu etiketine tıklayınca (veya pano sağ-tık menüsünden) açılan
+    // küçük düzenleyici. Mevcut metraj hazır gelir; Enter/Uygula kaydeder, Esc kapatır.
+    private void KabloMesafeDuzenle(Pano pano, Control hedef)
     {
-        if (_vm.SeciliPano == null) return;
-        if (NumberHelper.TryParse(KabloMesafe?.Text, out double mesafe))
+        var kutu = new TextBox
         {
-            _vm.SeciliPano.KabloMesafeM = mesafe;
-            _vm.SeciliPano.KabloMesafeKullaniciAyarladi = true; // kullanıcı müdahale etti → Kontrol modunda sarı kalkar
+            Text = pano.KabloMesafeM.ToString("0.##"),
+            Width = 80,
+            HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Right
+        };
+        var hata = new TextBlock
+        {
+            Text = "Geçerli bir mesafe girin (≥ 0).",
+            Foreground = new SolidColorBrush(Color.Parse("#E07060")),
+            FontSize = 11,
+            IsVisible = false
+        };
+        var uygulaBtn = new Button { Content = "Uygula", Classes = { "primary" } };
+        var flyout = new Flyout
+        {
+            Placement = PlacementMode.Bottom,
+            Content = new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#0A140A")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#2A4A20")),
+                BorderThickness = new Avalonia.Thickness(1),
+                CornerRadius = new Avalonia.CornerRadius(6),
+                Padding = new Avalonia.Thickness(12),
+                Child = new StackPanel
+                {
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock { Text = $"{pano.Ad} — besleme kablosu", Classes = { "sectionTitle" } },
+                        new TextBlock { Text = $"Mevcut: {pano.KabloMesafeM:0.##} m{KesitEk(pano.KabloKesiti)}", Classes = { "labelText" } },
+                        new StackPanel
+                        {
+                            Orientation = Avalonia.Layout.Orientation.Horizontal,
+                            Spacing = 6,
+                            Children =
+                            {
+                                new TextBlock { Text = "Yeni metraj (m):", Classes = { "labelText" }, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center },
+                                kutu,
+                                uygulaBtn
+                            }
+                        },
+                        hata
+                    }
+                }
+            }
+        };
+
+        void Uygula()
+        {
+            if (!NumberHelper.TryParse(kutu.Text, out double mesafe) || mesafe < 0 || double.IsNaN(mesafe) || double.IsInfinity(mesafe))
+            {
+                hata.IsVisible = true;
+                kutu.Focus();
+                return;
+            }
+            flyout.Hide();
+            pano.KabloMesafeM = mesafe;
+            pano.KabloMesafeKullaniciAyarladi = true; // kullanıcı müdahale etti → Kontrol modunda sarı kalkar
+            _vm.SeciliPano = pano;
             _vm.TumunuHesapla();
             TabloGuncelle();
             PanoSeciciGuncelle();
             SemaCiz();
-            // Mesafe ata sonrası kutuyu temizle / varsayılana dön
-            if (KabloMesafe != null) KabloMesafe.Text = "10";
         }
+
+        uygulaBtn.Click += (_, _) => Uygula();
+        kutu.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { Uygula(); e.Handled = true; }
+            else if (e.Key == Key.Escape) { flyout.Hide(); e.Handled = true; }
+        };
+        flyout.Opened += (_, _) => Dispatcher.UIThread.Post(() => { kutu.Focus(); kutu.SelectAll(); });
+        flyout.ShowAt(hedef);
     }
 
     // === KONTROL (DOĞRULAMA) MODU ===

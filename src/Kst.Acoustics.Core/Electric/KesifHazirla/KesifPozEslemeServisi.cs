@@ -66,6 +66,8 @@ public sealed class KesifPozEslemeServisi
             _eslemeler.Add(mevcut);
         }
 
+        if (!string.Equals(mevcut.PozNo, pozNo, StringComparison.OrdinalIgnoreCase) || mevcut.BirimAdi != birimAdi)
+            mevcut.KontrolEdildi = false;
         mevcut.PozNo = pozNo;
         mevcut.BirimAdi = birimAdi;
         mevcut.SonGuncellemeTarihi = DateTime.Now;

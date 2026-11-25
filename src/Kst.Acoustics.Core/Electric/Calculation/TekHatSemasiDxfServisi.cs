@@ -143,15 +143,24 @@ public static class TekHatSemasiDxfServisi
                 var pano = kabloluCocuklar[i];
                 var (pX, pY) = pos[pano];
                 double cCadY = ToCad(pY);
-                int yon = cCadY >= upCadY ? 1 : -1;            // çocuk yukarıda (+) / aşağıda (−)
+                var panoUps = proje.Upsler.FirstOrDefault(u =>
+                    string.Equals(u.KritikPanoAd, pano.Ad, StringComparison.OrdinalIgnoreCase));
+                // UPS'li çıkışta üst pano hattının hedefi kritik pano değil UPS girişidir.
+                // UpsCiz aşağıda UPS çıkışını kritik panoya bağlayarak seri topolojiyi tamamlar.
+                double hedefEdge = panoUps == null
+                    ? cCadY
+                    : cCadY + KutuH / 2.0 + 18 + KutuH;
+                int yon = hedefEdge >= upCadY ? 1 : -1;         // hedef yukarıda (+) / aşağıda (−)
                 double pEdge = upCadY + yon * (KutuH / 2.0);    // ebeveyn kenarı
-                double cEdge = cCadY - yon * (KutuH / 2.0);     // çocuk kenarı
+                double cEdge = panoUps == null
+                    ? cCadY - yon * (KutuH / 2.0)                // çocuk kenarı
+                    : hedefEdge;                                 // UPS giriş kenarı
                 double dalY = pEdge + yon * (14 + (i + 1) * DxfBranchGap);
                 if (yon > 0 && dalY > cEdge - 6) dalY = cEdge - 6;
                 if (yon < 0 && dalY < cEdge + 6) dalY = cEdge + 6;
 
                 bool merkeziKolon = pano.Ad == merkeziDagitimAd;
-                var dalKatman = merkeziKolon ? layUps : layKablo;
+                var dalKatman = panoUps != null ? layUps : merkeziKolon ? layUps : layKablo;
                 Cizgi(doc, upX, pEdge, upX, dalY, dalKatman);
                 Cizgi(doc, upX, dalY, pX, dalY, dalKatman);
                 Cizgi(doc, pX, dalY, pX, cEdge, dalKatman);
@@ -160,9 +169,9 @@ public static class TekHatSemasiDxfServisi
                 SigortaSembol(doc, pX, sembY, laySembol);
                 string dalEtiket = merkeziKolon
                     ? "UPS Kolonu (Ayrı)"
-                    : CikisEtiket(pano);
+                    : panoUps != null ? $"UPS Girişi • {CikisEtiket(pano)}" : CikisEtiket(pano);
                 doc.Entities.Add(new Text(dalEtiket,
-                    new Vector3(pX + 5, sembY + 1, 0), 3) { Layer = merkeziKolon ? layUps : layMetin });
+                    new Vector3(pX + 5, sembY + 1, 0), 3) { Layer = panoUps != null || merkeziKolon ? layUps : layMetin });
             }
 
             // Busbar grupları — feeder kolonu çocukların Y aralığını kapsar (yön bağımsız).

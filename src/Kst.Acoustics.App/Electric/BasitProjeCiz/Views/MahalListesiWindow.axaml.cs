@@ -19,7 +19,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
 {
     private readonly BasitProjeCizViewModel _vm;
     private bool _zayif;          // false = kuvvetli, true = zayıf akım
-    private bool _yukleniyor;     // ComboBox event'lerinde tekrar kurmayı önle
+    private bool _yukleniyor = true; // InitializeComponent sırasında adlandırılmış kontroller henüz bağlanmaz.
     /// Yerleşim ön-tahmini için aday üretici (yerleştirmenin kullandığı motorun aynısı).
     private readonly BasitProjeCizGeometriServisi _geometri = new();
 
@@ -57,7 +57,10 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         BpcElemanTipi.TvMerkezi, BpcElemanTipi.TelefonDagitim
     };
 
-    public string[] YerlesimTipleri { get; } = { "Adet", "Grid", "Duvar aralıklı", "Açıklık Yanı", "Homojen Duvar" };
+    public bool AnahtarAdimi => _vm.AydinlatmaAkisiAktif && _vm.AydinlatmaAsamasi == BpcAydinlatmaAsamasi.Anahtar;
+    public string KumandaYerlesimKurali => _seciliSatir?.Tip == BpcElemanTipi.Sensör ? "Tavanda, adet kadar" : "Kapı yanında, adet kadar";
+    public string[] YerlesimTipleri => AnahtarAdimi ? ["Adet"] : _vm.AydinlatmaAkisiAktif
+        ? ["Adet", "Grid", "Duvar aralıklı"] : ["Adet", "Grid", "Duvar aralıklı", "Açıklık Yanı", "Homojen Duvar"];
     public string[] MontajTipleri { get; } = { "Tavan", "Duvar", "Zemin" };
 
     private BpcMahalSatiri? _seciliSatir;
@@ -75,21 +78,31 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
 
     // Seçili satır/hücrenin GERÇEK değişikliklerini (INPC eşitlik korumalı)
     // IsDirty'ye bağlar — panel rebind'ları yanlış pozitif üretmez.
-    private void SatirVeyaHucreDegisti(object? sender, PropertyChangedEventArgs e) => _vm.Kirlet();
+    private bool _jestKaydedildi;
+    private void MahalJestineBasla()
+    {
+        if (_jestKaydedildi || _boyaAktif || _yukleniyor || !IsVisible || SeciliKat is not { } kat) return;
+        _vm.MahalDuzenlemesineBasla(kat);
+        _jestKaydedildi = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => _jestKaydedildi = false);
+    }
+
+    private void SatirVeyaHucreDegisecek(object? sender, PropertyChangingEventArgs e) => MahalJestineBasla();
 
     public BpcMahalSatiri? SeciliSatir
     {
         get => _seciliSatir;
         set
         {
-            if (_seciliSatir != null) _seciliSatir.PropertyChanged -= SatirVeyaHucreDegisti;
+            if (_seciliSatir != null) _seciliSatir.PropertyChanging -= SatirVeyaHucreDegisecek;
             _seciliSatir = value;
-            if (_seciliSatir != null) _seciliSatir.PropertyChanged += SatirVeyaHucreDegisti;
+            if (_seciliSatir != null) _seciliSatir.PropertyChanging += SatirVeyaHucreDegisecek;
             OnPropertyChanged();
             OnPropertyChanged(nameof(SeciliSatirAktif));
             OnPropertyChanged(nameof(GenelAyarPaneliAktif));
             OnPropertyChanged(nameof(OdaOzelPaneliAktif));
             OnPropertyChanged(nameof(EfektifAdetModu));
+            OnPropertyChanged(nameof(KumandaYerlesimKurali));
             BildirHucreOzellikGorunurluk();
             if (!_tabloGuncelleniyor) TabloKur(); // Re-render to show selection highlight
         }
@@ -102,9 +115,9 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         get => _seciliHucreAyar;
         set
         {
-            if (_seciliHucreAyar != null) _seciliHucreAyar.PropertyChanged -= SatirVeyaHucreDegisti;
+            if (_seciliHucreAyar != null) _seciliHucreAyar.PropertyChanging -= SatirVeyaHucreDegisecek;
             _seciliHucreAyar = value;
-            if (_seciliHucreAyar != null) _seciliHucreAyar.PropertyChanged += SatirVeyaHucreDegisti;
+            if (_seciliHucreAyar != null) _seciliHucreAyar.PropertyChanging += SatirVeyaHucreDegisecek;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsGenelAyarModu));
             OnPropertyChanged(nameof(GenelAyarPaneliAktif));
@@ -190,20 +203,12 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
             string tip = _seciliHucreAyar.GenelAyarKullan
                 ? _seciliSatir.YerlesimTipi
                 : _seciliHucreAyar.YerlesimTipi;
-            if (tip == "Adet") return true;
-            // Priz satırlarında "Duvar aralıklı", "Açıklık Yanı" ve "Homojen Duvar"
-            // da adet girişi zorunludur.
-            bool isPriz = BasitProjeCizKabloServisi.ElemanPrizMi(_seciliSatir.Tip);
-            return isPriz && tip is "Duvar aralıklı" or "Açıklık Yanı" or "Homojen Duvar";
+            return AnahtarAdimi || MahalListesiServisi.KullaniciAdediGerekir(_seciliSatir.Tip, tip);
         }
     }
 
     public MahalListesiWindow()
-    {
-        _vm = new BasitProjeCizViewModel();
-        InitializeComponent();
-        DataContext = this;
-    }
+        : this(new BasitProjeCizViewModel()) { }
 
     public MahalListesiWindow(BasitProjeCizViewModel vm)
     {
@@ -212,6 +217,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         DataContext = this;
         // M12/M16 kabuk ayrımı: pencere modülün disiplinine sabitlenir.
         _zayif = vm.ModulZayifMi;
+        PencereBasliginiGuncelle();
         KuvvetliBtn.IsChecked = !_zayif;
         ZayifBtn.IsChecked = _zayif;
         // Tek disiplinli kabukta disiplin geçiş sekmeleri gizlenir.
@@ -226,9 +232,20 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         SadecaEksikleriCheck.IsChecked = _vm.SadecaEksikleriEkle;
         SadecaEksikleriCheck.IsCheckedChanged += (_, _) =>
             _vm.SadecaEksikleriEkle = SadecaEksikleriCheck.IsChecked == true;
-        _vm.PropertyChanged += (_, e) =>
+        void VmDurumuDegisti(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(BasitProjeCizViewModel.ProjeKilitli))
+            if (e.PropertyName == nameof(BasitProjeCizViewModel.SeciliAsamaSecenegi))
+            {
+                if (_vm.AsamaliPaftaAktif && !_vm.AsamaMahalListesiVar) { Close(); return; }
+                PencereBasliginiGuncelle();
+                SeciliHucreAyar = null;
+                SeciliSatir = null;
+                OnPropertyChanged(nameof(YerlesimTipleri));
+                OnPropertyChanged(nameof(AnahtarAdimi));
+                KalemComboDoldur();
+                TabloKur();
+            }
+            else if (e.PropertyName == nameof(BasitProjeCizViewModel.ProjeKilitli))
             {
                 OnPropertyChanged(nameof(MahalDuzenlemeAktif));
                 TabloKur();
@@ -236,9 +253,10 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
             else if (e.PropertyName == nameof(BasitProjeCizViewModel.Elemanlar))
             {
                 // Eleman undo/redo sonrası tabloyu yenile
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => TabloKur());
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { KalemComboDoldur(); TabloKur(); });
             }
-        };
+        }
+        _vm.PropertyChanged += VmDurumuDegisti;
 
         KatCombo.SelectionChanged += (_, _) => { if (!_yukleniyor) { SeciliSatir = null; KalemComboDoldur(); TabloKur(); } };
         Closed += (_, _) => _vm.MahalListesiOdaVurgula(null); // pencere kapanınca vurguyu kaldır
@@ -256,8 +274,17 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         // Çift yönlü vurgu: canvas'ta oda seçilince (SeciliOda değişince) bu
         // pencerede ilgili sütun vurgulanır ve görünüme kaydırılır.
         _vm.PropertyChanged += MahalListesi_VmSeciliOdaChanged;
-        Closed += (_, _) => _vm.PropertyChanged -= MahalListesi_VmSeciliOdaChanged;
+        Closed += (_, _) =>
+        {
+            _vm.PropertyChanged -= VmDurumuDegisti;
+            _vm.PropertyChanged -= MahalListesi_VmSeciliOdaChanged;
+            if (_seciliSatir != null) _seciliSatir.PropertyChanging -= SatirVeyaHucreDegisecek;
+            if (_seciliHucreAyar != null) _seciliHucreAyar.PropertyChanging -= SatirVeyaHucreDegisecek;
+        };
     }
+
+    private void PencereBasliginiGuncelle() => Title = _vm.AsamaliPaftaAktif
+        ? $"Mahal Listesi · {_vm.SeciliAsamaSecenegi.Ad}" : "Mahal Listesi";
 
     private void MahalListesi_VmSeciliOdaChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -280,11 +307,22 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
     // Delete hücreyi pasifleştirir. Metin kutularında devreye girmez.
     private void MahalListesi_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Source is TextBox or NumericUpDown or ComboBox) return;
+        if (e.Source is TextBox or NumericUpDown) return;
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key is Key.Z or Key.Y)
+        {
+            if (!KilitliyseDur())
+            {
+                if (e.Key == Key.Y || e.KeyModifiers.HasFlag(KeyModifiers.Shift)) _vm.ElemanIleriAlCommand.Execute(null);
+                else _vm.ElemanGeriAlCommand.Execute(null);
+            }
+            e.Handled = true;
+            return;
+        }
+        if (e.Source is ComboBox) return;
         var kat = SeciliKat;
         if (kat == null || _seciliSatir == null) return;
 
-        var satirlar = kat.MahalListesi.Where(s => AktifTipler.Contains(s.Tip)).ToList();
+        var satirlar = kat.MahalListesi.Where(s => AktifTipMi(s.Tip)).ToList();
         var odalar = GosterilecekOdalar(kat);
         if (satirlar.Count == 0 || odalar.Count == 0) return;
 
@@ -329,7 +367,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
             if (_seciliHucreAyar.Aktif)
             {
                 var (yer, _, _, _) = _seciliSatir.EfektifAyarlar(aktifOda.Id);
-                if (yer == "Adet" && _seciliHucreAyar.Adet == 0) _seciliHucreAyar.Adet = 1;
+                if (MahalListesiServisi.KullaniciAdediGerekir(_seciliSatir.Tip, yer) && _seciliHucreAyar.Adet == 0) _seciliHucreAyar.Adet = 1;
             }
             _vm.Kirlet();
             TabloKur();
@@ -388,7 +426,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
 
     private void AdetDegisti(object? sender, NumericUpDownValueChangedEventArgs e)
     {
-        if (_seciliHucreAyar == null || _yukleniyor) return;
+        if (_seciliHucreAyar == null || _yukleniyor || sender is not NumericUpDown { IsKeyboardFocusWithin: true }) return;
         if (KilitliyseDur()) return;
         int n = (int)(e.NewValue ?? 0);
         _seciliHucreAyar.Adet = n;
@@ -433,7 +471,8 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         TabloKur();
     }
 
-    private BpcElemanTipi[] AktifTipler => _zayif ? ZayifTipler : KuvvetliTipler;
+    private bool AktifTipMi(BpcElemanTipi tip) =>
+        (_zayif ? ZayifTipler : KuvvetliTipler).Contains(tip) && _vm.MahalKalemiGorunurMu(tip);
 
     private void KalemComboDoldur()
     {
@@ -444,6 +483,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
 
         var semboller = SembolListesiGetir();
         var eklenebilir = semboller
+            .Where(t => AktifTipMi(t.Tip))
             .Where(t => !mevcutBloklar.Contains(t.Id) && !mevcutBloklar.Contains(t.Tip.ToString()))
             .ToList();
 
@@ -474,7 +514,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
             {
                 foreach (var tanim in liste)
                 {
-                    var tip = BasitProjeCizKutuphaneServisi.TipBlokAdindan(tanim.BlokAdi) ?? BpcElemanTipi.Armatür;
+                    var tip = BasitProjeCizKutuphaneServisi.TanimTipi(tanim);
                     sonuc.Add((tanim.Id, tip, tanim.Ad, tanim.BlokAdi, tanim));
                 }
             }
@@ -494,7 +534,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
 
         var (id, tip, ad, blokAdi, tanim) = liste[idx];
         bool isPriz = BasitProjeCizKabloServisi.ElemanPrizMi(tip);
-        _vm.Kirlet();
+        _vm.MahalDuzenlemesineBasla(kat);
         kat.MahalListesi.Add(new BpcMahalSatiri
         {
             Tip            = tip,
@@ -511,6 +551,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
     // ── Matris tabloyu kur (sütun = oda, satır = malzeme, hücre = adet) ──────
     private void TabloKur()
     {
+        if (_yukleniyor) return;
         var kat = SeciliKat;
         if (kat == null)
         {
@@ -520,12 +561,14 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         }
 
         var odalar = GosterilecekOdalar(kat);
-        var satirlar = kat.MahalListesi.Where(s => AktifTipler.Contains(s.Tip)).ToList();
+        var satirlar = kat.MahalListesi.Where(s => AktifTipMi(s.Tip)).ToList();
 
         // Undo/redo mahal listesini yeni nesnelerle değiştirmiş olabilir — bayat
         // satır/hücre seçimi panelde hayalet nesneyi düzenlemesin.
         if (_seciliSatir != null && !satirlar.Contains(_seciliSatir))
         {
+            _seciliSatir.PropertyChanging -= SatirVeyaHucreDegisecek;
+            if (_seciliHucreAyar != null) _seciliHucreAyar.PropertyChanging -= SatirVeyaHucreDegisecek;
             _seciliSatir = null;
             _seciliHucreAyar = null;
             _seciliOdaAd = null;
@@ -641,6 +684,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
                 if (KilitliyseDur()) return;
 
                 // Çift tık: bu ODADAKİ tüm kalemleri topluca aç/kapat.
+                MahalJestineBasla();
                 if (e.ClickCount == 2)
                 {
                     bool hepsiAktif = yakSatirlar.Count > 0 &&
@@ -652,7 +696,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
                         if (a.Aktif)
                         {
                             var (yer, _, _, _) = s.EfektifAyarlar(yaklananOda.Id);
-                            if (yer == "Adet" && a.Adet == 0) a.Adet = 1;
+                            if (MahalListesiServisi.KullaniciAdediGerekir(s.Tip, yer) && a.Adet == 0) a.Adet = 1;
                         }
                     }
                     _vm.Kirlet();
@@ -721,6 +765,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
                 if (e.ClickCount == 2)
                 {
                     if (KilitliyseDur()) return;
+                    MahalJestineBasla();
                     var hedefOdalar = yakOdalar.Where(o => o.MahalListesineDahil).ToList();
                     bool hepsiAktif = hedefOdalar.Count > 0 &&
                         hedefOdalar.All(o => satir.HucreGetirVeyaOlustur(o.Id).Aktif);
@@ -731,7 +776,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
                         if (a.Aktif)
                         {
                             var (yer, _, _, _) = satir.EfektifAyarlar(o.Id);
-                            if (yer == "Adet" && a.Adet == 0) a.Adet = 1;
+                            if (MahalListesiServisi.KullaniciAdediGerekir(satir.Tip, yer) && a.Adet == 0) a.Adet = 1;
                         }
                     }
                     _vm.Kirlet();
@@ -780,7 +825,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
                 var ayar = satir.HucreGetirVeyaOlustur(oda.Id);
 
                 var (efektifYerlesim, _, _, _) = satir.EfektifAyarlar(oda.Id);
-                bool isAdet = efektifYerlesim == "Adet";
+                bool isAdet = MahalListesiServisi.KullaniciAdediGerekir(satir.Tip, efektifYerlesim);
 
                 bool isCellSelected = (satir == SeciliSatir && ayar == SeciliHucreAyar);
                 bool odaDahil = oda.MahalListesineDahil;
@@ -857,7 +902,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
                         if (yakAyar.Aktif)
                         {
                             var (currentYerlesim, _, _, _) = yakSatir.EfektifAyarlar(yakOdaId);
-                            if (currentYerlesim == "Adet" && yakAyar.Adet == 0)
+                            if (MahalListesiServisi.KullaniciAdediGerekir(yakSatir.Tip, currentYerlesim) && yakAyar.Adet == 0)
                                 yakAyar.Adet = 1;
                         }
 
@@ -882,7 +927,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
                     if (_boyaDegeri)
                     {
                         var (yer, _, _, _) = yakSatir.EfektifAyarlar(yakOdaId);
-                        if (yer == "Adet" && yakAyar.Adet == 0) yakAyar.Adet = 1;
+                        if (MahalListesiServisi.KullaniciAdediGerekir(yakSatir.Tip, yer) && yakAyar.Adet == 0) yakAyar.Adet = 1;
                     }
                     _vm.Kirlet();
                     GorselleriGuncelle();
@@ -941,10 +986,10 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         var kat = SeciliKat;
         if (kat == null || KatOzetText == null) return;
 
-        var satirlar = kat.MahalListesi.Where(s => AktifTipler.Contains(s.Tip)).ToList();
+        var satirlar = kat.MahalListesi.Where(s => AktifTipMi(s.Tip)).ToList();
         int toplamEleman = satirlar.Sum(s =>
             MahalListesiServisi.SatirTahminToplami(s, kat.Odalar, _geometri));
-        double toplamW = MahalListesiServisi.KatTahminiGucW(kat, _vm.Kutuphane, _geometri);
+        double toplamW = MahalListesiServisi.KatTahminiGucW(kat, _vm.Kutuphane, _geometri, AktifTipMi);
         int aktifOda = kat.Odalar.Count(o => o.MahalListesineDahil);
 
         KatOzetText.Text = toplamEleman == 0
@@ -960,7 +1005,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         if (gridSol == null && gridSag == null) return;
 
         int rowIndex = 1;
-        var satirlar = SeciliKat?.MahalListesi.Where(s => AktifTipler.Contains(s.Tip)).ToList() ?? new();
+        var satirlar = SeciliKat?.MahalListesi.Where(s => AktifTipMi(s.Tip)).ToList() ?? new();
         var odalar = SeciliKat is { } gKat ? GosterilecekOdalar(gKat) : new();
 
         foreach (var satir in satirlar)
@@ -995,7 +1040,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
                 {
                     var ayar = satir.HucreGetirVeyaOlustur(oda.Id);
                     var (efektifYerlesim, _, _, _) = satir.EfektifAyarlar(oda.Id);
-                    bool isAdet = efektifYerlesim == "Adet";
+                    bool isAdet = MahalListesiServisi.KullaniciAdediGerekir(satir.Tip, efektifYerlesim);
                     bool isCellSelected = (satir == SeciliSatir && ayar == SeciliHucreAyar);
                     bool odaDahil = oda.MahalListesineDahil;
                     bool efektifAktif = satir.EfektifAktif(oda.Id);
@@ -1074,7 +1119,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         var hedef = SeciliKat;
         if (hedef == null) { _vm.DurumMesaji = "Önce kat seçin."; return; }
 
-        var adaylar = _vm.Katlar.Where(k => !ReferenceEquals(k, hedef) && k.MahalListesi.Count > 0).ToList();
+        var adaylar = _vm.Katlar.Where(k => !ReferenceEquals(k, hedef) && k.MahalListesi.Any(s => AktifTipMi(s.Tip))).ToList();
         if (adaylar.Count == 0)
         {
             _vm.DurumMesaji = "Kopyalanacak mahal listesi olan başka kat yok.";
@@ -1085,7 +1130,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
             "Kattan Kopyala",
             $"'{hedef.Ad}' katına hangi katın mahal listesi kopyalansın?\n" +
             "Odalar ADA göre eşleşir; sizin açtığınız hücreler korunur.",
-            adaylar, k => $"{k.Ad}  ({k.MahalListesi.Count} kalem, {k.Odalar.Count} oda)");
+            adaylar, k => $"{k.Ad}  ({k.MahalListesi.Count(s => AktifTipMi(s.Tip))} kalem, {k.Odalar.Count} oda)");
         if (kaynak == null) return;
 
         var ozet = _vm.MahalKattanKopyala(kaynak, hedef);
@@ -1111,14 +1156,15 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
     private async void SablonKaydet_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var kat = SeciliKat;
-        if (kat == null || kat.MahalListesi.Count == 0)
+        if (kat == null || !kat.MahalListesi.Any(s => AktifTipMi(s.Tip)))
         {
             _vm.DurumMesaji = "Kaydedilecek mahal listesi yok.";
             return;
         }
 
         var ad = await MetinDiyalogu("Şablon Kaydet",
-            "Şablon adı (aynı ad varsa üzerine yazılır):", $"{kat.Ad} listesi");
+            "Şablon adı (aynı ad varsa üzerine yazılır):", _vm.AsamaliPaftaAktif
+                ? $"{kat.Ad} · {_vm.SeciliAsamaSecenegi.Ad}" : $"{kat.Ad} listesi");
         if (string.IsNullOrWhiteSpace(ad)) return;
 
         var mesaj = _vm.MahalSablonKaydet(kat, ad!);
@@ -1327,14 +1373,15 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
 
     private void OdaArama_TextChanged(object? sender, TextChangedEventArgs e)
     {
-        _odaFiltre = OdaAramaBox.Text ?? "";
+        if (_yukleniyor || sender is not TextBox arama) return;
+        _odaFiltre = arama.Text ?? "";
         TabloKur();
     }
 
     private void OdaSira_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (_yukleniyor) return;
-        _odaSiraModu = OdaSiraCombo.SelectedIndex;
+        if (_yukleniyor || sender is not ComboBox siralama) return;
+        _odaSiraModu = siralama.SelectedIndex;
         TabloKur();
     }
 
@@ -1362,7 +1409,7 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
     private async void TumKatlaraYerlestir_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (KilitliyseDur()) return;
-        var hedefler = _vm.Katlar.Where(k => k.MahalListesi.Count > 0).ToList();
+        var hedefler = _vm.Katlar.Where(k => k.MahalListesi.Any(s => AktifTipMi(s.Tip))).ToList();
         if (hedefler.Count == 0)
         {
             await BilgiDiyalogu("Tüm Katlar", "Mahal listesi olan kat yok.");
@@ -1372,9 +1419,9 @@ public partial class MahalListesiWindow : Window, INotifyPropertyChanged
         bool tamYenileme = SadecaEksikleriCheck.IsChecked != true;
         var onay = await OnayDiyalogu("Tüm Katlara Yerleştir",
             $"{hedefler.Count} katta yerleştirme çalıştırılacak:\n" +
-            string.Join("\n", hedefler.Select(k => $"  • {k.Ad} ({k.MahalListesi.Count} kalem)")) +
+            string.Join("\n", hedefler.Select(k => $"  • {k.Ad} ({k.MahalListesi.Count(s => AktifTipMi(s.Tip))} kalem)")) +
             (tamYenileme
-                ? "\n\n⚠ TAM YENİLEME modu: her katta eski otomatik elemanlar silinip yeniden üretilir; bağlı kablolar da silinir."
+                ? "\n\nTam yenileme her katta bu listedeki türlerin otomatik elemanlarını yeniden üretir ve bu elemanlara bağlı kabloları kaldırır."
                 : "\n\nYalnız eksikler eklenecek; mevcut elemanlar korunur.") +
             "\n\nDevam edilsin mi?");
         if (!onay) return;

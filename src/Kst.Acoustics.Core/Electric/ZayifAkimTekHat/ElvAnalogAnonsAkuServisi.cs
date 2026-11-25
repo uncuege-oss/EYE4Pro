@@ -36,8 +36,12 @@ public static class ElvAnalogAnonsAkuServisi
                             + alarmAkimi * Math.Max(0, kaynak.AlarmSuresiDakika) / 60.0)
                            * YaslanmaKatsayisi;
 
-        // 12 V aküler 24 V sistemde seri çift çalışır; paralel set sayısı kapasiteyi belirler.
-        int setSayisi = gerilim >= 24 ? kaynak.AkuAdedi / 2 : Math.Max(0, kaynak.AkuAdedi);
+        // Each complete series string must reach nominal voltage; series batteries
+        // do not add Ah. Incomplete strings cannot contribute available capacity.
+        double seriAdetDegeri = Math.Ceiling(gerilim / 12.0);
+        int seriAdet = double.IsFinite(seriAdetDegeri) && seriAdetDegeri is >= 1 and <= int.MaxValue
+            ? (int)seriAdetDegeri : int.MaxValue;
+        int setSayisi = Math.Max(0, kaynak.AkuAdedi) / seriAdet;
         double mevcutAh = Math.Max(0, kaynak.AkuKapasitesiAh) * setSayisi;
 
         bool yeterli = mevcutAh + 0.001 >= gerekliAh;
@@ -46,8 +50,8 @@ public static class ElvAnalogAnonsAkuServisi
             sorunlar.Add("EN 54-4 akü kapasitesi tanımlanmamış.");
         else if (!yeterli && gerekliAh > 0)
             sorunlar.Add($"Akü kapasitesi yetersiz: gerekli {gerekliAh:0.#} Ah, mevcut {mevcutAh:0.#} Ah.");
-        if (gerilim >= 24 && kaynak.AkuAdedi % 2 != 0)
-            sorunlar.Add("24 V sistemde akü adedi çift olmalıdır (12 V aküler seri çift çalışır).");
+        if (kaynak.AkuAdedi % seriAdet != 0)
+            sorunlar.Add($"{gerilim:0.#} V sistemde akü adedi {seriAdet} katı olmalıdır (12 V aküler seri çalışır).");
         if (sistem.AnalogZonlar.Count > 0 && !kaynak.En54_4Uygun)
             sorunlar.Add("Güç kaynağının EN 54-4 uygunluğu onaylanmamış.");
 

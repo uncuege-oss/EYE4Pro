@@ -7,7 +7,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0D1117"
-        Title="EYE4PRO Landscape - M70 Park Tasarımı">
+        Title="EYE4PRO Peyzaj - M70 Park Tasarımı">
 
     <Window.Styles>
         <Style Selector="Button.act">
@@ -29,7 +29,7 @@
     <Grid RowDefinitions="Auto,*,Auto">
         <Border Grid.Row="0" BorderBrush="#143222" BorderThickness="0,0,0,1" Padding="24,14" Background="#0F1C14">
             <StackPanel Spacing="2">
-                <TextBlock Text="EYE4PRO LANDSCAPE — M70 Park Tasarımı" Foreground="#7BD3A0" FontSize="17" FontWeight="Bold"/>
+                <TextBlock Text="EYE4PRO Peyzaj — M70 Park Tasarımı" Foreground="#7BD3A0" FontSize="17" FontWeight="Bold"/>
                 <TextBlock Text="Araziyi ve binayı salt-okunur yükle; sert zemin yerleşimi + alan/oran. Çıktı: .e4park.json" Foreground="#6FB78E" FontSize="11"/>
             </StackPanel>
         </Border>

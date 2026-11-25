@@ -22,10 +22,13 @@ public static class KesifJsonServisi
     /// Proje grafiğini çağıran thread'de JSON'a dönüştürür, yalnız dosya yazımını asenkron yapar.
     /// Avalonia'ya bağlı ObservableCollection nesnelerinin arka plan thread'inden okunmasını önler.
     /// </summary>
-    public static async Task KaydetAsync(KesifProje proje, string path, CancellationToken cancellationToken = default)
+    /// <returns>Başarıyla diske yazılan sürümün JSON parmak izi.</returns>
+    public static async Task<string> KaydetAsync(KesifProje proje, string path, CancellationToken cancellationToken = default)
     {
         var json = JsonOlustur(proje);
         await GuvenliDosyaYazmaServisi.YazAsync(path, json, cancellationToken);
+        // Çağıran, yazım sürerken değişebilen projenin yerine gerçekten yazılan sürümü temiz kabul eder.
+        return json;
     }
 
     /// <summary>Kaydedilen proje içeriğinin değişip değişmediğini yan etkisiz karşılaştırmak için kullanılır.</summary>

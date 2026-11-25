@@ -316,3 +316,124 @@ Core.Tests (`dotnet run --project Kst.Acoustics.Core.Tests`): **121 test geçer*
   §2.8/§7 — yeni kod eklenmedi, olduğu gibi kullanılıyor).
 - **Etiket çeşitliliği:** regex seti gerçek dosyalarla genişletilecek; tahmin her zaman
   diyalogda düzeltilebilir olduğundan yanlış tahmin veri bozmaz.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Gelecek şemalar reddediliyor; sabit .tmp yerine benzersiz geçici dosya ve .bak yedeği kullanılıyor (A14, A16).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.
+
+## 10. DWG/DXF otomatik mimari içe aktarma — 2026-11-05
+
+**Durum: otomatik akış eklendi; yalnız küçük düzeltme gerektiren genel mimari rekonstrüksiyon hedefi henüz tamamlanmadı.**
+
+- M50 sol panelinde `Mimari Proje Yükle…`: DWG/DXF seçimi, kat ayırma, oda/etiket/açıklık çıkarma, kalıcı içe aktarma raporu. Mevcut bina listesine yeni katlar eklenir.
+- `MimariCadDosyasi`: ODA File Converter veya kurulu AutoCAD Core Console ile izole çalışma kopyası; kaynak DWG değiştirilmez. Geçici çıktı okuma bitene kadar yaşar, sonunda temizlenir. Motor için `EYE4PRO_CAD_CONVERTER` kullanılabilir. CAD motoru yoksa açık hata verir.
+- Ham pafta önce bölünür; bütün belge tek oda taramasına verilmez. Birimsiz çizimde yeterli kapı yayı kanıtı varsa ölçek önerilir ve kontrol notu kaydedilir.
+- Temas eden pafta çerçeveleri ayrılır. Ölçekli ana plan başlıkları antet tekrarlarına tercih edilir; kesit, görünüş, vaziyet ve tavan paftaları elenir.
+- Oda adları semantik olarak sıralanır; malzeme notları, kapı kodları ve ölçüler mahal adı olmaz. İç içe blok metinleri ve blok attribute değerleri okunur.
+- Açık kat yüksekliği yazıları ve doğrulanabilir ardışık kat kot farkları kullanılır. `h=` oda net yüksekliğidir. Çelişkili/eksik yükseklikte 3 m **geçici** değer raporlanır; kesin ölçü sayılmaz.
+- Yakındaki kapı/pencere ölçüleri geometrik genişlikle doğrulanır. Çift kanat ve iki duvar yüzündeki aynı açıklık eşleştirmesi desteklenir; belirsiz yerleşim uydurulmaz.
+- 3D duvarlar kapı/pencere dikdörtgenlerini keser; denizlik ve açıklık yüksekliği uygulanır. `TabanKotuM` düzenlenebilir. Açık sıfır denizlik ile eski 0=varsayılan davranışı ayrılır.
+- Şema 3: mutlak kat kotu, açık sıfır eşik ve rapor notları. Eski dosyalar göç eder; eski uygulamanın yeni alanları sessiz kaybetmemesi için yeni sürüm damgası kullanılır.
+
+### Doğrulama ve mevcut sınırlar
+
+Kullanıcının Beylerbeyi mimari DWG dosyası kurulu AutoCAD 2027 ile uçtan uca açıldı. Son otomatik analiz:
+
+- Zemin kat ve 1. kat: 32 + 29 **oda adayı**, 34 + 25 açıklık; bunlar doğrulanmış mahal adetleri değildir.
+- Çatı altı/teras: 31 geometrik alan adayı; kapalı mahal kanıtı bulunmadığı için oda blokları gizlendi, kaynak çizim korundu.
+- Zemin/1. kat/çatı için sırasıyla 4/5/2 açıklık kaydına yazılı ölçü eşleşti. Kalanlar varsayılan ölçü/kontrol notu taşır.
+- Zemin ve 1. katın kot yazıları kademeli döşeme/merdiven kotlarıyla karışıyor; güvenilir kat yüksekliği çözülemedi. Kesit geometrisinden katlar arası ilişki çıkarımı, aks tabanlı hizalama, eksik açıklıkların blok/duvar semantiğiyle çıkarımı ve oda sınırlarının iyileştirilmesi sonraki geliştirme gereksinimleridir.
+- Tam çatı kabuğu/BIM rekonstrüksiyonu yapılmıyor. Çatı taraması otomatik olarak oda hacmi sayılmıyor.
+
+Derleme: `dotnet build src/Kst.Acoustics.App --no-restore -p:NuGetAudit=false -p:UsedAvaloniaProducts=` — 0 hata/uyarı.
+
+Regresyon çalıştırıcıları (`dotnet run --project tests/<ad>.Regression -p:NuGetAudit=false -p:UsedAvaloniaProducts=`):
+`BinaImport` 9, `Bina3D` 9, `BinaKat` 11, `BinaKalite` 6, `BinaMetin` 56, `BinaExisting` 42; toplam 133 kontrol geçti.
+
+Yerel inceleme çıktıları: `scratch/bina-import/automatic.txt`, `scratch/bina-import/result.e4bina.json`, `scratch/bina-import/dwg-smoke.txt`. Kaynak DWG ve dönüştürülmüş çizim test verisidir; dağıtım paketine/depo kalıcı örneklerine dahil edilmemelidir.
+
+## 11. Katman seçimi → Üret akışı — 2026-11-05
+
+Kullanıcının talebiyle dosya seçimi artık hemen oda/kat üretmez. Ana `Mimari Proje Yükle…` ve seçili kata `DWG/DXF Planı Yükle…` girişleri önce katman önizlemesini açar.
+
+1. DWG gerekiyorsa geçici çalışma kopyasından DXF'e çevrilir; kaynak dosya değiştirilmez.
+2. `KatmanliOku` katmanları, çizgileri, yazıları ve yayları belleğe alır. CAD'deki kapalı/donmuş katmanlar başlangıçta kapalıdır.
+3. Kullanıcı katman araması, kutular, tümünü aç/kapat veya dosyadaki duruma dönüş ile çizimi sadeleştirir. Yakınlaştırma, kaydırma ve ekrana sığdırma vardır. Oda adları/ölçüler için yazı katmanları gerektiği ekranda belirtilir.
+4. **Üret** yalnız seçilmiş verinin anlık kopyasını işler. Önizleme güncellenirken, bütün katmanlar kapalıyken veya kullanılabilir tespit çizgisi yokken kapalıdır. **Vazgeç** mevcut modeli değiştirmez.
+5. Kaynak `0` katmanlı blok nesneleri insert katmanını devralır. Ana blok kapalıysa açık alt katmanlar da üretime sızmaz; görünür alt katmanları ayrı kapatmak mümkündür.
+6. `KaynakKatmanlari` ve yerel `KayitliTespitSegmentleri` `.e4bina` içinde saklanır. Kayıttan sonra **Tara**, bütün DWG/DXF'i filtresiz yeniden okuyup kapalı katmanları geri getirmez.
+
+Dosyalar: `MimariKatmanliCizim`, `DxfKatPlaniParser.Katmanlar`, `MimariKatmanSecimWindow`, `MimariKatmanOnizlemeCanvas`. Önizleme sade CAD çizgi/metin gösterimidir; tam AutoCAD pafta çizicisi değildir.
+
+Doğrulama: `BinaKatman.Regression` 22/22, `BinaImport.Regression` 9/9, `BinaExisting.Regression` 44/44; toplam 75 kontrol geçti. Uygulama derlemesi 0 hata/0 uyarı. Örnek Beylerbeyi dosyası önizlemede 52 katman olarak açıldı. Küçük ekranda pencere çalışma alanına sığdırılıyor. Katman seçimi §10'da belgelenen mimari anlamlandırma sınırlarını tek başına ortadan kaldırmaz.
+
+## 12. Katman ve yeniden tarama doğruluğu — 2026-11-05
+
+- Tefriş/yazı gibi tespit dışı katmanların yayları önizlemede kalır; kapı tespitine ve oda sınırlarının sanal kapatılmasına aktarılmaz. Böylece görünür dekoratif yaylar kapı kanıtı sayılmaz.
+- **Tara**, aynı geometride tekrar bulunan otomatik açıklığın kimliğini, tipini, yüksekliğini, denizliğini ve ölçü kaynağını korur. İki uç için 2 cm tolerans ve iki yönde tekil eşleşme gerekir; belirsiz eşleşmeye bilgi devredilmez. Yeni uçlar ve genişlik güncel geometriden kalır. Silinmiş otomatik kayıtlar geri eklenmez.
+- Komşu oda duvarındaki yansıma oluşturulduktan sonra da bu eşleştirme uygulanır. Her iki yüzün ayrı kimliği ve ölçüleri bellek içi taramada ve kayıt/aç sonrasında korunur.
+- Seçili kata dosyayı **yeniden yükleme**, eşleştirmeden sonra yeni çizimin ölçü etiketlerini uygular. Kaynaktaki güncel ölçü önceki otomatik açıklığın düzenlenmiş ölçüsünü değiştirebilir; bu işlem yalnız **Tara** ile aynı değildir.
+- Noktasız küçük `ı` açıkça normalleştirilir: `sığınak`, `danışma`, `çalışma odası`, `çatı katı` ve `kapı` tanınır; `sıva` mahal adı sayılmaz. Katman araması `siva/sıva`, `olcu/ölçü` farklarını tolere eder; CAD katman kimlikleri değiştirilmez.
+- Örnek projede görülen `MDFLAM ALTI DOLAP`, `AKRİLİK KAP.` ve gömme dolap notları mahal adı olmaz. `MDF Deposu`, `Dolap Odası` ve `Seramik Atölyesi` gibi kullanım amacı içeren gerçek mahal adları korunur.
+
+Son doğrulama: `BinaKatman` 25, `BinaMetin` 67, `BinaAciklikYenile` 19, `BinaExisting` 47, `BinaImport` 9, `BinaKat` 11, `BinaKalite` 6, `Bina3D` 9; **193 kontrol geçti**. Uygulama derlemesi 0 hata/0 uyarı. Kayıtlar: `scratch/bina-import/final-*.txt`.
+
+Örnek dosyada 52 katman açıkken tespit girdisindeki yay sayısı 2214'ten 133'e indi. Bu, dekoratif yayların elendiğini gösterir; kalan kapı/pencerelerin tamamının doğrulandığı anlamına gelmez. Oda sınırı ve güvenilir kat yüksekliği için §10'daki açık konular sürer.
+
+12 mimari katmanla üretilen yerel inceleme modeli: `scratch/bina-layer-audit/beylerbeyi-katmanli-inceleme.e4bina.json`. Üç katın katman seçimi, tespit çizgileri, oda/açıklık adetleri ve açıklık kimlikleri kaydet/aç ile doğrulandı. Zemin 21, 1. kat 13, çatı 2 alan adayıdır; bunlar doğrulanmış mahal adetleri değildir. Çatı blokları gizlidir. Tam karşılaştırma `scratch/bina-layer-audit/report.txt` dosyasındadır; bu yerel kullanıcı verisi dağıtıma dahil edilmez.
+
+## 13. Kapı sınırları ve kesitten kat yüksekliği — 2026-11-05
+
+### Çift kanat kapı ve mahal sınırları
+
+Örnek projede açık kapı kanatları da tespit çizgilerine dahildi. Tek yayın ucunu en yakın çizgiye göre seçmek, kapalı geçiş doğrultusu yerine açık kanadı kapı sayabiliyordu. `AciklikTespitServisi` artık karşılıklı menteşe/yarıçapları ve ortak uçları uyuşan iki yayı tekil eşleştirir; bu durumda kapalı uçları kullanır. Kopya/belirsiz yaylar eşleşme oluşturmaz. Eşit olmayan kanat, hafif eksen sapması ve döndürülmüş çift kapı desteklenir. Fiziksel kapı kanıtı olmayan açıklığa duvar eklenmez.
+
+13 mimari katmanla örnek sonuçları:
+
+- 1. kat: 154,5 m² birleşik sınır, yaklaşık 36,5 m² hol + 117,7 m² taziye oturma alanına ayrıldı; oda adayı 13 → 14.
+- Zemin: 134,6 m² birleşik sınır, yaklaşık 115,5 m² taziye oturma alanı + 19,0 m² hole ayrıldı; oda adayı 21 → 22.
+- Giriş/merdiven/kafeterya gibi açık bağlantılı kullanım alanları rastgele bölünmez. Bir bağlı hacimdeki kaynak adları `BinaOda.KaynakMahalAdlari` içinde kalıcıdır; seçili oda panelinde görünür.
+
+### Kesit kanıtı ve kotlar
+
+`MimariKatYukseklikServisi.Cozumle`, plan kotlarını kesit/görünüşteki tekrarlı kotlarla eşleştirir. Metin konumlarının Y−kot referansı en fazla 12 cm aralıkta kalmalıdır; üst üste CAD kopyaları bağımsız tekrar sayılmaz. Açık plan kotu + düşey koordinat uyumu gerekir. Kesit yoksa veya ölçek/kat/blok ilişkisi belirsizse değer üretilmez. Başka kesitte doğrulanan ara kat, seyrek etiketli kesit üzerinden atlanamaz. İsimli blokların kesit eşleşmesi kurulmadan yükleyicinin kot-farkı yolu da katlar arasında ölçü taşımaz.
+
+Örnekte **zemin ana tabanı 0,00 m, 1. kat ana tabanı 4,00 m, çatı tabanı 8,00 m; iki kat aralığı 4,00 m**. Bunlar net oda yüksekliği değil, ana kat referanslarıdır. C-C kesitindeki +0/+4/+8 etiketlerinin düşey farkı yaklaşık 4,000/3,995 m; B-B ve A-A uygun seviyelerde ek kanıt sağlar. Kanıt metinleri ve koordinatları içe aktarma raporunda saklanır.
+
+Önemli katman ayrıntısı: B-B/C-C kotları **YAZI TEF** katmanındadır. Önceki 12 katmanlı maskeye bu katman eklenmelidir. Katman önizlemesi kot/yükseklik yazısı sayılarını tooltip ile gösterir ve ölçü yazısı taşıyan kapalı katmanları bildirir. Gizli katmanlar üretime gizlice dahil edilmez. Alt kot kanıtı kapalıyken görünür +1 m yerel kot bütün katın tabanı yapılmaz.
+
+### Yerel kot ve model uyumluluğu
+
+Şema **4**: `BinaOda.TabanKotuOverrideM` mutlak oda taban kotudur; null ise kat tabanı geçerlidir. 3D döşeme/duvar/tavan ve açıklık çizgileri bu kotu kullanır. Oda eşleştirme, geri al/ileri al ve kaydet/aç alanı korur. Seçili oda panelinde taban kotu ve yükseklik düzenlenebilir; boş değer kat değerine döner, geçersiz giriş önceki değeri korur.
+
+`YerelKotlariOku` oda içindeki çelişkisiz kotları aday olarak raporlar. Bir `+3.17` yazısı tek başına döşeme kanıtı değildir. Ana tabandan farklı değer, yalnız açık TABAN/DÖŞEME KOTU etiketi **ve** bağımsız net yükseklik bulunduğunda hacme otomatik uygulanır. Örneğin +1/+4,5 gibi kademeler ve +3,17 merdiven olasılığı, üst/net ölçü kesinleşmeden bütün hacme yayılmaz. Çatı tabanı çözüldü; çatı kabuğu/net yüksekliği üretilmedi ve çatı oda blokları gizli kalır.
+
+Yeni yerel çıktı: `scratch/bina-layer-audit/beylerbeyi-kot-ve-oda-duzeltmesi.e4bina.json`. Görsel inceleme: `scratch/bina-evidence/after-1.png`, `after-2.png`; kaynakla karşılaştırma: `before-1.png`, `before-2.png`. Kaynak DWG/DXF değişmedi.
+
+Doğrulama: katman 33, metin 67, açıklık yenileme 19, mevcut bina/VM 47, içe aktarma 9, kat 11, kalite 6, 3D 9, oda sınırı 11, yükseklik 25; **237 regresyon kontrolü**. Ayrıca **10 uçtan uca senaryo**, gerçek Beylerbeyi kaynağı dahil, kayıt/aç ve 3D tutarlılığını doğrular. Testler `tests/Bina*.Regression`; son kayıtlar `scratch/bina-import/oda-kot-*.txt`. Uygulama derlemesi 0 hata/0 uyarı. İzole güncel çalıştırılabilir: `scratch/bina-final-build/bin/Kst.Acoustics.App/debug/Kst.Acoustics.App.exe`.
+
+## 14. DWG okurken kapanma düzeltmesi — 2026-11-24
+
+`berecik.dwg` dönüşümü tamamlandıktan sonra `sta4cad App2` APPID kaydının kendisine bağlı XData'sı, netDxf `Insert.Explode → XData.Clone → ApplicationRegistry.Clone` zincirinde sonsuz özyinelemeye neden oluyordu. Windows hata kodu `0xc00000fd`; bu yığın taşması normal `catch` ile yakalanamaz.
+
+`DxfKatPlaniParser` içindeki dört dosya okuma girişi ortak `GeometriBelgesiniOku` yöntemini kullanır. Bina geometrisi hesabında kullanılmayan APPID düzeyi XData yalnız bellekte temizlenir; nesne XData'sı, çizgi/metin, katmanlar ve kaynak CAD dosyası korunur.
+
+Doğrulama: `BinaKatman.Regression` **49/49** geçti; yeni 16 kontrol kendine referans ve iki APPID arasındaki döngüleri, blok koordinatlarını, oda alanını, dört okuma yolunu ve kaynak dosyanın değişmediğini kapsar. Gerçek DWG dönüşüm/okuma testi 17 katman, 99.343 çizgi parçası ve 111 metinle tamamlandı. Varsayılan katman seçiminde otomatik kat ayırma güvenilir plan bulamadı (0 kat); bu sonuç kapanma düzeltmesinden ayrı bir anlamlandırma sınırıdır. Ekran üzerinden test, bilgisayar kullanımı aracının uygulama erişimine izin vermemesi nedeniyle yapılamadı. Kayıtlar: `scratch/berecik-repro/`.
+
+## 15. Rapordan kaynak çizimi inceleme — 2026-11-24
+
+İçe aktarma raporundaki **Çizimi incele** eskiden yalnız raporu kapatıyordu. Kat üretilemeyince geride boş bina ekranı kalıyordu. Artık bu düğme `MimariCizimIncelemeWindow` içinde seçili katmanların çizgi ve yazılarını gösterir; yakınlaştırma, kaydırma, ekrana sığdırma ve rapora dönüş desteklenir. Raporu kapatmak için ayrı **Kapat** düğmesi vardır.
+
+Son içe aktarmanın çizimi ve raporu oturum belleğinde saklanır. Sıfır kat üretilse veya geçici DXF silinse bile **İçe Aktarma Raporu** yeniden açıldığında aynı kaynak çizim incelenebilir. Yeni bina veya başka bina dosyası açıldığında bu önbellek temizlenir. Kaydedilmiş binalarda ham veri yoksa seçili katın kayıtlı DXF çizgileri kullanılır. İncelenecek veri yoksa düğme devre dışıdır ve nedenini açıklayan metin görünür.
+
+`BinaDrawingReview.Regression`: **24/24 kontrol** geçti. Avalonia Headless + Skia ile düğme olayları, gerçek önizleme penceresi, tekrar açma/kapama, kaynak dosyasız/sıfır odalı görünüm ve kaydedilmiş kat çizgileri doğrulandı. Gerçek `berecik` çizimi 17 katman, 99.343 çizgi parçası ve 111 yazıyla render edildi; görsel `outputs/drawing-review-tests/berecik.png`. Bu değişiklik otomatik kat ayırma kurallarını değiştirmez.
+
+## 16. Windows katman önizlemesi donması — 2026-11-24
+
+`berecik.dwg` içindeki 99.343 ayrık çizginin tek `StreamGeometry` içinde çizilmesi Windows'ta yerel Skia çizimini kilitliyordu. Gerçek Windows regresyonunda `READY` sonrasında arayüz durdu; yığın örneğinde render iş parçacığı `SKCanvas.DrawPath`, UI iş parçacığı `MediaContext.SyncWaitCompositorBatch` içinde bekliyordu. Headless bitmap testi bu yolu kapsamadığından önceki kontrolde görülmedi.
+
+`MimariKatmanOnizlemeCanvas` şimdi çizgileri en fazla 256 parçalık geometri gruplarında tutar ve yalnız görünümle kesişen grupları çizer. Çizgi/metin verisi eksiltilmez; katman seçimi ve rapor önizlemesi aynı kontrolü kullanır.
+
+Doğrulama: `BinaDrawingReview.Regression` **24/24**. Ek `--native <DXF>` modu üretim teması ve gerçek Windows compositor ile katman penceresini açar, 16 zoom olayı, üç tümünü kapat/aç çevrimi, yeniden boyutlandırma ve ekrana sığdırmayı çalıştırır; dispatcher nabzını ölçer. Düzeltme sonrasında test tamamlandı: 50 nabız, en büyük aralık **469 ms**. Donma öncesi yığın ve sonraki sonuçlar `outputs/native-preview-before.stack.txt`, `outputs/native-preview-after.log`; görüntü `outputs/drawing-review-tests/berecik.png`.

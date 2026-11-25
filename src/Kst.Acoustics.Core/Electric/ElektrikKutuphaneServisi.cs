@@ -113,6 +113,9 @@ public class ElektrikKutuphaneServisi
         foreach (var v in VarsayilanYukTipleri())
             if (!mevcut.Contains(v.Ad))
                 YukTipleri.Add(v);
+        // Faz alanı olmayan eski kayıtlar addan tamamlanır; kütüphane kaydedilince kalıcı olur.
+        foreach (var y in YukTipleri)
+            y.VarsayilanFazTipi ??= YukTipiTanim.AddanFazTahmini(y.Ad);
     }
 
     /// <summary>
@@ -305,12 +308,12 @@ public class ElektrikKutuphaneServisi
 
     private static List<YukTipiTanim> VarsayilanYukTipleri() => new()
     {
-        new() { Ad = "Aydınlatma",       BirimGucW = 40,   SigortaCinsi = "B", TalepFaktoru = 1.0 },
-        new() { Ad = "Priz",              BirimGucW = 300,  SigortaCinsi = "B", TalepFaktoru = 1.0 },
-        new() { Ad = "Islak Hacim Priz",  BirimGucW = 300,  SigortaCinsi = "B", TalepFaktoru = 1.0 },
-        new() { Ad = "Mekanik",           BirimGucW = 200,  SigortaCinsi = "B", TalepFaktoru = 1.0 },
-        new() { Ad = "Motor (3 Faz)",     BirimGucW = 0,    SigortaCinsi = "C", TalepFaktoru = 1.0 },
-        new() { Ad = "Özel Yük",          BirimGucW = 0,    SigortaCinsi = "B", TalepFaktoru = 1.0 },
+        new() { Ad = "Aydınlatma",       BirimGucW = 40,   SigortaCinsi = "B", TalepFaktoru = 1.0, VarsayilanFazTipi = FazTipi.Monofaze },
+        new() { Ad = "Priz",              BirimGucW = 300,  SigortaCinsi = "B", TalepFaktoru = 1.0, VarsayilanFazTipi = FazTipi.Monofaze },
+        new() { Ad = "Islak Hacim Priz",  BirimGucW = 300,  SigortaCinsi = "B", TalepFaktoru = 1.0, VarsayilanFazTipi = FazTipi.Monofaze },
+        new() { Ad = "Mekanik",           BirimGucW = 200,  SigortaCinsi = "B", TalepFaktoru = 1.0, VarsayilanFazTipi = FazTipi.Monofaze },
+        new() { Ad = "Motor (3 Faz)",     BirimGucW = 0,    SigortaCinsi = "C", TalepFaktoru = 1.0, VarsayilanFazTipi = FazTipi.Trifaze },
+        new() { Ad = "Özel Yük",          BirimGucW = 0,    SigortaCinsi = "B", TalepFaktoru = 1.0, VarsayilanFazTipi = FazTipi.Monofaze },
     };
 
     private static List<KacakAkimRolesiTanim> VarsayilanKarlar() => new()

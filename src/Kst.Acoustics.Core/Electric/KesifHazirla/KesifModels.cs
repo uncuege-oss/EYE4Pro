@@ -151,9 +151,12 @@ public sealed class KesifTablosu : KesifObservable
 {
     private string _ad = "Keşif Tablosu";
     private string _not = "";
+    private bool _tamamlandiMi;
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Ad { get => _ad; set => SetProperty(ref _ad, value); }
+    /// <summary>Manuel tamamlanma ve düzenleme kilidi. Alt tabloların tikleri bağımsızdır; üst tablo kilidi altlara da uygulanır.</summary>
+    public bool TamamlandiMi { get => _tamamlandiMi; set => SetProperty(ref _tamamlandiMi, value); }
     public ObservableCollection<KesifSatir> Satirlar { get; set; } = new();
 
     /// <summary>Alt keşif tabloları (en fazla 3 seviye: tablo → alt tablo → alt tablonun alt tablosu).
@@ -219,6 +222,14 @@ public static class KesifTabloAgaci
     /// <summary>Verilen tablonun ebeveynini bulur; en üst seviyedeyse null.</summary>
     public static KesifTablosu? Ebeveyn(KesifProje proje, KesifTablosu hedef)
         => TumTablolar(proje).FirstOrDefault(t => t.AltTablolar.Contains(hedef));
+
+    /// <summary>Tamamlanmış tablo ve onun altındaki tüm tablolar düzenlemeye kapalıdır.</summary>
+    public static bool KilitliMi(KesifProje proje, KesifTablosu tablo)
+    {
+        for (KesifTablosu? t = tablo; t is not null; t = Ebeveyn(proje, t))
+            if (t.TamamlandiMi) return true;
+        return false;
+    }
 
     /// <summary>1 tabanlı seviye (en üst = 1).</summary>
     public static int Derinlik(KesifProje proje, KesifTablosu hedef)
@@ -303,6 +314,8 @@ public sealed class KesifReferansDosyasi : KesifObservable
     public string SayfaAdi { get => _sayfaAdi; set => SetProperty(ref _sayfaAdi, value); }
     public DateTime YuklemeTarihi { get; set; } = DateTime.Now;
     public ObservableCollection<KesifMetrajSatiri> MetrajSatirlari { get; set; } = new();
+    /// <summary>Referansın ilk aktarımında seçilen yaprak tablo. Yeniden işlemede seçimden bağımsız korunur.</summary>
+    public Guid? HedefTabloId { get; set; }
     [JsonIgnore] public int SatirSayisi => MetrajSatirlari.Count;
 }
 
@@ -352,6 +365,7 @@ public static class KesifEslemeAnahtar
 
 public sealed class KesifIcmalKirilim
 {
+    public Guid TabloId { get; init; }
     public string TabloAdi { get; init; } = "";
     public decimal Miktar { get; init; }
     public decimal Tutar { get; init; }

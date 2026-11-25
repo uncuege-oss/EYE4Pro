@@ -1,218 +1,191 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Kst.Acoustics.Core.Common.Geometry;
-using Kst.Acoustics.Core.Projects;
+using Kst.Acoustics.App.Terrain.Rendering;
 using Kst.Acoustics.Core.Terrain.Models;
 using Kst.Acoustics.Core.Terrain.Services;
 
 namespace Kst.Acoustics.App.Terrain.Views;
 
-/// M60 — Hafriyat Hesapla penceresi. DXF arazi yükler, TIN'i izometrik gösterir,
-/// hedef kota göre yarma/dolgu hesaplar ve .e4arazi.json olarak kaydeder.
-/// MVP: tasarım bölgesi = tüm arazi alanı (sınır kutusu) tek platform.
+/// <summary>Çok bölgeli arazi tesviyesi: kot, kenar şevi/dik kesim, önizleme ve hafriyat.</summary>
 public partial class HafriyatWindow : Window
 {
     private readonly Func<Window>? _geriDon;
     private AraziModeli? _arazi;
     private AraziYuzeyi? _yuzey;
+    private string? _acikProjeYolu;
+    private AraziKotIndeksi? _kotIndeksi;
+    private AraziTesviyeServisi? _tesviye;
+    private TerrainMesh? _mevcutAg;
+    private sealed record Onizleme(TerrainMesh Ag, double OrneklemeAraligiM, IReadOnlyList<string> Uyarilar);
+    private Onizleme? _onizleme;
+    private int[]? _renkler;
+    private bool _mesgul, _kuruluyor = true;
+    private readonly CancellationTokenSource _kapanis = new();
 
-    // Avalonia AXAML loader için zorunlu.
     public HafriyatWindow() : this(null) { }
-
     public HafriyatWindow(Func<Window>? geriDon)
     {
-        InitializeComponent();
-        _geriDon = geriDon;
+        InitializeComponent(); _geriDon = geriDon;
+        Plan.KonumDegisti = s => KonumText.Text = s;
+        Plan.CizimDegisti = () => KonumText.Text = $"{Plan.CizimNoktalari.Count} köşe seçildi. Tamamla ile bölgeyi oluşturun.";
+        Plan.BolgeSecildi = id => BolgeSec(id);
+        Plan.KenarSecildi = (id, kenar) => BolgeSec(id, kenar);
+        Plan.SinirDegisti = async (id, noktalar) => await SinirDuzenleAsync(id, noktalar);
+        Plan.KotSecildi = kot => { HedefKotBox.Text = kot.ToString("0.###", CultureInfo.InvariantCulture); DurumText.Text = $"Araziden {kot:0.###} m alındı. Bölgeyi Uygula ile hedef kota geçirin."; };
+        Opened += (_, _) =>
+        {
+            var ekran = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+            if (ekran != null && WindowState == WindowState.Normal && WindowStartupLocation == WindowStartupLocation.CenterScreen &&
+                (Width > ekran.WorkingArea.Width / ekran.Scaling || Height + 40 > ekran.WorkingArea.Height / ekran.Scaling))
+                WindowState = WindowState.Maximized;
+        };
+        Closed += (_, _) => { _kapanis.Cancel(); Onizleme3D.Dispose(); };
+        _kuruluyor = false; GecmisButonlari();
     }
 
-    private async void DxfYukle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void DxfYukle_OnClick(object? sender, RoutedEventArgs e)
     {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "DXF Arazi Dosyası Seç",
-            AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("DXF Dosyaları") { Patterns = ["*.dxf"] }]
-        });
-        var path = files.Count > 0 ? files[0].Path.LocalPath : null;
-        if (string.IsNullOrWhiteSpace(path)) return;
-
-        DurumText.Text = "DXF arazi yükleniyor ve TIN üretiliyor…";
+        if (_mesgul || !BekleyenFormYok()) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
+            Title = "DWG / DXF Arazi Dosyası Seç", AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("CAD Arazi Dosyaları") { Patterns = ["*.dwg", "*.dxf"] }] });
+        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        if (!string.IsNullOrWhiteSpace(path)) await CadYukleAsync(path);
+    }
+    public async Task CadYukleAsync(string path)
+    {
+        if (_mesgul) return;
+        Mesgul(true, "CAD dosyası okunuyor…");
         try
         {
-            var (arazi, yuzey, uyarilar) = await Task.Run(() =>
-            {
-                var sonuc = new DxfAraziParser().Parse(path);
-                var y = new AraziYuzeyServisi().Olustur(sonuc.Arazi);
-                return (sonuc.Arazi, y, sonuc.Uyarilar);
-            });
-
-            _arazi = arazi;
-            _yuzey = yuzey;
-            Onizleme3D.HitIntensityMap = null; // önceki renk haritasını temizle
-            Onizleme3D.Surfaces = Arazi3DGorunumServisi.YuzeyleriOlustur(yuzey);
-            RaporText.Text = "Arazi yüklendi. Hedef kot girip Hesapla'ya basın.";
-
-            string uyari = uyarilar.Count > 0 ? "  Uyarı: " + string.Join(" ", uyarilar) : "";
-            DurumText.Text =
-                $"{arazi.Noktalar.Count} nokta, {arazi.Konturlar.Count} kontur, " +
-                $"{yuzey.Dugumler.Count} düğüm, {yuzey.Ucgenler.Count} üçgen.{uyari}";
+            var proje = await AraziProjeOkuyucu.AcAsync(this, path, _kapanis.Token);
+            if (proje == null) { DurumText.Text = "İçe aktarma iptal edildi."; return; }
+            await AraziGosterAsync(proje.Model, proje.Yuzey, path);
+            ImportText.Text = KaynakOzeti(proje.Model) + $"{proje.Model.Noktalar.Count} kot noktası, {proje.Model.Konturlar.Count} kontur\n" + string.Join("\n", proje.Uyarilar);
+            DurumText.Text = "Mevcut arazi hazır. + Bölge Çiz veya + Dikdörtgen ile başlayın.";
         }
-        catch (Exception ex)
-        {
-            DurumText.Text = "DXF yüklenemedi: " + ex.Message;
-        }
+        catch (Exception ex) { DurumText.Text = "Arazi yüklenemedi: " + ex.Message; }
+        finally { Mesgul(false); }
     }
 
-    private void Hesapla_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void AraziAc_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (_arazi is null || _yuzey is null || _yuzey.Ucgenler.Count == 0)
-        {
-            DurumText.Text = "Önce geçerli bir DXF arazi yükleyin.";
-            return;
-        }
-
-        if (!Sayi(HedefKotBox.Text, out double hedefKot))
-        {
-            DurumText.Text = "Hedef kot geçersiz.";
-            return;
-        }
-        Sayi(KabarmaBox.Text, out double kabarma);
-        Sayi(SikismaBox.Text, out double sikisma);
-
-        // Tasarım: arazi sınır kutusunu kapsayan tek platform.
-        var sinir = SinirPoligonu(_yuzey);
-        if (sinir is null)
-        {
-            DurumText.Text = "Arazi sınırı belirlenemedi.";
-            return;
-        }
-
-        var tasarim = new TasarimYuzeyi();
-        tasarim.Bolgeler.Add(new TasarimBolgesi
-        {
-            Ad = "Platform",
-            Tip = TasarimBolgeTipi.Platform,
-            HedefKotM = hedefKot,
-            Poligon = sinir
-        });
-        _arazi.Tasarim = tasarim;
-
-        double grid = GridAraligiSec(sinir);
-        var sonuc = new HafriyatHesabiServisi { GridAraligiM = grid }.Hesapla(_yuzey, tasarim);
-        var rapor = HafriyatRaporServisi.Olustur(sonuc,
-            new HafriyatKatsayilari { KabarmaYuzdesi = kabarma, SikismaYuzdesi = sikisma });
-
-        RaporText.Text = rapor.Ozet;
-
-        // Önizlemeye platformu da ekle ve yarma/dolgu renk haritasını uygula.
-        var yuzeyler = Arazi3DGorunumServisi.YuzeyleriOlustur(_yuzey);
-        Onizleme3D.HitIntensityMap = Arazi3DGorunumServisi.HafriyatRenkHaritasi(_yuzey, tasarim);
-        yuzeyler.AddRange(Arazi3DGorunumServisi.PlatformYuzeyleri(tasarim));
-        Onizleme3D.Surfaces = yuzeyler;
-
-        DurumText.Text =
-            $"Hesaplandı (ızgara {grid:0.##} m): yarma {sonuc.YarmaHacmiM3:N0} m³, " +
-            $"dolgu {sonuc.DolguHacmiM3:N0} m³, net {sonuc.NetHacimM3:N0} m³.";
+        if (_mesgul || !BekleyenFormYok()) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
+            Title = "Arazi Projesi Aç", AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("EYE4PRO Arazi") { Patterns = ["*.e4arazi.json", "*.e4p60"] }] });
+        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        if (!string.IsNullOrWhiteSpace(path)) await AraziYukleAsync(path);
     }
-
-    private async void AraziKaydet_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    public async Task AraziYukleAsync(string path)
     {
-        if (_arazi is null)
-        {
-            DurumText.Text = "Kaydedilecek arazi yok.";
-            return;
-        }
-
-        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = "Arazi Kaydet",
-            DefaultExtension = "e4arazi.json",
-            SuggestedFileName = string.IsNullOrWhiteSpace(_arazi.AraziAdi) ? "arazi" : _arazi.AraziAdi,
-            FileTypeChoices = [new FilePickerFileType("EYE4PRO Arazi (.e4arazi.json)") { Patterns = ["*.e4arazi.json"] }]
-        });
-        var path = file?.Path.LocalPath;
-        if (string.IsNullOrWhiteSpace(path)) return;
-
+        if (_mesgul) return;
+        Mesgul(true, "Arazi ve tasarım yükleniyor…");
         try
         {
-            AraziGeometriServisi.Kaydet(_arazi, path);
-            DurumText.Text = $"Kaydedildi (revizyon {_arazi.GeometriRevizyon}): {path}";
+            var proje = await AraziProjeOkuyucu.AcAsync(this, path, _kapanis.Token);
+            if (proje == null) { DurumText.Text = "İçe aktarma iptal edildi."; return; }
+            var arazi = proje.Model;
+            await AraziGosterAsync(arazi, proje.Yuzey, path);
+            ImportText.Text = KaynakOzeti(arazi) + $"{arazi.Konturlar.Count:N0} kontur · Revizyon {arazi.GeometriRevizyon}";
+            DurumText.Text = $"{arazi.Tasarim.Bolgeler.Count} tasarım bölgesi yüklendi. Mevcut zemin korunuyor.";
         }
-        catch (Exception ex)
+        catch (Exception ex) { DurumText.Text = "Arazi açılamadı: " + ex.Message; }
+        finally { Mesgul(false); }
+    }
+    private async Task AraziGosterAsync(AraziModeli arazi, AraziYuzeyi yuzey, string path)
+    {
+        var hazir = await Task.Run(() => {
+            var ozet = AraziTasarimServisi.Ozetle(yuzey);
+            var indeks = new AraziKotIndeksi(yuzey);
+            var tesviye = new AraziTesviyeServisi(indeks, arazi.Tasarim);
+            return (ozet, tesviye, ag: TerrainMesh.Measured(yuzey), indeks);
+        }, _kapanis.Token);
+        _kuruluyor = true;
+        try
         {
-            DurumText.Text = "Kaydedilemedi: " + ex.Message;
+            _arazi = arazi; _yuzey = yuzey; _acikProjeYolu = path; _tesviye = hazir.tesviye; _kotIndeksi = hazir.indeks;
+            _mevcutAg = hazir.ag; _onizleme = null; _renkler = null;
+            Onizleme3D.Scene(_mevcutAg, null, false, reset: true);
+            _geri.Clear(); _ileri.Clear(); _formKirli = false; _seciliId = null; _seciliKenar = -1;
+            Plan.Yukle(yuzey); Plan.Tasarim = arazi.Tasarim;
+            DosyaText.Text = string.IsNullOrWhiteSpace(arazi.AraziAdi) ? Path.GetFileName(path) : arazi.AraziAdi;
+            OzetText.Text = $"{yuzey.Dugumler.Count:N0} düğüm · {yuzey.Ucgenler.Count:N0} üçgen · Kot {hazir.ozet.MinKotM:0.00} – {hazir.ozet.MaxKotM:0.00} m";
+            GridBox.Text = Math.Max(.1, Math.Min(2, GridAraligiSec(hazir.ozet.SinirPoligonu))).ToString("0.###", CultureInfo.InvariantCulture);
+            _hesapImzasi = HesapImzasi();
+            YuzeyGorunumBox.SelectedIndex = 0;
+            BolgeListesiniGuncelle(arazi.Tasarim.Bolgeler.FirstOrDefault()?.Id);
+            SonucuTemizle();
         }
+        finally { _kuruluyor = false; }
+        GorunumuUygula(); GecmisButonlari();
+        if (arazi.Tasarim.Bolgeler.Count > 0) await OnizlemeHazirlaAsync();
     }
 
-    private void Geri_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void AraziKaydet_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (_geriDon is null) { Close(); return; }
-        OpenWindowOnSameScreen(_geriDon());
+        if (_arazi == null || _mesgul || !BekleyenFormYok()) return;
+        if (Plan.CizimModu) { DurumText.Text = "Kaydetmeden önce bölge çizimini tamamlayın veya iptal edin."; return; }
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions {
+            Title = "Arazi ve Çok Bölgeli Tasarımı Kaydet", DefaultExtension = "e4arazi.json",
+            SuggestedFileName = (_arazi.AraziAdi.Length == 0 ? "arazi" : _arazi.AraziAdi) + "-tasarim.e4arazi.json",
+            FileTypeChoices = [new FilePickerFileType("EYE4PRO Arazi") { Patterns = ["*.e4arazi.json"] }] });
+        var path = file?.TryGetLocalPath(); if (string.IsNullOrWhiteSpace(path)) return;
+        try { AraziGeometriServisi.Kaydet(_arazi, path); DurumText.Text = $"Arazi ve {_arazi.Tasarim.Bolgeler.Count} tasarım bölgesi kaydedildi: {path}"; }
+        catch (Exception ex) { DurumText.Text = "Kaydedilemedi: " + ex.Message; }
     }
-
-    // ── Yardımcılar ───────────────────────────────────────────────────────────
-
-    private static bool Sayi(string? metin, out double deger)
+    private async void KotlariKaydet_OnClick(object? sender, RoutedEventArgs e)
     {
-        deger = 0;
-        if (string.IsNullOrWhiteSpace(metin)) return false;
-        var s = metin.Trim().Replace(',', '.');
-        return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out deger);
-    }
-
-    private static List<Point2D>? SinirPoligonu(AraziYuzeyi yuzey)
-    {
-        if (yuzey.Dugumler.Count == 0) return null;
-        double minX = double.MaxValue, minY = double.MaxValue, maxX = double.MinValue, maxY = double.MinValue;
-        foreach (var d in yuzey.Dugumler)
+        if (_yuzey == null || _mesgul) return;
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions {
+            Title = "Mevcut Arazi Kotları", DefaultExtension = "csv", SuggestedFileName = "mevcut-arazi-kotlari.csv",
+            FileTypeChoices = [new FilePickerFileType("CSV") { Patterns = ["*.csv"] }] });
+        var path = file?.TryGetLocalPath(); if (string.IsNullOrWhiteSpace(path)) return;
+        try
         {
-            if (d.X < minX) minX = d.X;
-            if (d.Y < minY) minY = d.Y;
-            if (d.X > maxX) maxX = d.X;
-            if (d.Y > maxY) maxY = d.Y;
+            var sb = new StringBuilder("No;X_m;Y_m;Z_m\n"); int i = 1;
+            foreach (var p in _yuzey.Dugumler) sb.AppendLine(FormattableString.Invariant($"{i++};{p.X:0.######};{p.Y:0.######};{p.Z:0.######}"));
+            await File.WriteAllTextAsync(path, sb.ToString(), new UTF8Encoding(true));
+            DurumText.Text = "Mevcut arazi kotları kaydedildi.";
         }
-        if (maxX <= minX || maxY <= minY) return null;
-        return new List<Point2D> { new(minX, minY), new(maxX, minY), new(maxX, maxY), new(minX, maxY) };
+        catch (Exception ex) { DurumText.Text = "Kotlar kaydedilemedi: " + ex.Message; }
     }
 
-    // Hücre sayısını ~150×150 ile sınırlamak için ızgara aralığı seçer.
-    private static double GridAraligiSec(List<Point2D> sinir)
+    private void Mesgul(bool value, string? mesaj = null)
     {
-        double genislik = sinir[1].X - sinir[0].X;
-        double yukseklik = sinir[2].Y - sinir[1].Y;
-        double enBuyuk = Math.Max(genislik, yukseklik);
-        double grid = enBuyuk / 150.0;
-        return grid < 0.5 ? 0.5 : grid;
+        _mesgul = value;
+        DosyaAraclari.IsEnabled = PlanAraclari.IsEnabled = TasarimPanel.IsEnabled = HesapAyarlari.IsEnabled = HesaplaButton.IsEnabled = YuzeyGorunumBox.IsEnabled = Plan.IsEnabled = !value;
+        if (mesaj != null) DurumText.Text = mesaj;
+        if (!value) GecmisButonlari();
+    }
+    private static bool Sayi(string? s, out double d) =>
+        double.TryParse(s?.Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out d) && double.IsFinite(d);
+    private static string KaynakOzeti(AraziModeli arazi) => arazi.Kaynak is { } k
+        ? $"Kaynak CAD: {Path.GetFileName(k.DosyaYolu)}\nÖlçek: 1 birim = {k.MetrePerBirim:G} m\nKatmanlar: {string.Join(", ", k.Katmanlar)}\n" : "";
+    private static double GridAraligiSec(IReadOnlyList<Point2D> sinir) =>
+        Math.Max(.05, Math.Max(sinir.Max(p => p.X) - sinir.Min(p => p.X), sinir.Max(p => p.Y) - sinir.Min(p => p.Y)) / 120);
+    private async void Karsilastir_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (_mesgul || !BekleyenFormYok()) return;
+        var ilk = _arazi != null && _yuzey != null && _acikProjeYolu != null
+            ? new YuklenenArazi(_acikProjeYolu, _arazi, _yuzey, []) : null;
+        var pencere = new AraziKarsilastirmaWindow(ilk);
+        Kst.Acoustics.App.Views.WindowNavigation.CopyPlacement(this, pencere);
+        await pencere.ShowDialog(this);
     }
 
-    private void OpenWindowOnSameScreen(Window win)
+    private void Geri_OnClick(object? sender, RoutedEventArgs e)
     {
-        win.WindowStartupLocation = WindowStartupLocation.Manual;
-        var screen = this.Screens?.ScreenFromWindow(this);
-        if (screen != null)
-        {
-            var area = screen.WorkingArea;
-            int w = (int)(double.IsNaN(win.Width) || win.Width < 100 ? 1200 : win.Width);
-            int h = (int)(double.IsNaN(win.Height) || win.Height < 100 ? 800 : win.Height);
-            w = Math.Min(w, area.Width);
-            h = Math.Min(h, area.Height);
-            win.Position = new PixelPoint(area.X + (area.Width - w) / 2, area.Y + (area.Height - h) / 2);
-        }
-        else
-        {
-            win.Position = this.Position;
-        }
-
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = win;
-        win.Show();
-        Close();
+        if (_mesgul || !BekleyenFormYok()) return;
+        if (_geriDon == null) { Close(); return; }
+        var win = _geriDon(); Kst.Acoustics.App.Views.WindowNavigation.CopyPlacement(this, win);
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.MainWindow = win;
+        win.Show(); Close();
     }
 }

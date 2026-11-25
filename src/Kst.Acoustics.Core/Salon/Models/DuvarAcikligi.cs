@@ -5,15 +5,16 @@ namespace Kst.Acoustics.Core.Salon.Models;
 /// Açıklık türü.
 public enum AciklikTipi { Kapi, Pencere }
 
-/// Duvar açıklığı (kapı/pencere). Bir duvara Id ile değil, **plan konumuyla** bağlanır:
-/// 3D üretiminde merkez noktası hangi duvar segmentinin üzerindeyse (tolerans içinde)
-/// o duvardan delik açılır ve delik, açıklığın kendi kategorisiyle ("Kapı"/"Pencere")
-/// yüzey olarak doldurulur — kabuk sızdırmaz kalır, M01'de ayrı malzeme atanır.
-/// Konum-tabanlı bağ, trim/yeniden çizim sonrasında da çalışır (M12 yerleşim deseni).
+/// Duvar açıklığı: serbest tasarımda kalıcı nesne/kenar kimliği ve kenar oranı ile bağlıdır.
+/// Merkez koordinatları bağdan hesaplanır; eski dosyalarda konumsal eşleştirme kullanılır.
+/// Açıklık ayrı malzeme kategorisiyle kaplanır; akustik kabuk kapalı kalır.
 public class DuvarAcikligi : IDuvarAcikligi
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Ad { get; set; } = "Kapı";
+    public string? DuvarId { get; set; }
+    public string? KenarId { get; set; }
+    public double KenarOrani { get; set; }
     public AciklikTipi Tip { get; set; } = AciklikTipi.Kapi;
 
     /// Açıklık merkezinin plan konumu (duvar çizgisi üzerinde, m).

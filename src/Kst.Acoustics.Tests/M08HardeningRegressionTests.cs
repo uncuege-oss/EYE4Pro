@@ -406,13 +406,13 @@ public static class M08HardeningRegressionTests
                     seedPath,
                     directoryAsFile);
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 threw = true;
             }
 
             if (!threw)
-                throw new InvalidOperationException("Yazma hatası yutulmamalı; çağırana IOException ulaşmalı.");
+                throw new InvalidOperationException("Yazma hatası yutulmamalı; çağırana dosya erişim hatası ulaşmalı.");
         }
         finally
         {

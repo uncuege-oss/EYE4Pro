@@ -18,22 +18,42 @@ public partial class BasitProjeCizViewModel
 
     // ── Otomatik yerleştirme ─────────────────────────────────────────────────
 
-    // Varsayılan: işaretsiz = tam yenileme (codex12 §5 kararı, 2026-06-17).
-    // MahalListesiWindow'daki checkbox ile İKİ YÖNLÜ senkron tutulur — ana
-    // penceredeki "Mahalden Otomatik Yerleştir" butonu da aynı değeri kullanır;
-    // iki giriş noktası farklı davranamaz.
-    [ObservableProperty] private bool _sadecaEksikleriEkle;
+    // Aydınlatma ve priz adımları varsayılan olarak eksikleri tamamlar. Kullanıcının
+    // açık tercihini ana pencere ve mahal listesi ortak kullanır.
+    private bool? _sadecaEksikleriEkle;
+    public bool SadecaEksikleriEkle
+    {
+        get => _sadecaEksikleriEkle ?? AsamaliPaftaAktif;
+        set
+        {
+            if (SetProperty(ref _sadecaEksikleriEkle, value))
+                OnPropertyChanged(nameof(YerlestirModuAciklama));
+        }
+    }
 
     /// Ana penceredeki yerleştir butonunun tooltip'i — aktif mod gizli kalmasın.
     public string YerlestirModuAciklama => SadecaEksikleriEkle
         ? "Mod: yalnız eksikleri ekler — mevcut otomatik elemanlar korunur."
         : "Mod: TAM YENİLEME — eski otomatik elemanlar silinip mahal listesine göre yeniden yerleştirilir (bağlı kablolar da silinir).";
 
-    partial void OnSadecaEksikleriEkleChanged(bool value)
-        => OnPropertyChanged(nameof(YerlestirModuAciklama));
+    private BpcAydinlatmaAsamasi? YerlesimAsamasi => AydinlatmaAkisiAktif ? AydinlatmaAsamasi : null;
+    private BpcPaftaTipi? YerlesimPaftasi => ModulZayifMi || AydinlatmaAkisiAktif ? null : AktifPafta;
+
+    public bool MahalKalemiGorunurMu(BpcElemanTipi tip) =>
+        (!PrizAkisiAktif || PrizAsamasi == BpcPrizAsamasi.Priz) &&
+        BasitProjeCizOtomatikYerlestirServisi.MahalKalemiMi(tip, YerlesimAsamasi, YerlesimPaftasi);
+
+    private bool YerlesimElemaniMi(BasitProjeEleman eleman)
+    {
+        if (AsamaliPaftaAktif) return AsamadaDuzenlenebilir(eleman);
+        return MahalKalemiGorunurMu(eleman.Tip);
+    }
 
     [RelayCommand]
     private void MahalListesindenOtomatikYerlestir()
+        => MahalYerlesiminiUygula(snapshotAl: true);
+
+    private void MahalYerlesiminiUygula(bool snapshotAl)
     {
         var kat = SeciliKat;
         if (kat is null) return;
@@ -43,8 +63,22 @@ public partial class BasitProjeCizViewModel
             return;
         }
 
-        ElemanSnapshotAl(kat);
-
+        if (AydinlatmaAkisiAktif && AydinlatmaAsamasi is not
+            (BpcAydinlatmaAsamasi.Armatur or BpcAydinlatmaAsamasi.Anahtar or BpcAydinlatmaAsamasi.Buat))
+        {
+            DurumMesaji = "Otomatik yerleşim için armatür, anahtar veya buat adımını seçin.";
+            return;
+        }
+        if (PrizAkisiAktif && PrizAsamasi is not (BpcPrizAsamasi.Priz or BpcPrizAsamasi.Buat))
+        {
+            DurumMesaji = "Otomatik yerleşim için priz veya buat adımını seçin.";
+            return;
+        }
+        if (snapshotAl && !AsamaliPaftaAktif)
+        {
+            ElemanSnapshotAl(kat);
+            snapshotAl = false;
+        }
         int silinenEleman = 0;
         int oncekiKablo = kat.Kablolar.Count;
         if (!SadecaEksikleriEkle)
@@ -52,8 +86,10 @@ public partial class BasitProjeCizViewModel
             // Yalnız mahal listesinden otomatik üretilen elemanları temizle; manuel
             // semboller ve elle taşınmış (kaynağı temizlenmiş) elemanlar korunur.
             var eskiler = kat.Elemanlar
-                .Where(e => e.OtomatikYerlesimKaynak == BasitProjeCizOtomatikYerlestirServisi.MahalListesiKaynak)
+                .Where(e => e.OtomatikYerlesimKaynak == BasitProjeCizOtomatikYerlestirServisi.MahalListesiKaynak
+                    && YerlesimElemaniMi(e))
                 .ToList();
+            if (snapshotAl && eskiler.Count > 0) ElemanSnapshotAl(kat);
             foreach (var e in eskiler) ElemanSil(e);
             silinenEleman = eskiler.Count;
         }
@@ -63,8 +99,10 @@ public partial class BasitProjeCizViewModel
         var tavaniAcik = TavaniAcikOdaIdleri(kat);
 
         var (yeni, uyarilar) = _yerlestir.TumMahalListesindenYerlestir(
-            kat, _kutuphane, SadecaEksikleriEkle, tavaniAcik);
+            kat, _kutuphane, SadecaEksikleriEkle, tavaniAcik, YerlesimAsamasi, YerlesimPaftasi,
+            PrizAkisiAktif ? PrizAsamasi : null);
 
+        if (snapshotAl && silinenEleman == 0 && yeni.Count > 0) ElemanSnapshotAl(kat);
         foreach (var e in yeni) kat.Elemanlar.Add(e);
 
         string yenilemeNotu = silinenEleman > 0
@@ -89,7 +127,12 @@ public partial class BasitProjeCizViewModel
         if (panelSatirlari.Count > 0)
             UyariGoster("Yerleştirme uyarıları:\n• " + string.Join("\n• ", panelSatirlari));
 
-        Guncelle3DGorunum();
+        if (silinenEleman > 0 || yeni.Count > 0)
+        {
+            GuncelleFiltrelenmisElemanlar();
+            GuncelleKabloGorunum();
+            Guncelle3DGorunum();
+        }
     }
 
     // ── Mahal listesi üretkenlik komutları (codex12 §20) ─────────────────────
@@ -102,7 +145,7 @@ public partial class BasitProjeCizViewModel
         if (ReferenceEquals(kaynak, hedef)) return "Kaynak ve hedef kat aynı.";
 
         ElemanSnapshotAl(hedef);
-        var sonuc = MahalListesiServisi.KattanKopyala(kaynak, hedef);
+        var sonuc = MahalListesiServisi.KattanKopyala(kaynak, hedef, satirFiltresi: s => MahalKalemiGorunurMu(s.Tip));
         DurumMesaji = $"{kaynak.Ad} → {hedef.Ad}: {sonuc.Ozet}";
         return sonuc.Ozet;
     }
@@ -121,7 +164,7 @@ public partial class BasitProjeCizViewModel
         // Kabuk disiplinine uymayan kalemler önerilmez (M12 kuvvetli, M16 zayıf).
         var hedefDisiplin = zayifAkim ? BpcDisiplin.ZayifAkim : BpcDisiplin.KuvvetliAkim;
         var sonuc = MahalListesiServisi.AkilliDoldur(kat, _kutuphane, tablo,
-            tip => BpcSistemKatalogu.Disiplini(tip) == hedefDisiplin);
+            tip => BpcSistemKatalogu.Disiplini(tip) == hedefDisiplin && MahalKalemiGorunurMu(tip));
 
         DurumMesaji = $"Akıllı doldurma — {sonuc.Ozet}";
         return sonuc.Ozet;
@@ -132,7 +175,7 @@ public partial class BasitProjeCizViewModel
     {
         if (string.IsNullOrWhiteSpace(ad)) return "Şablon adı boş olamaz.";
         var dosya = MahalListesiServisi.SablonlariYukle();
-        var yeni = MahalListesiServisi.SablonaDonustur(kat, ad.Trim(), aciklama);
+        var yeni = MahalListesiServisi.SablonaDonustur(kat, ad.Trim(), aciklama, MahalKalemiGorunurMu);
 
         // Aynı adlı şablon varsa üzerine yazılır (kullanıcı bilinçli olarak aynı adı verdi).
         dosya.Sablonlar.RemoveAll(s => string.Equals(s.Ad, yeni.Ad, StringComparison.OrdinalIgnoreCase));
@@ -152,7 +195,7 @@ public partial class BasitProjeCizViewModel
     {
         if (ProjeKilitli) return "Proje kilitli — şablon uygulamak için önce kilidi açın.";
         ElemanSnapshotAl(kat);
-        var sonuc = MahalListesiServisi.SablonUygula(sablon, kat);
+        var sonuc = MahalListesiServisi.SablonUygula(sablon, kat, MahalKalemiGorunurMu);
         DurumMesaji = $"Şablon '{sablon.Ad}' uygulandı — {sonuc.Ozet}";
         return sonuc.Ozet;
     }
@@ -163,18 +206,19 @@ public partial class BasitProjeCizViewModel
     {
         if (ProjeKilitli) return "Proje kilitli — yerleştirmek için önce kilidi açın.";
 
-        var hedefler = Katlar.Where(k => k.MahalListesi.Count > 0).ToList();
+        var hedefler = Katlar.Where(k => k.MahalListesi.Any(s => MahalKalemiGorunurMu(s.Tip))).ToList();
         if (hedefler.Count == 0) return "Mahal listesi olan kat yok.";
 
         var oncekiKat = SeciliKat;
         var satirlar = new List<string>();
         int toplamYeni = 0;
 
+        ElemanSnapshotAl(hedefler);
         foreach (var kat in hedefler)
         {
             int once = kat.Elemanlar.Count;
             SeciliKat = kat;
-            MahalListesindenOtomatikYerlestir(); // kilit/snapshot/uyarı akışı içeride
+            MahalYerlesiminiUygula(snapshotAl: false);
             int fark = kat.Elemanlar.Count - once;
             toplamYeni += Math.Max(0, fark);
             satirlar.Add($"{kat.Ad}: {(fark >= 0 ? "+" : "")}{fark} eleman (toplam {kat.Elemanlar.Count})");
@@ -190,9 +234,12 @@ public partial class BasitProjeCizViewModel
     /// Mahal listesi satırını siler; o satırdan otomatik yerleştirilen tüm elemanları projeden kaldırır.
     public void MahalSatiriKaldir(BasitProjeKat kat, BpcMahalSatiri satir)
     {
+        if (KilitliyseDur("mahal kalemini kaldırmak") || (PrizAkisiAktif && !MahalKalemiGorunurMu(satir.Tip))) return;
         SeciliKat = kat;
         ElemanSnapshotAl(kat);
-        var eskiler = kat.Elemanlar.Where(e => MahalSatirElemaniMi(e, satir)).ToList();
+        bool asamaListesi = YerlesimAsamasi is BpcAydinlatmaAsamasi.Armatur or BpcAydinlatmaAsamasi.Anahtar || PrizAkisiAktif;
+        var eskiler = kat.Elemanlar.Where(e => MahalSatirElemaniMi(e, satir)
+            && (!asamaListesi || YerlesimElemaniMi(e))).ToList();
         foreach (var e in eskiler)
         {
             e.OtomatikYerlesimGrupIds ??= new();
@@ -209,12 +256,15 @@ public partial class BasitProjeCizViewModel
     /// tekOdaId null ise satırdaki tüm aktif odalar yeniden işlenir.
     public void MahalSatiriYenidenYerlestir(BasitProjeKat kat, BpcMahalSatiri satir, string? tekOdaId = null)
     {
+        if (KilitliyseDur("mahal kalemini yerleştirmek") || (PrizAkisiAktif && !MahalKalemiGorunurMu(satir.Tip))) return;
         SeciliKat = kat;
         var eskiler = kat.Elemanlar
             .Where(e => MahalSatirElemaniMi(e, satir)
+                     && (!PrizAkisiAktif || YerlesimElemaniMi(e))
                      && (tekOdaId == null || e.OdaId == tekOdaId))
             .ToList();
 
+        ElemanSnapshotAl(kat);
         // Eski yerleştirmede Aktif bayrağı taşımayan odaları otomatik aktifleştir
         foreach (var odaId in eskiler.Select(e => e.OdaId).Where(id => id != null).Distinct())
         {
@@ -222,7 +272,6 @@ public partial class BasitProjeCizViewModel
             if (!ayar.Aktif) ayar.Aktif = true;
         }
 
-        ElemanSnapshotAl(kat);
         foreach (var e in eskiler) ElemanSil(e);
 
         var tanim = MahalSatirTanimiBul(satir);
@@ -245,7 +294,7 @@ public partial class BasitProjeCizViewModel
 
             var placed = _yerlestir.OdayaYerlestir(
                 oda, tanim, yerlesim, montaj, gridM, gridYM, duvarM, ayar.Adet,
-                kat.Acikliklar, kat.Elemanlar, false, out _);
+                kat.Acikliklar, kat.Elemanlar, PrizAkisiAktif, out _);
 
             foreach (var e in placed)
             {
@@ -334,8 +383,7 @@ public partial class BasitProjeCizViewModel
                 PoligonYardimci.IsPointInside(new Point2D(x, y), o.Poligon))
             ?.Id;
 
-        var tip = BasitProjeCizKutuphaneServisi.TipBlokAdindan(EklenecekSembol.BlokAdi)
-                  ?? BpcElemanTipi.Armatür;
+        var tip = BasitProjeCizKutuphaneServisi.TanimTipi(EklenecekSembol);
 
         if (BasitProjeCizKabloServisi.ElemanDuvarSnapMi(tip) && kat.Odalar.Count > 0)
         {
@@ -356,7 +404,8 @@ public partial class BasitProjeCizViewModel
             OdaId          = odaId,
             X              = x,
             Y              = y,
-            PaftaTipi      = BasitProjeCizOtomatikYerlestirServisi.PaftaForBlokPublic(EklenecekSembol.BlokAdi),
+            PaftaTipi      = PrizAkisiAktif && (tip == BpcElemanTipi.Buat || BasitProjeCizKabloServisi.ElemanPrizMi(tip))
+                ? BpcPaftaTipi.Priz : BasitProjeCizOtomatikYerlestirServisi.PaftaForBlokPublic(EklenecekSembol.BlokAdi),
             Ozellikler     = "",
             CustomGucW     = EklenecekSembol.GucW > 0 ? EklenecekSembol.GucW : null,
             MontajTipi     = EklenecekSembol.MontajTipi,
@@ -374,9 +423,26 @@ public partial class BasitProjeCizViewModel
             OzelAlanTuru   = EklenecekSembol.OzelAlanTuru
         };
 
-        var eklenenAd = EklenecekSembol.Ad;
+        if (tip == BpcElemanTipi.KatPanosu && AydinlatmaAkisiAktif)
+        {
+            var kod = string.IsNullOrWhiteSpace(EklenecekSembol.SembolAdi) ? "P" : EklenecekSembol.SembolAdi;
+            var panolar = Katlar.SelectMany(k => k.Elemanlar).Where(e => e.Tip == BpcElemanTipi.KatPanosu).ToList();
+            int sira = 1;
+            while (panolar.Any(p => p.Ad == $"{EklenecekSembol.Ad} {sira}" || p.EkranAdi == $"{kod}{sira}")) sira++;
+            eleman.Ad = $"{EklenecekSembol.Ad} {sira}";
+            eleman.EkranAdi = $"{kod}{sira}";
+        }
+        var eklenenAd = eleman.Ad;
         kat.Elemanlar.Add(eleman);
+        if (tip == BpcElemanTipi.KatPanosu)
+        {
+            GuncelleTumKatPanolari();
+            GuncellePanoIcerik();
+        }
+        SeciliElemanlar.Clear();
         SeciliEleman = eleman;
+        SeciliElemanlar.Add(eleman);
+        GuncelleElemanVurgu();
         ElemanEkleModu = false;
         EklenecekSembol = null;
         DurumMesaji = $"{eklenenAd} eklendi ({x:N2}, {y:N2})";
@@ -387,7 +453,7 @@ public partial class BasitProjeCizViewModel
     {
         var kat = SeciliKat;
         var referans = SeciliEleman;
-        if (kat is null || referans is null)
+        if (kat is null || referans is null || KilitliyseDur("otomatik yerleşim yapmak"))
             return false;
 
         if (referans.Tip == BpcElemanTipi.Buat)
@@ -413,8 +479,6 @@ public partial class BasitProjeCizViewModel
             return false;
         }
 
-        ElemanSnapshotAl(kat);
-
         var yeni = string.Equals(referans.MontajTipi, "Duvar", StringComparison.OrdinalIgnoreCase)
             ? DuvarYerlesimiOlustur(kat, oda, referans)
             : TavanYerlesimiOlustur(oda, referans);
@@ -425,6 +489,13 @@ public partial class BasitProjeCizViewModel
             return false;
         }
 
+        ElemanSnapshotAl(kat);
+        // İlk priz mevcut linye ve pano kayıtlarında aynı kimlikle kullanılmaya devam eder.
+        if (PrizAkisiAktif)
+        {
+            yeni[0].Id = referans.Id;
+            if (kat.Kablolar.Count > 0) RotalarBayat = true;
+        }
         kat.Elemanlar.Remove(referans);
         foreach (var eleman in yeni)
             kat.Elemanlar.Add(eleman);
@@ -622,6 +693,7 @@ public partial class BasitProjeCizViewModel
 
         ElemanSnapshotAl(kat);
 
+        var hedefOdaId = OdaIdHesapla(kat, yeniX, yeniY);
         if (BasitProjeCizKabloServisi.ElemanDuvarSnapMi(eleman.Tip) && kat.Odalar.Count > 0)
         {
             var snapped = BasitProjeCizDxfServisi.SnapToNearestWall(new Point2D(yeniX, yeniY), kat.Odalar);
@@ -637,11 +709,8 @@ public partial class BasitProjeCizViewModel
         eleman.OtomatikYerlesimKaynak = "";
         (eleman.OtomatikYerlesimGrupIds ??= new()).Clear();
 
-        // OdaId yeniden hesapla
-        eleman.OdaId = kat.Odalar
-            .FirstOrDefault(o => o.Poligon.Count >= 3 &&
-                PoligonYardimci.IsPointInside(new Point2D(yeniX, yeniY), o.Poligon))
-            ?.Id;
+        // Ortak duvar iki mahalin sınırıdır; bırakılan tarafı duvara oturtmadan önce belirle.
+        eleman.OdaId = hedefOdaId ?? OdaIdHesapla(kat, yeniX, yeniY);
 
         if (kat.Kablolar.Count > 0) RotalarBayat = true;
         DurumMesaji = $"{eleman.Ad} taşındı ({yeniX:N2}, {yeniY:N2})";
@@ -705,6 +774,7 @@ public partial class BasitProjeCizViewModel
         var kat = SeciliKat;
         if (kat is null) return;
 
+        var hedefOdaId = OdaIdHesapla(kat, yeniX, yeniY);
         if (BasitProjeCizKabloServisi.ElemanDuvarSnapMi(primaryEl.Tip) && kat.Odalar.Count > 0)
         {
             var snapped = BasitProjeCizDxfServisi.SnapToNearestWall(new Point2D(yeniX, yeniY), kat.Odalar);
@@ -717,7 +787,7 @@ public partial class BasitProjeCizViewModel
 
         primaryEl.X = yeniX;
         primaryEl.Y = yeniY;
-        primaryEl.OdaId = OdaIdHesapla(kat, yeniX, yeniY);
+        primaryEl.OdaId = hedefOdaId ?? OdaIdHesapla(kat, yeniX, yeniY);
         primaryEl.OtomatikYerlesimKaynak = "";
         (primaryEl.OtomatikYerlesimGrupIds ??= new()).Clear();
 
@@ -756,6 +826,11 @@ public partial class BasitProjeCizViewModel
     private void ElemanSnapshotAl(BasitProjeKat kat)
         => ElemanSnapshotAl([kat]);
 
+    public void MahalDuzenlemesineBasla(BasitProjeKat kat)
+    {
+        if (!ProjeKilitli) ElemanSnapshotAl(kat);
+    }
+
     /// Bir işlem birden fazla kattaki referansları değiştiriyorsa tüm katları tek
     /// undo adımında tutar (ör. başka kattaki ana panonun silinmesi).
     private void ElemanSnapshotAl(IEnumerable<BasitProjeKat> katlar)
@@ -773,9 +848,9 @@ public partial class BasitProjeCizViewModel
 
         if (_elemanUndoStack.Count > 20)
         {
-            var liste = _elemanUndoStack.ToList();
+            var liste = _elemanUndoStack.Take(20).Reverse().ToList();
             _elemanUndoStack.Clear();
-            foreach (var s in liste.Take(20)) _elemanUndoStack.Push(s);
+            foreach (var s in liste) _elemanUndoStack.Push(s);
         }
     }
 
@@ -785,7 +860,7 @@ public partial class BasitProjeCizViewModel
         kat.KatNo,
         kat.Elemanlar.Select(CloneEleman).ToList(),
         kat.Devreler.Select(d => new BpcDevre {
-            Id = d.Id, DevreNo = d.DevreNo,
+            Id = d.Id, DevreNo = d.DevreNo, ManuelRotaTipi = d.ManuelRotaTipi,
             AnahtarElemanId = d.AnahtarElemanId, BuatId = d.BuatId,
             ArmaturElemanIds = d.ArmaturElemanIds.ToList()
         }).ToList(),
@@ -814,11 +889,12 @@ public partial class BasitProjeCizViewModel
             GecisOdaIds = b.GecisOdaIds.ToList(), LinyePrefix = b.LinyePrefix
         }).ToList(),
         (kat.MahalListesi ?? new()).Select(CloneMahalSatiri).ToList(),
+        kat.Odalar.ToDictionary(o => o.Id, o => (o.MahalListesineDahil, o.GecisSecili)),
         (kat.KabloTavalari ?? new()).Select(CloneKabloTavasi).ToList(),
         (kat.PanoBeslemeHatlari ?? new()).Select(p => new BpcPanoBeslemeHatti {
             Id = p.Id, AnaPanoId = p.AnaPanoId, TaliPanoId = p.TaliPanoId,
             AnaKatNo = p.AnaKatNo, TaliKatNo = p.TaliKatNo,
-            UygulamaTipi = p.UygulamaTipi, Etiket = p.Etiket,
+            UygulamaTipi = p.UygulamaTipi, Etiket = p.Etiket, OtomatikKatIciBesleme = p.OtomatikKatIciBesleme,
             Rota = p.Rota.Select(pt => new Point2D(pt.X, pt.Y)).ToList()
         }).ToList(),
         CloneTopraklama(kat.Topraklama));
@@ -916,6 +992,12 @@ public partial class BasitProjeCizViewModel
         kat.MahalListesi ??= new();
         kat.MahalListesi.Clear();
         foreach (var m in snap.MahalListesi) kat.MahalListesi.Add(m);
+        foreach (var oda in kat.Odalar)
+            if (snap.MahalSecimleri.TryGetValue(oda.Id, out var secim))
+            {
+                oda.MahalListesineDahil = secim.Dahil;
+                oda.GecisSecili = secim.Gecis;
+            }
 
         kat.KabloTavalari ??= new();
         kat.KabloTavalari.Clear();
@@ -931,7 +1013,7 @@ public partial class BasitProjeCizViewModel
     [RelayCommand]
     private void ElemanGeriAl()
     {
-        if (_elemanUndoStack.Count == 0) return;
+        if (_elemanUndoStack.Count == 0 || KilitliyseDur("değişikliği geri almak")) return;
         var snap = _elemanUndoStack.Pop();
         var eslesenler = snap.Katlar
             .Select(s => (Snap: s, Kat: SnapshotKatiniBul(s.KatId, s.KatNo)))
@@ -941,11 +1023,14 @@ public partial class BasitProjeCizViewModel
 
         _elemanRedoStack.Push(new ProjeElemanUndoSnapshot(
             eslesenler.Select(x => KatDurumKopyala(x.Kat!)).ToList()));
+        if (KabloModuAktif) KabloModuKapat();
         foreach (var (katSnap, kat) in eslesenler)
             KatDurumGeriYukle(kat!, katSnap);
         Kirlet();
 
+        SeciliElemanlar.Clear();
         SeciliEleman = null;
+        GuncelleElemanVurgu();
         SeciliDevreId = null;
         DurumMesaji = "Geri alındı";
         OnPropertyChanged(nameof(Elemanlar)); // MahalListesiWindow için
@@ -959,7 +1044,7 @@ public partial class BasitProjeCizViewModel
     [RelayCommand]
     private void ElemanIleriAl()
     {
-        if (_elemanRedoStack.Count == 0) return;
+        if (_elemanRedoStack.Count == 0 || KilitliyseDur("değişikliği ileri almak")) return;
         var snap = _elemanRedoStack.Pop();
         var eslesenler = snap.Katlar
             .Select(s => (Snap: s, Kat: SnapshotKatiniBul(s.KatId, s.KatNo)))
@@ -969,11 +1054,14 @@ public partial class BasitProjeCizViewModel
 
         _elemanUndoStack.Push(new ProjeElemanUndoSnapshot(
             eslesenler.Select(x => KatDurumKopyala(x.Kat!)).ToList()));
+        if (KabloModuAktif) KabloModuKapat();
         foreach (var (katSnap, kat) in eslesenler)
             KatDurumGeriYukle(kat!, katSnap);
         Kirlet();
 
+        SeciliElemanlar.Clear();
         SeciliEleman = null;
+        GuncelleElemanVurgu();
         SeciliDevreId = null;
         DurumMesaji = "İleri alındı";
         OnPropertyChanged(nameof(Elemanlar)); // MahalListesiWindow için
@@ -1014,7 +1102,8 @@ public partial class BasitProjeCizViewModel
         SensorKontrollu = e.SensorKontrollu,
         BagliOdaIds    = e.BagliOdaIds.ToList(),
         KatArasiSecim  = e.KatArasiSecim,
-        TaliPanoHedefPanoId = e.TaliPanoHedefPanoId
+        TaliPanoHedefPanoId = e.TaliPanoHedefPanoId,
+        AydinlatmaSigortalari = e.AydinlatmaSigortalari?.ToDictionary(x => x.Key, x => x.Value)
     };
 
     private sealed record ElemanUndoSnapshot(
@@ -1029,6 +1118,7 @@ public partial class BasitProjeCizViewModel
         List<BpcSistemDevre> SistemDevreleri,
         List<BpcBuatPanoBaglanti> BuatPanoBaglantilari,
         List<BpcMahalSatiri> MahalListesi,
+        Dictionary<string, (bool Dahil, bool Gecis)> MahalSecimleri,
         List<BpcKabloTavasi> KabloTavalari,
         List<BpcPanoBeslemeHatti> PanoBeslemeHatlari,
         BpcTopraklama Topraklama);

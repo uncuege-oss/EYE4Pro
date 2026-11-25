@@ -19,6 +19,16 @@ public class BpcDxfSegment
     public string Layer { get; set; } = "";
 }
 
+public enum BpcAydinlatmaAsamasi
+{
+    Pano, Armatur, Anahtar, Buat, MahalKablosu, PanoKablosu, Sigortalar
+}
+
+public enum BpcPrizAsamasi
+{
+    Priz, Buat, MahalKablosu, PanoKablosu, Sigortalar
+}
+
 public class BasitProjeCizProje
 {
     /// Dosya şema sürümü. 0 = sürümsüz (eski) dosya. Yükleme sırasında
@@ -33,6 +43,9 @@ public class BasitProjeCizProje
 
     /// Son çalışma oturumundan seçili kat numarası. 0 = kaydedilmemiş (ilk kata düş).
     public int SeciliKatNo { get; set; }
+    public BpcAydinlatmaAsamasi AydinlatmaAsamasi { get; set; } = BpcAydinlatmaAsamasi.Pano;
+    public BpcPrizAsamasi PrizAsamasi { get; set; } = BpcPrizAsamasi.Priz;
+    public BpcPaftaTipi SonTasarimPaftasi { get; set; } = BpcPaftaTipi.Aydinlatma;
 
     // ── M50 bina geometrisi bağlantısı ────────────────────────────────────
     /// Bağlı .e4bina dosyasının yolu (varsa). Dosya taşınmışsa gömülü kopya kullanılır.
@@ -113,12 +126,14 @@ public class BasitProjeKat : INotifyPropertyChanged
 }
 
 /// Mahal listesi tablosunda bir satır = bir malzeme tipi. Sayilar oda Id → adet.
-public class BpcMahalHucreAyar : INotifyPropertyChanged
+public class BpcMahalHucreAyar : INotifyPropertyChanged, INotifyPropertyChanging
 {
+    public event PropertyChangingEventHandler? PropertyChanging;
     public event PropertyChangedEventHandler? PropertyChanged;
     private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
     {
         if (Equals(field, value)) return;
+        PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(name));
         field = value;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
@@ -166,10 +181,11 @@ public class BpcMahalHucreAyar : INotifyPropertyChanged
     public int? OzelCihazAdet { get => _ozelCihazAdet; set => Set(ref _ozelCihazAdet, value); }
 }
 
-public class BpcMahalSatiri : INotifyPropertyChanged
+public class BpcMahalSatiri : INotifyPropertyChanged, INotifyPropertyChanging
 {
     // Genel ayarlar INPC bildirir (Set eşitlik korumalı) — UI, gerçek değişiklikleri
     // IsDirty'ye bağlayabilsin diye. JSON serileştirme etkilenmez.
+    public event PropertyChangingEventHandler? PropertyChanging;
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// Aynı sembolü kullanan mahal satırlarını birbirinden ayıran kararlı kimlik.
@@ -178,6 +194,7 @@ public class BpcMahalSatiri : INotifyPropertyChanged
     private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
     {
         if (Equals(field, value)) return;
+        PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(name));
         field = value;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
@@ -358,6 +375,7 @@ public class BpcPanoBeslemeHatti
     public int AnaKatNo { get; set; }
     public int TaliKatNo { get; set; }
     public BpcPanoBeslemeUygulamaTipi UygulamaTipi { get; set; } = BpcPanoBeslemeUygulamaTipi.Kablo;
+    public bool OtomatikKatIciBesleme { get; set; }
     public List<Point2D> Rota { get; set; } = new();
     public string Etiket { get; set; } = "";
 }
@@ -375,6 +393,7 @@ public class BpcDevre
     public string? AnahtarElemanId { get; set; }
     public string? BuatId          { get; set; }
     public int     DevreNo        { get; set; } = 1;  // Komütatör: 1 veya 2
+    public BpcRotaTipi? ManuelRotaTipi { get; set; }
     public List<string> ArmaturElemanIds { get; set; } = new();
 }
 
@@ -399,6 +418,8 @@ public class BpcKablo
     public BpcPaftaTipi? SistemAnahtar { get; set; }
     public List<Point2D> Rota  { get; set; } = new();
 }
+
+public sealed record BpcPanoSigortasi(int Amper, bool Manuel);
 
 public class BpcBuatPanoBaglanti
 {
@@ -461,7 +482,12 @@ public class BasitProjeOda : INotifyPropertyChanged
     }
 
     public double AlanM2 { get; set; }
-    public bool GecisSecili { get; set; }
+    private bool _gecisSecili;
+    public bool GecisSecili
+    {
+        get => _gecisSecili;
+        set => Set(ref _gecisSecili, value);
+    }
     public bool AsmaTavan { get; set; }
     
     private bool _mahalListesineDahil = true;
@@ -868,16 +894,21 @@ public class BasitProjeEleman
     /// oda buatına bağlanır. Kablolama bu armatür/sensörleri özel işler.
     public bool SensorKontrollu { get; set; }
 
-    /// Yalnız Kat Panosu için: bu panonun beslediği oda Id'leri. Buat→pano
+    /// Ana, kat, tali veya alt panonun beslediği oda Id'leri. Buat→pano
     /// otomatik yönlendirmesinde, odası bu listede olan buatlar bu panoya gider.
     public List<string> BagliOdaIds { get; set; } = new();
     /// Kat Panosu oda atamasında diğer katların odalarının da seçilebilmesi
     /// (varsayılan kapalı). Yalnız UI seçeneklerini etkiler.
     public bool KatArasiSecim { get; set; }
 
-    /// Yalnız Tali Pano için: kullanıcının açıkça seçtiği üst kat panosu Id'si.
+    /// Tali veya alt pano için kullanıcının açıkça seçtiği üst panonun Id'si.
     /// null = otomatik çözümleme (odanın BagliOdaIds atamasına bakılır).
     public string? TaliPanoHedefPanoId { get; set; }
+
+    /// Aydınlatma ve priz tasarımındaki pano girişi, linye ve besleme çıkışları.
+    /// Sözlük adı eski proje dosyalarıyla uyumludur. Çıkış anahtarı bağlantı kimliğidir.
+    /// Elle kaldırılan sigortanın 0 A kaydı, tekrar üretimde kararı korur.
+    public Dictionary<string, BpcPanoSigortasi>? AydinlatmaSigortalari { get; set; }
 
     public override string ToString() => $"{Tip} {Ad} ({X:N2}, {Y:N2})";
 }

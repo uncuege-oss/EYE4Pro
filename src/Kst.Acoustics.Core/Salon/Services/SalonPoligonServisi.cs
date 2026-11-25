@@ -20,32 +20,19 @@ public static class SalonPoligonServisi
     /// Halka kümesini (dış halkalar CCW+, delikler CW−) basit poligonlara ayırır.
     public static List<List<Point2D>> BasitPoligonlaraAyir(List<List<Point2D>> halkalar)
     {
-        var mevcut = halkalar.Where(h => h.Count >= 3).ToList();
-        int koruma = 0;
-        while (koruma++ < 32)
+        var valid=halkalar.Where(p=>p.Count>=3).ToList();
+        if(!valid.Any(p=>ClipperAdaptor.IsaretliAlan(p)<0)) return valid;
+        // Exact horizontal partition through hole vertices; no artificial slit or lost area.
+        double lo=valid.SelectMany(p=>p).Min(p=>p.X)-1, hi=valid.SelectMany(p=>p).Max(p=>p.X)+1;
+        var ys=valid.SelectMany(p=>p).Select(p=>p.Y).Distinct().Order().ToList();
+        var result=new List<List<Point2D>>();
+        for(int i=0;i+1<ys.Count;i++)
         {
-            var delik = mevcut.FirstOrDefault(h => ClipperAdaptor.IsaretliAlan(h) < 0);
-            if (delik is null) break;
-
-            // Deliğin x-aralığının ortasından tam yükseklikte ince şerit çıkar.
-            double x = (delik.Min(p => p.X) + delik.Max(p => p.X)) / 2.0;
-            double y0 = mevcut.SelectMany(h => h).Min(p => p.Y) - 1.0;
-            double y1 = mevcut.SelectMany(h => h).Max(p => p.Y) + 1.0;
-            var serit = new List<Point2D>
-            {
-                new(x - SeritYarimM, y0), new(x + SeritYarimM, y0),
-                new(x + SeritYarimM, y1), new(x - SeritYarimM, y1)
-            };
-            var yeni = ClipperAdaptor.Fark(mevcut, new[] { serit });
-
-            // Şerit deliği bölemiyorsa (dejenere durum) sonsuz döngüye girme.
-            if (yeni.Count == mevcut.Count &&
-                yeni.Count(h => ClipperAdaptor.IsaretliAlan(h) < 0)
-                    == mevcut.Count(h => ClipperAdaptor.IsaretliAlan(h) < 0))
-                break;
-            mevcut = yeni;
+            if(ys[i+1]-ys[i]<1e-9)continue;
+            var band=new List<Point2D>{new(lo,ys[i]),new(hi,ys[i]),new(hi,ys[i+1]),new(lo,ys[i+1])};
+            result.AddRange(ClipperAdaptor.Kesisim(valid,new[]{(IReadOnlyList<Point2D>)band}).Where(p=>ClipperAdaptor.IsaretliAlan(p)>1e-9));
         }
-        return mevcut.Where(h => ClipperAdaptor.IsaretliAlan(h) > 1e-9).ToList();
+        return result;
     }
 
     /// Yatay paneli (sabit kotlu poligon) kabuk içine kırpar; kabuk yoksa panel aynen

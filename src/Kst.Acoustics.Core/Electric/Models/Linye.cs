@@ -74,6 +74,7 @@ public class Linye
     public double ToplamGucW => SortiSayisi * BirimGucW * TalepFaktoru;
     public double AkimA { get; set; }
     public int SigortaAmper { get; set; }
+    public int? ManuelSigortaAmper { get; set; }
     public SigortaCinsi SigortaCinsi { get; set; } = SigortaCinsi.B;
     public string KesmeKapasitesi { get; set; } = "6kA";
 

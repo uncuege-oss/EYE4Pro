@@ -116,16 +116,11 @@
                 <!-- PANO HİYERARŞİSİ -->
                 <Border Classes="grup">
                     <StackPanel>
-                        <TextBlock Classes="baslik" Text="Pano Seçim Hiyerarşisi" Margin="0,0,0,6"/>
+                        <TextBlock Classes="baslik" Text="Aydınlatma ve priz için pano seçimi" Margin="0,0,0,6"/>
                         <Border Classes="ayirici"/>
 
-                        <TextBlock Classes="kural" Text="Bir buat hangi panoya bağlanacağını şu sırayla belirler:"/>
-                        <TextBlock Classes="kural" Margin="12,2,0,2"
-                                   Text="1) Buatın bulunduğu mahaldeki TALİ pano → bu oda için atanmış tali pano tercih edilir."/>
-                        <TextBlock Classes="kural" Margin="12,2,0,2"
-                                   Text="2) Mahalde tali pano yoksa → en yakın KAT panosu."/>
-                        <TextBlock Classes="kural" Margin="12,2,0,2"
-                                   Text="3) Kat panosu da yoksa → ANA hariç en yakın pano. ANA pano yoksa herhangi bir pano."/>
+                        <TextBlock Classes="kural" TextWrapping="Wrap"
+                                   Text="Aydınlatma paftasında Pano yerleşimi adımını açın. Mahal içinde sağ tıklayıp bu mahali besleyen panoyu seçin. Aydınlatma ve priz hatları aynı atamayı kullanır."/>
                     </StackPanel>
                 </Border>
 

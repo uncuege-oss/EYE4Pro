@@ -8,7 +8,7 @@ public static class KesifHesapServisi
 
         // Alt tablolar dahil tüm tabloları dolaş; satırlar yalnız yaprak tablolarda bulunur.
         var rows = KesifTabloAgaci.TumTablolar(proje)
-            .SelectMany(t => t.Satirlar.Select(s => new { Tablo = t.Ad, Satir = s }))
+            .SelectMany(t => t.Satirlar.Select(s => new { Tablo = t, Satir = s }))
             .Where(x => !string.IsNullOrWhiteSpace(x.Satir.PozNo) || !string.IsNullOrWhiteSpace(x.Satir.BirimAdi))
             .GroupBy(x => new
             {
@@ -32,11 +32,12 @@ public static class KesifHesapServisi
                     OrtalamaBirimFiyat = weightedUnitPrice,
                     ToplamTutar = totalCost,
                     BirimFiyatFarkiVar = unitPrices > 1,
-                    Kirilimlar = new(g.GroupBy(x => x.Tablo)
-                        .OrderBy(x => x.Key, StringComparer.CurrentCultureIgnoreCase)
+                    Kirilimlar = new(g.GroupBy(x => x.Tablo.Id)
+                        .OrderBy(x => x.First().Tablo.Ad, StringComparer.CurrentCultureIgnoreCase)
                         .Select(tg => new KesifIcmalKirilim
                         {
-                            TabloAdi = tg.Key,
+                            TabloId = tg.Key,
+                            TabloAdi = tg.First().Tablo.Ad,
                             Miktar = tg.Sum(x => x.Satir.Miktar),
                             Tutar = tg.Sum(x => x.Satir.SatirToplam)
                         }))

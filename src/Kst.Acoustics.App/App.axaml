@@ -13,6 +13,36 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://Kst.Acoustics.App/Themes/SemanticColors.axaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- FluentAvalonia 3.0 ContextMenu teması içermiyor; şablonsuz menü 0x0 açılıp
+                 görünmüyordu. MenuItem/Separator temaları FluentAvalonia'dan gelir. -->
+            <ControlTheme x:Key="{x:Type ContextMenu}" TargetType="ContextMenu">
+                <Setter Property="Background" Value="{DynamicResource MenuFlyoutPresenterBackground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource MenuFlyoutPresenterBorderBrush}"/>
+                <Setter Property="BorderThickness" Value="{DynamicResource MenuFlyoutPresenterBorderThemeThickness}"/>
+                <Setter Property="CornerRadius" Value="{DynamicResource OverlayCornerRadius}"/>
+                <Setter Property="Padding" Value="0,4"/>
+                <Setter Property="MinWidth" Value="160"/>
+                <Setter Property="MaxWidth" Value="456"/>
+                <Setter Property="Focusable" Value="True"/>
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                <ItemsPresenter Name="PART_ItemsPresenter"
+                                                ItemsPanel="{TemplateBinding ItemsPanel}"
+                                                KeyboardNavigation.TabNavigation="Continue"
+                                                Grid.IsSharedSizeScope="True"/>
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter>
+            </ControlTheme>
         </ResourceDictionary>
     </Application.Resources>
 
@@ -23,5 +53,9 @@
     <Application.Styles>
         <sty:FluentAvaloniaTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <!-- Tüm pencereler (modül pencereleri ve diyaloglar dahil) görev çubuğunda EYE4PRO logosunu gösterir. -->
+        <Style Selector=":is(Window)">
+            <Setter Property="Icon" Value="/Assets/eye4pro.ico"/>
+        </Style>
     </Application.Styles>
 </Application>

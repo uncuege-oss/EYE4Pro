@@ -213,3 +213,9 @@ başlar — bkz. [codex71](../71-bitkilendirme-peyzaj/codex71.md).
 1. `maincodex.md` → `landscape/_index.md` → bu dosya okunur.
 2. Kaynak: `src/Kst.Acoustics.Core/Landscape/` (henüz yok — F0'da oluşturulur).
 3. Bina salt-okunurluğu §4.5, arazi salt-okunurluğu §4.7 maincodex'te bağlayıcıdır.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Kayıt/göç güvenliği, saat yönündeki dış halka, delik üstünü örten döşeme ve yol genişliği taşması düzeltildi. Yerleşimde tam ayak izi kontrolü kullanılıyor; alan özeti union kapsamı değişmedi (A14–A16, A20–A22).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

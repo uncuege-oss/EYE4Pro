@@ -77,7 +77,9 @@ public partial class OrtaGerilimDialog : Window
         HucreTrafoKesitBox.Text = _og.HucreTrafoXlpeKablosu.KesitMm2.ToString("0.##");
         HucreTrafoMesafeBox.Text = _og.HucreTrafoXlpeKablosu.UzunlukM.ToString("0.##");
         EmniyetBox.Text = _og.EmniyetFaktoru.ToString("0.##");
-        if (!string.IsNullOrEmpty(_og.TrafoTanimAd))
+        // Yalnız elle sabitlenmiş trafo seçili gelir; otomatik seçilmiş trafo "(otomatik tayin)" olarak
+        // kalır ki Güncelle'ye basmak onu manuele çevirip yük artışında kilitlemesin.
+        if (_og.TrafoManuel && !string.IsNullOrEmpty(_og.TrafoTanimAd))
         {
             var t = vm.TrafoTipleri.FirstOrDefault(x => x.Ad == _og.TrafoTanimAd);
             if (t != null) TrafoCombo.SelectedItem = t;
@@ -135,6 +137,7 @@ public partial class OrtaGerilimDialog : Window
             SebekeHucreXlpeKablosu = KabloKopyala(kaynak.SebekeHucreXlpeKablosu),
             HucreTrafoXlpeKablosu = KabloKopyala(kaynak.HucreTrafoXlpeKablosu),
             TrafoTanimAd = kaynak.TrafoTanimAd,
+            TrafoManuel = kaynak.TrafoManuel,
             TrafoKat = kaynak.TrafoKat,
             EmniyetFaktoru = kaynak.EmniyetFaktoru,
             Hucreler = kaynak.Hucreler.Select(h => new OgHucre
@@ -238,7 +241,9 @@ public partial class OrtaGerilimDialog : Window
         _og.HucreTrafoXlpeKablosu.UzunlukM = System.Math.Max(0, NumberHelper.Parse(HucreTrafoMesafeBox.Text, 10));
         _og.EmniyetFaktoru = NumberHelper.Parse(EmniyetBox.Text, 1.0);
         if (_og.EmniyetFaktoru <= 0) _og.EmniyetFaktoru = 1.0;
-        _og.TrafoTanimAd = (TrafoCombo.SelectedItem as TrafoTanim)?.Ad ?? "";
+        var seciliTrafo = TrafoCombo.SelectedItem as TrafoTanim;
+        _og.TrafoManuel = seciliTrafo != null;
+        _og.TrafoTanimAd = seciliTrafo?.Ad ?? "";
         string trafoKat = TrafoKatCombo.SelectedItem as string ?? TrafoKatVarsayilan;
         _og.TrafoKat = trafoKat == TrafoKatVarsayilan ? "" : trafoKat;
         _og.Hucreler = _hucreler.ToList();
@@ -252,7 +257,9 @@ public partial class OrtaGerilimDialog : Window
     {
         if (!_hazir) return;
         UiOku();
-        OrtaGerilimHesapServisi.Hesapla(_og, _anaPano, _vm.Proje, _vm.Kutuphane);
+        // Önizleme yalnız geçici OG kopyasını hesaplar; canlı ana pano ancak Kaydet'te güncellenir.
+        OrtaGerilimHesapServisi.Hesapla(_og, _anaPano, _vm.Proje, _vm.Kutuphane,
+            anaPanoyaYansit: false);
 
         var trafo = _vm.TrafoTipleri.FirstOrDefault(t => t.Ad == _og.TrafoTanimAd);
         var sb = new System.Text.StringBuilder();

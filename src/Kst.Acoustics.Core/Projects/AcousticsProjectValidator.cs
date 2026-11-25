@@ -450,6 +450,10 @@ public static class AcousticsProjectValidator
 
     private static bool GridDefinitionMatches(ReceiverGrid grid, int rows, int cols)
     {
+        if (ReceiverGrid.AxisPointCount(grid.XMin, grid.XMax, grid.CellSize) == cols &&
+            ReceiverGrid.AxisPointCount(grid.YMin, grid.YMax, grid.CellSize) == rows)
+            return true;
+        // Saved maps from earlier versions used rounded dimensions. Keep them readable.
         var expectedCols = Math.Round((grid.XMax - grid.XMin) / grid.CellSize) + 1;
         var expectedRows = Math.Round((grid.YMax - grid.YMin) / grid.CellSize) + 1;
         return double.IsFinite(expectedCols) && double.IsFinite(expectedRows) &&
@@ -504,8 +508,8 @@ public static class AcousticsProjectValidator
 
     private static bool TryGetGridDimensions(ReceiverGrid grid, out double cols, out double rows)
     {
-        cols = Math.Round((grid.XMax - grid.XMin) / grid.CellSize) + 1;
-        rows = Math.Round((grid.YMax - grid.YMin) / grid.CellSize) + 1;
+        cols = ReceiverGrid.AxisPointCount(grid.XMin, grid.XMax, grid.CellSize);
+        rows = ReceiverGrid.AxisPointCount(grid.YMin, grid.YMax, grid.CellSize);
         return double.IsFinite(cols) && double.IsFinite(rows) &&
                cols is >= 1 and <= int.MaxValue && rows is >= 1 and <= int.MaxValue &&
                double.IsFinite(cols * rows) && cols * rows <= int.MaxValue;

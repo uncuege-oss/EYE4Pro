@@ -30,6 +30,10 @@ public sealed class BasitProjeGeometriBagimliVeri : IGeometriBagimliVeri
             // ── Elemanlar ────────────────────────────────────────────────────
             foreach (var el in kat.Elemanlar)
             {
+                if (el.Tip == BpcElemanTipi.KatPanosu)
+                    foreach (var odaId in el.BagliOdaIds.Distinct())
+                        yield return new GeometriBagimliKayit(
+                            "Mahal pano ataması", $"{el.Ad} → {OdaAd(odaId)}", odaId, kat.Ad, kat.Id);
                 if (string.IsNullOrEmpty(el.OdaId)) continue;
                 string etiket = !string.IsNullOrWhiteSpace(el.EkranAdi) ? el.EkranAdi
                     : !string.IsNullOrWhiteSpace(el.Ad) ? el.Ad

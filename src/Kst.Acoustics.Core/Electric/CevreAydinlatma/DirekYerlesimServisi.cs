@@ -14,7 +14,7 @@ public static class DirekYerlesimServisi
     public static List<Point2D> GuzergahaYerlestir(IReadOnlyList<Point2D> rota, double aralikM)
     {
         var sonuc = new List<Point2D>();
-        if (rota.Count == 0 || aralikM <= 0)
+        if (rota.Count == 0 || !GecerliYerlesim(rota, aralikM, kapali: false))
             return sonuc;
 
         sonuc.Add(rota[0]);
@@ -32,7 +32,7 @@ public static class DirekYerlesimServisi
     public static List<Point2D> PoligonCevresineYerlestir(IReadOnlyList<Point2D> poligon, double aralikM, double kenarOfsetM)
     {
         var sonuc = new List<Point2D>();
-        if (poligon.Count < 3 || aralikM <= 0)
+        if (poligon.Count < 3 || !double.IsFinite(kenarOfsetM) || !GecerliYerlesim(poligon, aralikM, kapali: true))
             return sonuc;
 
         bool ccw = ImzaliAlan(poligon) > 0;
@@ -112,6 +112,21 @@ public static class DirekYerlesimServisi
             alan += a.X * b.Y - b.X * a.Y;
         }
         return alan;
+    }
+
+    private static bool GecerliYerlesim(IReadOnlyList<Point2D> points, double spacing, bool kapali)
+    {
+        if (!double.IsFinite(spacing) || spacing <= 0) return false;
+        double length = 0;
+        for (int i = 0; i < points.Count; i++)
+        {
+            if (!double.IsFinite(points[i].X) || !double.IsFinite(points[i].Y)) return false;
+            if (!kapali && i == points.Count - 1) break;
+            var next = points[(i + 1) % points.Count];
+            double dx = next.X - points[i].X, dy = next.Y - points[i].Y;
+            length += Math.Sqrt(dx * dx + dy * dy);
+        }
+        return double.IsFinite(length) && length / spacing <= 100_000;
     }
 
     // CCW poligonda sol normal (-uy, ux) içeri bakar.

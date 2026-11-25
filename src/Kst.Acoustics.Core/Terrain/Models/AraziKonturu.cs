@@ -11,6 +11,7 @@ public class AraziKonturu : IAraziKontur
     public double KotM { get; set; }
     public bool Kapali { get; set; }
     public AraziKotKaynagi KotKaynagi { get; set; } = AraziKotKaynagi.Bilinmiyor;
+    public string? KatmanAdi { get; set; }
     public List<Point2D> Noktalar { get; set; } = new();
 
     IReadOnlyList<Point2D> IAraziKontur.Noktalar => Noktalar;

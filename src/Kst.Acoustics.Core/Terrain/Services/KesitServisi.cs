@@ -42,10 +42,11 @@ public static class KesitServisi
         }
 
         // Blokları kesit dikdörtgenlerine projekte et (X aralığı = ayak izi X min/max).
-        for (int i = 0; i < model.Bloklar.Count && i < ayaklar.Count; i++)
+        var ayakHaritasi = ayaklar.GroupBy(a => a.BlokId).ToDictionary(g => g.Key, g => g.First());
+        foreach (var b in model.Bloklar)
         {
-            var b = model.Bloklar[i];
-            var poly = ayaklar[i].Poligon;
+            if (!ayakHaritasi.TryGetValue(b.BlokId, out var ayak)) continue;
+            var poly = ayak.Poligon;
             if (poly.Count == 0 || b.Kotlar.Count == 0) continue;
 
             kesit.Bloklar.Add(new KesitBlok

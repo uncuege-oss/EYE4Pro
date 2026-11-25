@@ -34,6 +34,12 @@
       <Setter Property="Foreground" Value="#FFFFFF"/>
       <Setter Property="BorderBrush" Value="#2AD864"/>
     </Style>
+    <Style Selector="Button.compact">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Padding" Value="8,4"/>
+      <Setter Property="MinWidth" Value="0"/>
+      <Setter Property="MinHeight" Value="28"/>
+    </Style>
     <Style Selector="TextBox">
       <Setter Property="Background" Value="#071108"/>
       <Setter Property="Foreground" Value="#E8F4E8"/>
@@ -50,7 +56,7 @@
     </Style>
   </Window.Styles>
 
-  <Grid RowDefinitions="Auto,*" ColumnDefinitions="*" Margin="16" RowSpacing="12">
+  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*" Margin="16" RowSpacing="10">
     <!-- Header -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="4">
@@ -65,7 +71,7 @@
       
       <!-- Left side: Custom positions list -->
       <Border Grid.Column="0" BorderBrush="#17351D" BorderThickness="1" CornerRadius="6" Padding="8" Background="#0B170D">
-        <Grid RowDefinitions="*,Auto" RowSpacing="8">
+        <Grid RowDefinitions="*">
           <DataGrid ItemsSource="{Binding OzelPozlar}"
                     SelectedItem="{Binding SeciliOzelPoz}"
                     AutoGenerateColumns="False"
@@ -82,10 +88,6 @@
             </DataGrid.Columns>
           </DataGrid>
           
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Poz Ekle" Command="{Binding OzelPozEkleCommand}"/>
-            <Button Content="Poz Sil" Command="{Binding OzelPozSilCommand}"/>
-          </StackPanel>
         </Grid>
       </Border>
 
@@ -94,7 +96,7 @@
 
       <!-- Right side: Detail pane / Editor -->
       <Border Grid.Column="2" BorderBrush="#17351D" BorderThickness="1" CornerRadius="6" Padding="12" Background="#0B170D">
-        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+        <Grid RowDefinitions="Auto,*" RowSpacing="10">
           <TextBlock Text="Poz Detayları / Düzenleme" Foreground="#DFF1D9" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,5"/>
           
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -131,11 +133,14 @@
             </StackPanel>
           </ScrollViewer>
 
-          <StackPanel Grid.Row="2" Spacing="8">
-            <Button Content="Değişiklikleri Kaydet (Poz Düzenle)" Command="{Binding OzelPozGuncelleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-          </StackPanel>
         </Grid>
       </Border>
     </Grid>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+      <Button Classes="compact" Content="Toplu Poz Ekle" Click="TopluPozEkle_OnClick"/>
+      <Button Classes="compact" Content="Poz Ekle" Command="{Binding OzelPozEkleCommand}"/>
+      <Button Classes="compact" Content="Poz Sil" Command="{Binding SeciliOzelPozSilCommand}"/>
+      <Button Classes="compact" Content="Değişiklikleri Kaydet" Command="{Binding OzelPozGuncelleCommand}"/>
+    </StackPanel>
   </Grid>
 </Window>

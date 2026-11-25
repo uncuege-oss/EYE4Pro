@@ -40,6 +40,14 @@ public partial class LinyeDuzenleDialog : Window
             _ => 0
         };
         AciklamaBox.Text = linye.Aciklama;
+
+        // Açılışta linyenin kendi fazı gösterilir; kullanıcı yük tipini değiştirirse faz
+        // o tipin kütüphane varsayılanına gelir (yine elle değiştirilebilir).
+        YukTipiCombo.SelectionChanged += (_, _) =>
+        {
+            if (YukTipiCombo.SelectedItem is YukTipiTanim yt)
+                FazTipiCombo.SelectedIndex = yt.VarsayilanFaz == FazTipi.Trifaze ? 1 : 0;
+        };
     }
 
     private void Iptal_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close();

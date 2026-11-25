@@ -6,7 +6,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0B1118"
-        Title="Eye4Pro Acoustics - Modül Merkezi">
+        Title="Eye4Pro Akustik - Modül Merkezi">
 
     <Window.Styles>
         <Style Selector="Button.moduleAction">
@@ -62,7 +62,7 @@
                         </Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
                             <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="18" FontWeight="Bold"/>
-                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="10" FontWeight="SemiBold"/>
+                            <TextBlock Text="AKUSTİK" Foreground="#18A7BD" FontSize="10" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -78,29 +78,9 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <Button Content="⬡ Bina Geometrisi"
-                            Click="OpenBinaGeometrisi_OnClick"
-                            Background="#0C2235"
-                            BorderBrush="#1A5A82"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="12,7"
-                            Foreground="#60C0E8"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            ToolTip.Tip="M50 — Bina geometrisi oluştur / düzenle"/>
-                    <Button Content="🎭 Salon Tasarla"
-                            Click="OpenSalonTasarla_OnClick"
-                            Background="#231630"
-                            BorderBrush="#5A3A82"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="12,7"
-                            Foreground="#C49BE4"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            ToolTip.Tip="M51 — Salon (oditoryum) geometrisi tasarla → M01'e girdi"/>
-                    <Button Content="Complete Engineering"
+
+
+                    <Button Content="Ana Sayfa"
                             Click="BackToEngineeringHome_OnClick"
                             Background="#172331"
                             BorderBrush="#283849"
@@ -115,7 +95,7 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12,7">
-                        <TextBlock Text="Acoustics Engine v2.0"
+                        <TextBlock Text="Akustik Engine v2.0"
                                    Foreground="#9DB0C0"
                                    FontSize="12"
                                    FontWeight="SemiBold"/>
@@ -282,7 +262,7 @@
                                     <TextBlock Classes="moduleMeta" Text="HIC ve Gmax analizi"/>
                                 </StackPanel>
                             </Grid>
-                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Content="Başlat" 
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" Content="Başlat"
                                     Click="OpenImpactSurface_OnClick"
                                     Background="#12282B" Foreground="#82C8D2"/>
                             <TextBlock Classes="moduleBody" Text="Çok katmanlı oyun alanı/spor zemin tasarımı; HIC ve Gmax simülasyonu, EN 1177 uyumlu kritik düşüş yüksekliği (CFH) değerlendirmesi."/>
@@ -301,7 +281,7 @@
                                     <TextBlock Classes="moduleMeta" Text="Dış mekan gürültü kontrolü"/>
                                 </StackPanel>
                             </Grid>
-                            <Button DockPanel.Dock="Bottom" Content="Başlat" 
+                            <Button DockPanel.Dock="Bottom" Content="Başlat"
                                     Click="OpenNoiseBarrier_OnClick"
                                     HorizontalAlignment="Right"
                                     Background="#3D2A24" Foreground="#FFAC8B"
@@ -338,7 +318,7 @@
                                     <TextBlock Classes="moduleMeta" Text="Akustik test ve doğrulama"/>
                                 </StackPanel>
                             </Grid>
-                            <Button DockPanel.Dock="Bottom" Classes="moduleAction" 
+                            <Button DockPanel.Dock="Bottom" Classes="moduleAction"
                                     Click="OpenMeasurement_OnClick"
                                     Background="#17251A" Foreground="#84C98C" Content="Başlat"/>
                             <TextBlock Classes="moduleBody" Text="Sinyal jeneratörü (sweep / pembe gürültü / impuls), FFT analizör; ISO 3382 / 16283 uyumlu RT60, STI ve R'w saha veri toplama."/>
@@ -349,7 +329,7 @@
         </ScrollViewer>
 
         <Border Grid.Row="2" BorderBrush="#1D2B38" BorderThickness="0,1,0,0" Background="#090F15" Padding="0,10">
-            <TextBlock Text="Eye4Pro Acoustics"
+            <TextBlock Text="Eye4Pro Akustik"
                        FontSize="11"
                        Foreground="#536879"
                        HorizontalAlignment="Center"/>

@@ -29,6 +29,7 @@ public class PanoLinyeOzet
     public int ElemanSayisi { get; set; }
     public double GucW { get; set; }
     public int EksikGucTanimSayisi { get; set; }
+    public double HesapAkimiA { get; set; }
     public int SigortaA { get; set; }
     public string SigortaCinsi { get; set; } = "B";
     /// Linye fazı. Aydınlatmada >9 armatür, prizde >7 priz olunca trifaze olur.
@@ -67,6 +68,7 @@ public class PanoOzet
     public double ToplamGucW { get; set; }
     public int EksikGucTanimToplam { get; set; }
     public bool EksikGucVarMi => EksikGucTanimToplam > 0;
+    public double GirisHesapAkimiA { get; set; }
     public int GirisSigortaA { get; set; }
     /// Pano içindeki FI/RCD grupları (Aydınlatma Grup1, Priz Grup2).
     public List<PanoFiGrubu> FiGruplari { get; set; } = new();
@@ -89,10 +91,64 @@ public static class BasitProjeCizPanoServisi
     private static int LinyeSigortaA(double gucW, double akimA, int minimumA)
         => gucW <= 0 ? 0 : LinyeHesapServisi.SigortaBoyutlandir(akimA, minimumA);
 
+    private static bool KatalogIcinde(double akim)
+        => double.IsFinite(akim) && akim <= LinyeHesapServisi.StandartSigortaDegerleri[^1];
+
+    public static IEnumerable<string> SigortaKatalogHatalari(PanoOzet ozet)
+        => SigortaKatalogHatalari(ozet, null);
+
+    public static IEnumerable<string> SigortaKatalogHatalari(PanoOzet ozet, string? kaynakId)
+    {
+        int ustSinir = LinyeHesapServisi.StandartSigortaDegerleri[^1];
+        string? Hata(string yer, double guc, double akim)
+        {
+            if (!double.IsFinite(guc) || !double.IsFinite(akim))
+                return $"{ozet.Ad} / {yer} için toplam güç veya akım hesaplanamadı.";
+            return akim > ustSinir
+                ? $"{ozet.Ad} / {yer} için {akim:G6} A hesaplandı. Sigorta kataloğunun üst sınırı {ustSinir} A."
+                : null;
+        }
+        foreach (var linye in ozet.Linyeler.Where(l => (l.LinyePrefix is "A" or "P" or "BK") &&
+                     (kaynakId == null || l.BaglantiId == kaynakId)))
+            if (Hata(linye.Etiket, linye.GucW, linye.HesapAkimiA) is { } hata) yield return hata;
+        if ((kaynakId == null || kaynakId == AydinlatmaTasarimServisi.Giris) &&
+            Hata("Pano girişi", ozet.ToplamGucW, ozet.GirisHesapAkimiA) is { } giris) yield return giris;
+    }
+
+    // Katlar arası bir beslemenin iki rota parçası tek bir elektriksel çıkıştır.
+    public static List<PanoOzet> ProjePanoOzetleri(BasitProjeCizProje proje,
+        IEnumerable<BpcArmatürTanim> tanimlar, bool kayitliSigortalariKullan = true)
+        => ProjePanoOzetleri(proje, tanimlar, kayitliSigortalariKullan, mekanikDahil: true);
+
+    /// Aydınlatma ve priz tasarımının önerilen sigortaları, tüm katlardaki A/P yükleriyle hesaplanır.
+    public static List<PanoOzet> TasarimPanoOzetleri(BasitProjeCizProje proje,
+        IEnumerable<BpcArmatürTanim> tanimlar, bool kayitliSigortalariKullan = false)
+        => ProjePanoOzetleri(proje, tanimlar, kayitliSigortalariKullan, mekanikDahil: false);
+
+    private static List<PanoOzet> ProjePanoOzetleri(BasitProjeCizProje proje,
+        IEnumerable<BpcArmatürTanim> tanimlar, bool kayitliSigortalariKullan, bool mekanikDahil)
+    {
+        if (proje.Katlar.Count == 1)
+            return PanoOzetleri(proje.Katlar[0], tanimlar, null, kayitliSigortalariKullan, mekanikDahil);
+        var birlesik = new BasitProjeKat
+        {
+            Elemanlar = new(proje.Katlar.SelectMany(k => k.Elemanlar)),
+            Devreler = proje.Katlar.SelectMany(k => k.Devreler).ToList(),
+            PrizDevreleri = proje.Katlar.SelectMany(k => k.PrizDevreleri).ToList(),
+            MekanikDevreleri = proje.Katlar.SelectMany(k => k.MekanikDevreleri).ToList(),
+            Kablolar = proje.Katlar.SelectMany(k => k.Kablolar).ToList(),
+            BuatPanoBaglantilari = proje.Katlar.SelectMany(k => k.BuatPanoBaglantilari).ToList(),
+            PanoBeslemeHatlari = proje.Katlar.SelectMany(k => k.PanoBeslemeHatlari)
+                .Where(h => h.UygulamaTipi == BpcPanoBeslemeUygulamaTipi.Kablo)
+                .DistinctBy(h => (h.AnaPanoId, h.TaliPanoId)).ToList()
+        };
+        return PanoOzetleri(birlesik, tanimlar, null, kayitliSigortalariKullan, mekanikDahil);
+    }
+
     public static List<PanoOzet> PanoOzetleri(
         BasitProjeKat kat,
         IEnumerable<BpcArmatürTanim> armaturTanimlari,
-        BpcPaftaTipi? aktifPafta = null)
+        BpcPaftaTipi? aktifPafta = null, bool kayitliSigortalariKullan = true, bool mekanikDahil = true)
     {
         var tanimlar = armaturTanimlari?.ToList() ?? new List<BpcArmatürTanim>();
         var tanimById = new Dictionary<string, BpcArmatürTanim>();
@@ -106,24 +162,20 @@ public static class BasitProjeCizPanoServisi
 
         (double GucW, bool Eksik) GucBul(BasitProjeEleman el)
         {
-            static double AdetleCarp(BasitProjeEleman eleman, double guc)
-                => eleman.OzelAlanTuru == "Adet" && eleman.CustomAdet is > 1
-                    ? guc * eleman.CustomAdet.Value
-                    : guc;
-
-            if (el.CustomGucW.HasValue)
-                return (AdetleCarp(el, el.CustomGucW.Value), false);
-            if (!string.IsNullOrEmpty(el.ArmatürTanimId) &&
-                tanimById.TryGetValue(el.ArmatürTanimId, out var t1))
-                return (AdetleCarp(el, t1.GucW), false);
-            if (!string.IsNullOrWhiteSpace(el.BlokAdi) &&
-                tanimByBlok.TryGetValue(el.BlokAdi, out var t2))
-                return (AdetleCarp(el, t2.GucW), false);
-            return (0, true);
+            double guc = el.CustomGucW
+                ?? tanimById.GetValueOrDefault(el.ArmatürTanimId ?? "")?.GucW
+                ?? tanimByBlok.GetValueOrDefault(el.BlokAdi ?? "")?.GucW
+                ?? 0;
+            if (el.OzelAlanTuru == "Adet" && el.CustomAdet is > 1) guc *= el.CustomAdet.Value;
+            return double.IsFinite(guc) && guc > 0 ? (guc, false) : (0, true);
         }
 
-        static FazTipi FazTipiBul(BasitProjeEleman el) =>
-            el.Tip == BpcElemanTipi.TrifazePriz ? FazTipi.Trifaze : FazTipi.Monofaze;
+        static FazTipi FazTipiBul(BasitProjeEleman el) => el.Tip switch
+        {
+            BpcElemanTipi.TrifazePriz => FazTipi.Trifaze,
+            BpcElemanTipi.KombinePrizKutusu when (el.TrifazeAdet ?? 2) > 0 => FazTipi.Trifaze,
+            _ => FazTipi.Monofaze
+        };
 
         static double AkimBul(double gucW, BasitProjeEleman? el)
         {
@@ -212,6 +264,7 @@ public static class BasitProjeCizPanoServisi
                         GucW = guc.GucW,
                         EksikGucTanimSayisi = guc.Eksik,
                         Faz = faz,
+                        HesapAkimiA = akim,
                         SigortaA = LinyeSigortaA(guc.GucW, akim, 16),
                         SigortaCinsi = "B"
                     };
@@ -244,6 +297,7 @@ public static class BasitProjeCizPanoServisi
                         GucW = guc.GucW,
                         EksikGucTanimSayisi = guc.Eksik,
                         Faz = faz,
+                        HesapAkimiA = akim,
                         SigortaA = LinyeSigortaA(guc.GucW, akim, 10),
                         SigortaCinsi = "B"
                     };
@@ -253,7 +307,7 @@ public static class BasitProjeCizPanoServisi
             }
 
             // Mekanik (Klima) linyeleri
-            if (LinyeAktifPaftadaMi("M", aktifPafta) && kat.MekanikDevreleri != null)
+            if (mekanikDahil && LinyeAktifPaftadaMi("M", aktifPafta) && kat.MekanikDevreleri != null)
             {
                 foreach (var mBag in kat.MekanikDevreleri.Where(m => m.PanoId == pano.Id))
                 {
@@ -275,6 +329,7 @@ public static class BasitProjeCizPanoServisi
                         ElemanSayisi = 1,
                         GucW = guc.GucW,
                         EksikGucTanimSayisi = guc.Eksik ? 1 : 0,
+                        HesapAkimiA = akim,
                         SigortaA = LinyeSigortaA(guc.GucW, akim, 6),
                         SigortaCinsi = "C" // Klima kompresör kalkış akımları için C tipi
                     });
@@ -297,6 +352,7 @@ public static class BasitProjeCizPanoServisi
             double girisGerilim = panoTrifaze ? HatGerilimV : GerilimV;
             double girisAkim = LinyeHesapServisi.AkimHesapla(
                 ozet.ToplamGucW, girisGerilim, CosF, girisFaz);
+            ozet.GirisHesapAkimiA = girisAkim;
             ozet.GirisSigortaA = LinyeHesapServisi.SigortaBoyutlandir(girisAkim);
 
             // FI/RCD grupları: aydınlatma (A) → Grup1, priz (P) → Grup2, mekanik (M) → FI yok
@@ -326,30 +382,34 @@ public static class BasitProjeCizPanoServisi
         // yükleri + onun altındakiler) toplam gücüdür. Üst panonun giriş sigortası
         // bu beslemeleri de kapsar. Çizimde hat var ama listede yok hatasını çözer.
         var ozetById   = sonuc.ToDictionary(o => o.Pano.Id);
-        var ownGucById = sonuc.ToDictionary(o => o.Pano.Id, o => o.ToplamGucW);
+        var yerelYukler = sonuc.ToDictionary(o => o.Pano.Id,
+            o => (Guc: o.ToplamGucW, Trifaze: o.Linyeler.Any(l => l.Faz == FazTipi.Trifaze), Eksik: o.EksikGucTanimToplam));
         var beslemeler = kat.PanoBeslemeHatlari
             .Where(h => h.UygulamaTipi == BpcPanoBeslemeUygulamaTipi.Kablo)
-            .ToList();
+            .DistinctBy(h => (h.AnaPanoId, h.TaliPanoId))
+            .ToLookup(h => h.AnaPanoId);
 
-        double AltPanoToplamGuc(string panoId, HashSet<string> ziyaret)
+        (double Guc, bool Trifaze, int Eksik) PanoYuku(string panoId, HashSet<string> ziyaret)
         {
-            if (!ziyaret.Add(panoId)) return 0; // cevrim koruması
-            double g = ownGucById.TryGetValue(panoId, out var o) ? o : 0;
-            foreach (var h in beslemeler.Where(h => h.AnaPanoId == panoId))
-                g += AltPanoToplamGuc(h.TaliPanoId, ziyaret);
-            return g;
+            if (!ziyaret.Add(panoId) || !yerelYukler.TryGetValue(panoId, out var yuk)) return default;
+            foreach (var hat in beslemeler[panoId])
+            {
+                var alt = PanoYuku(hat.TaliPanoId, ziyaret);
+                yuk.Guc += alt.Guc;
+                yuk.Trifaze |= alt.Trifaze;
+                yuk.Eksik += alt.Eksik;
+            }
+            return yuk;
         }
 
         foreach (var ozet in sonuc)
         {
-            var gelen = beslemeler.Where(h => h.AnaPanoId == ozet.Pano.Id).ToList();
-            if (gelen.Count == 0) continue;
+            if (!beslemeler.Contains(ozet.Pano.Id)) continue;
 
-            foreach (var h in gelen)
+            foreach (var h in beslemeler[ozet.Pano.Id])
             {
                 if (!ozetById.TryGetValue(h.TaliPanoId, out var kaynak)) continue;
-                double kaynakGuc = AltPanoToplamGuc(h.TaliPanoId, new HashSet<string>());
-                bool trifaze = kaynak.Linyeler.Any(l => l.Faz == FazTipi.Trifaze);
+                var (kaynakGuc, trifaze, eksik) = PanoYuku(h.TaliPanoId, new HashSet<string> { ozet.Pano.Id });
                 var faz = trifaze ? FazTipi.Trifaze : FazTipi.Monofaze;
                 double gerilim = trifaze ? HatGerilimV : GerilimV;
                 double akim = LinyeHesapServisi.AkimHesapla(kaynakGuc, gerilim, CosF, faz);
@@ -360,22 +420,52 @@ public static class BasitProjeCizPanoServisi
                     OzelEtiket   = $"← {kaynak.Ad}",
                     ElemanSayisi = 1,
                     GucW         = kaynakGuc,
+                    EksikGucTanimSayisi = eksik,
                     Faz          = faz,
+                    HesapAkimiA  = akim,
                     SigortaA     = LinyeHesapServisi.SigortaBoyutlandir(akim),
                     SigortaCinsi = "C" // alt pano karma yükü → C tipi
                 });
             }
 
             // Toplam güç ve giriş sigortası beslemeleri de kapsasın
-            ozet.ToplamGucW   = AltPanoToplamGuc(ozet.Pano.Id, new HashSet<string>());
+            var toplam = PanoYuku(ozet.Pano.Id, new HashSet<string>());
+            ozet.ToplamGucW = toplam.Guc;
+            ozet.EksikGucTanimToplam = toplam.Eksik;
             ozet.ElemanToplam = ozet.Linyeler.Sum(l => l.ElemanSayisi);
-            bool panoTri = ozet.Linyeler.Any(l => l.Faz == FazTipi.Trifaze);
+            bool panoTri = toplam.Trifaze;
             var girisFaz2 = panoTri ? FazTipi.Trifaze : FazTipi.Monofaze;
             double girisGer2 = panoTri ? HatGerilimV : GerilimV;
             double girisAkim2 = LinyeHesapServisi.AkimHesapla(ozet.ToplamGucW, girisGer2, CosF, girisFaz2);
+            ozet.GirisHesapAkimiA = girisAkim2;
             ozet.GirisSigortaA = LinyeHesapServisi.SigortaBoyutlandir(girisAkim2);
         }
 
+        if (!mekanikDahil)
+            foreach (var ozet in sonuc)
+            {
+                if (ozet.EksikGucVarMi || !KatalogIcinde(ozet.GirisHesapAkimiA)) ozet.GirisSigortaA = 0;
+                foreach (var linye in ozet.Linyeler)
+                    if (linye.EksikGucTanimSayisi > 0 || !KatalogIcinde(linye.HesapAkimiA)) linye.SigortaA = 0;
+            }
+
+        if (kayitliSigortalariKullan)
+            foreach (var ozet in sonuc.Where(o => o.Pano.AydinlatmaSigortalari != null))
+            {
+                var kayit = ozet.Pano.AydinlatmaSigortalari!;
+                if (kayit.TryGetValue(AydinlatmaTasarimServisi.Giris, out var giris))
+                    ozet.GirisSigortaA = giris.Amper;
+                foreach (var l in ozet.Linyeler.Where(l => l.LinyePrefix is "A" or "P" or "BK"))
+                    if (kayit.TryGetValue(l.BaglantiId, out var cikis)) l.SigortaA = cikis.Amper;
+                if (aktifPafta is null or BpcPaftaTipi.Aydinlatma)
+                {
+                    int sira = 0;
+                    foreach (var yedek in kayit.Where(x => x.Key.StartsWith(AydinlatmaTasarimServisi.YedekOnEk,
+                                 StringComparison.Ordinal) && x.Value.Amper > 0))
+                        ozet.Linyeler.Add(new PanoLinyeOzet { BaglantiId = yedek.Key, LinyePrefix = "Y",
+                            OzelEtiket = $"Yedek {++sira}", SigortaA = yedek.Value.Amper });
+                }
+            }
         return sonuc;
     }
 

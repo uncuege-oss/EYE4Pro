@@ -1,0 +1,86 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kst.Acoustics.App.Electric.KesifHazirla.TopluOzelPozWindow"
+        x:CompileBindings="False"
+        Title="Toplu Özel Poz Ekle" Width="1050" Height="600" MinWidth="800" MinHeight="430"
+        Background="#071108" WindowStartupLocation="CenterOwner">
+  <Window.Styles>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#0E3A1A"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#168A38"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Padding" Value="8,4"/>
+      <Setter Property="MinHeight" Value="28"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="#15572A"/>
+    </Style>
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="#071108"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+      <Setter Property="BorderBrush" Value="#1E6A32"/>
+      <Setter Property="GridLinesVisibility" Value="All"/>
+      <Setter Property="RowHeight" Value="28"/>
+      <Setter Property="ColumnHeaderHeight" Value="30"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Background" Value="#0B1C0E"/>
+      <Setter Property="Foreground" Value="#DFF1D9"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="#071108"/>
+      <Setter Property="Foreground" Value="#E8F4E8"/>
+    </Style>
+  </Window.Styles>
+  <Grid Margin="12" RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="8">
+    <StackPanel Spacing="4">
+      <TextBlock Text="Toplu Özel Poz Ekle" Foreground="#DFF1D9" FontSize="16" FontWeight="SemiBold"/>
+      <TextBlock Text="Excel'de sırasıyla poz adı/no, tanımı, birimi ve fiyatı sütunlarını kopyalayın. İlk hücreyi seçip Ctrl+V yapın."
+                 Foreground="#91B980" FontSize="12" TextWrapping="Wrap"/>
+    </StackPanel>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6">
+      <Button Content="Panodan Yapıştır (Ctrl+V)" Click="Yapistir_OnClick"/>
+      <Button Content="Satır Ekle" Click="SatirEkle_OnClick"/>
+      <Button Content="Seçili Satırı Sil" Click="SatirSil_OnClick"/>
+    </StackPanel>
+    <DataGrid Grid.Row="2" Name="gridPozlar" AutoGenerateColumns="False" IsReadOnly="False"
+              CanUserSortColumns="False" CanUserReorderColumns="False" CanUserResizeColumns="True"
+              SelectionMode="Single" CellEditEnded="Grid_CellEditEnded">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Poz Adı / No" Binding="{Binding PozNo, Mode=TwoWay}" Width="140"/>
+        <DataGridTemplateColumn Header="Poz Tanımı" Width="3*">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding BirimAdi}" TextTrimming="CharacterEllipsis" Margin="8,0" VerticalAlignment="Center">
+                <ToolTip.Tip><TextBlock Text="{Binding BirimAdi}" TextWrapping="Wrap" MaxWidth="650"/></ToolTip.Tip>
+              </TextBlock>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate><TextBox Text="{Binding BirimAdi, Mode=TwoWay}" Padding="4,0"/></DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Poz Birimi" Binding="{Binding Birim, Mode=TwoWay}" Width="85"/>
+        <DataGridTextColumn Header="Poz Fiyatı (₺)" Binding="{Binding Fiyat, Mode=TwoWay}" Width="140"/>
+        <DataGridTemplateColumn Header="Hata / Kontrol" Width="2*" IsReadOnly="True">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Hata}" Foreground="#FFBE55" TextTrimming="CharacterEllipsis"
+                         Margin="8,0" VerticalAlignment="Center" ToolTip.Tip="{Binding Hata}"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+    <TextBlock Grid.Row="3" Name="txtMesaj" Foreground="#FFBE55" FontSize="12" TextWrapping="Wrap"
+               Text="Hücreleri düzenleyebilirsiniz. Boş satırlar atlanır. Aktarımda mevcut pozların üzerine yazılmaz."/>
+    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+      <Button Content="İptal" Click="Iptal_OnClick"/>
+      <Button Content="Özel Pozlara Ekle" Click="Ekle_OnClick"/>
+    </StackPanel>
+  </Grid>
+</Window>

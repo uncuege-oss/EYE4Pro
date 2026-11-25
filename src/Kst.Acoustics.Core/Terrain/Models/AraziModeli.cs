@@ -16,8 +16,13 @@ public class AraziModeli : IAraziGeometri
 
     public string AraziAdi { get; set; } = "";
     public string? DosyaYolu { get; set; }
+    /// İçe aktarılan özgün CAD ve seçimler; proje kaydı DosyaYolu'nu değiştirirken korunur.
+    public AraziKaynakBilgisi? Kaynak { get; set; }
 
     public List<AraziNoktasi> Noktalar { get; set; } = new();
+    /// Özgün CAD yüzlerinin Noktalar listesindeki köşe indisleri.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<AraziUcgen>? KaynakUcgenleri { get; set; }
     public List<AraziKonturu> Konturlar { get; set; } = new();
 
     /// Hafriyat tasarım bölgeleri (hedef kotlar). Türetilen TIN ve hafriyat sonucu

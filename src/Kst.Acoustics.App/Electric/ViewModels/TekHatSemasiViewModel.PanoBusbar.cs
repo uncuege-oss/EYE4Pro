@@ -24,6 +24,12 @@ public partial class TekHatSemasiViewModel
             ad = "Ana Pano";
         }
 
+        ad = (ad ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(ad))
+            throw new InvalidOperationException("Pano adı boş olamaz.");
+        if (!PanoAdiKullanilabilir(ad))
+            throw new InvalidOperationException($"'{ad}' adlı pano zaten var. Pano adları benzersiz olmalıdır.");
+
         var pano = new Pano
         {
             Ad = ad,
@@ -134,13 +140,44 @@ public partial class TekHatSemasiViewModel
         if (!otomatikTipSec && tip != null)
             bb.BusbarTipiAd = tip.Ad;
 
-        var minUzunluk = BusbarMinUzunluk(bb);
-        bb.ToplamUzunlukM = Math.Max(Math.Max(0, uzunlukM), minUzunluk);
+        if (bb.KatBolumleri.Count > 0)
+            BusbarYerlesimServisi.Uygula(Proje, bb, bb.KatBolumleri);
+        else
+        {
+            var minUzunluk = BusbarMinUzunluk(bb);
+            bb.ToplamUzunlukM = Math.Max(Math.Max(0, uzunlukM), minUzunluk);
+        }
         BusbarYenidenDuzenle(bb);
     }
 
     public void PanoyuBusbarBagla(Pano pano, BusbarHatti bb, double pozisyon, int cikisSigortaA, double kabloKutuMesafeM)
+        => PanoyuBusbarBaglaTemel(pano, bb, pozisyon, null, cikisSigortaA, kabloKutuMesafeM);
+
+    public void PanoyuBusbarBaglaKatKonumuyla(Pano pano, BusbarHatti bb, double katPozisyonM,
+        int cikisSigortaA, double kabloKutuMesafeM)
     {
+        double katUzunlugu = BusbarYerlesimServisi.KatUzunlugu(bb, pano.Kat);
+        if (bb.KatBolumleri.Count > 0 && katUzunlugu <= 0)
+            throw new InvalidOperationException($"{pano.Kat} katında busbar uzunluğu tanımlı değil. Önce busbar adına tıklayıp kat yerleşimini girin.");
+        if (katUzunlugu > 0 && katPozisyonM > katUzunlugu)
+            throw new InvalidOperationException($"Çıkış kutusu konumu ({katPozisyonM:0.##} m), {pano.Kat} katındaki busbar uzunluğunu ({katUzunlugu:0.##} m) aşamaz.");
+
+        double mutlakPozisyon = bb.KatBolumleri.Count == 0
+            ? Math.Max(0, katPozisyonM)
+            : BusbarYerlesimServisi.MutlakPozisyonHesapla(Proje, bb, pano.Kat, katPozisyonM);
+        PanoyuBusbarBaglaTemel(pano, bb, mutlakPozisyon, Math.Max(0, katPozisyonM),
+            cikisSigortaA, kabloKutuMesafeM);
+    }
+
+    private void PanoyuBusbarBaglaTemel(Pano pano, BusbarHatti bb, double pozisyon,
+        double? katPozisyonM, int cikisSigortaA, double kabloKutuMesafeM)
+    {
+        var bbUstPano = Proje.TumPanolar.FirstOrDefault(p => p.Ad == bb.UstPanoAd);
+        if (bbUstPano == null)
+            throw new InvalidOperationException("Busbarı besleyen pano bulunamadı.");
+        if (bbUstPano == pano || AltAgactaMi(pano, bbUstPano))
+            throw new InvalidOperationException("Pano kendi busbarına veya alt ağacındaki bir busbara bağlanamaz.");
+
         // Önce eski bağlantıyı kaldır
         if (pano.BaglandigiBusbarId != null)
         {
@@ -150,7 +187,6 @@ public partial class TekHatSemasiViewModel
         }
 
         // Üst pano referansını da busbar'ın üst panosuna ayarla
-        var bbUstPano = Proje.TumPanolar.FirstOrDefault(p => p.Ad == bb.UstPanoAd);
         if (bbUstPano != null && pano.UstPano != bbUstPano)
         {
             if (pano.UstPano != null) pano.UstPano.AltPanolar.Remove(pano);
@@ -169,6 +205,7 @@ public partial class TekHatSemasiViewModel
         {
             Ad = $"{bb.Ad}-K{bb.CikisKutulari.Count + 1}",
             PozisyonM = pozisyon,
+            KatPozisyonM = katPozisyonM,
             SigortaA = cikisSigortaA,
             KabloMesafeM = kabloKutuMesafeM,
             BagliPanoAd = pano.Ad
@@ -176,6 +213,13 @@ public partial class TekHatSemasiViewModel
 
         // Pozisyona göre sırala, kutu adlarını yeniden numaralandır, hat uzunluğunu gerekirse büyüt
         BusbarYenidenDuzenle(bb);
+    }
+
+    public void BusbarKatYerlesiminiUygula(BusbarHatti bb, IEnumerable<BusbarKatBolumu> katBolumleri)
+    {
+        BusbarYerlesimServisi.Uygula(Proje, bb, katBolumleri);
+        BusbarYenidenDuzenle(bb);
+        TumunuHesapla();
     }
 
     /// <summary>
@@ -239,7 +283,11 @@ public partial class TekHatSemasiViewModel
     public void PanoyuYenidenAdlandir(Pano pano, string yeniAd)
     {
         yeniAd = (yeniAd ?? "").Trim();
+        if (pano.PanoTipi == PanoTipi.AnaPano)
+            yeniAd = "Ana Pano";
         if (string.IsNullOrWhiteSpace(yeniAd) || yeniAd == pano.Ad) return;
+        if (!PanoAdiKullanilabilir(yeniAd, pano))
+            throw new InvalidOperationException($"'{yeniAd}' adlı pano zaten var. Pano adları benzersiz olmalıdır.");
         string eski = pano.Ad;
         pano.Ad = yeniAd;
 
@@ -296,6 +344,45 @@ public partial class TekHatSemasiViewModel
         }
     }
 
+    public bool PanoAdiKullanilabilir(string? ad, Pano? haric = null)
+    {
+        ad = (ad ?? "").Trim();
+        return !string.IsNullOrWhiteSpace(ad) && !Proje.TumPanolar.Any(p =>
+            p != haric && string.Equals(p.Ad, ad, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public void PanoTipiniDegistir(Pano pano, PanoTipi yeniTip)
+    {
+        if (pano.PanoTipi == yeniTip) return;
+        if (pano.PanoTipi == PanoTipi.AnaPano)
+            throw new InvalidOperationException("Ana pano başka bir pano tipine dönüştürülemez.");
+        if (pano.PanoTipi is PanoTipi.UpsPanosu or PanoTipi.TransferPanosu)
+            throw new InvalidOperationException("UPS ve transfer panosu tipi bağlı sistem üzerinden değiştirilmelidir.");
+        if (yeniTip == PanoTipi.AnaPano && Proje.TumPanolar.Any(p =>
+                p != pano && p.PanoTipi == PanoTipi.AnaPano))
+            throw new InvalidOperationException("Projede yalnızca 1 adet Ana Pano olabilir.");
+
+        pano.PanoTipi = yeniTip;
+        if (yeniTip == PanoTipi.AnaPano)
+        {
+            if (!string.IsNullOrEmpty(pano.BaglandigiBusbarId))
+            {
+                var eskiBusbar = Proje.TumBusbarlar.FirstOrDefault(b => b.Id == pano.BaglandigiBusbarId);
+                eskiBusbar?.CikisKutulari.RemoveAll(k =>
+                    string.Equals(k.BagliPanoAd, pano.Ad, StringComparison.OrdinalIgnoreCase));
+                if (eskiBusbar != null) BusbarYenidenDuzenle(eskiBusbar);
+            }
+            pano.UstPano?.AltPanolar.Remove(pano);
+            pano.UstPano = null;
+            pano.UstPanoAd = "";
+            pano.BaglantiTipi = BaglantiTipi.Kablo;
+            pano.BaglandigiBusbarId = null;
+            pano.CikisKutusuSigortaA = 0;
+            PanoyuYenidenAdlandir(pano, "Ana Pano");
+            Proje.KokPano = pano;
+        }
+    }
+
     /// <summary><paramref name="hedef"/>, <paramref name="kok"/> panonun alt ağacında mı? (döngü kontrolü)</summary>
     public bool AltAgactaMi(Pano kok, Pano hedef)
     {
@@ -342,7 +429,9 @@ public partial class TekHatSemasiViewModel
             sirali[i].Ad = $"{bb.Ad}-K{i + 1}";
             bb.CikisKutulari.Add(sirali[i]);
         }
-        bb.ToplamUzunlukM = Math.Max(Math.Max(0, bb.ToplamUzunlukM), BusbarMinUzunluk(bb));
+        bb.ToplamUzunlukM = bb.KatBolumleri.Count > 0
+            ? bb.KatBolumleri.Sum(k => Math.Max(0, k.UzunlukM))
+            : Math.Max(Math.Max(0, bb.ToplamUzunlukM), BusbarMinUzunluk(bb));
     }
 
     private static double BusbarMinUzunluk(BusbarHatti bb)
@@ -393,9 +482,51 @@ public partial class TekHatSemasiViewModel
     {
         if (SeciliPano == null) return null;
 
-        var kopya = new Linye
+        var kopya = LinyeKopyasiOlustur(kaynak, SiradakiLinyeNoBul(SeciliPano, kaynak.YukTipiAd));
+        SeciliPano.Linyeler.Add(kopya);
+        LinyeleriYenidenNumaralandir(SeciliPano);
+        TumunuHesapla();
+        return kopya;
+    }
+
+    // Linye panosu (Ctrl+C / Ctrl+V). Kopyalama anındaki hali saklanır: kaynak linye sonradan
+    // düzenlense ya da silinse de yapıştırılan içerik değişmez. Başka panoya da yapıştırılabilir.
+    private readonly List<Linye> _linyePanosu = new();
+
+    public int PanodakiLinyeSayisi => _linyePanosu.Count;
+
+    public int LinyeleriKopyala(IEnumerable<Linye> linyeler)
+    {
+        _linyePanosu.Clear();
+        foreach (var l in linyeler)
+            _linyePanosu.Add(LinyeKopyasiOlustur(l, l.LinyeNo));
+        return _linyePanosu.Count;
+    }
+
+    /// <summary>Panodaki linyeleri seçili panoya ekler; eklenen yeni linyeleri döner.</summary>
+    public List<Linye> LinyeleriYapistir()
+    {
+        var eklenen = new List<Linye>();
+        if (SeciliPano == null || _linyePanosu.Count == 0) return eklenen;
+        if (SeciliPano.PanoTipi is PanoTipi.KontrolPanosu or PanoTipi.Kompanzasyon) return eklenen;
+
+        foreach (var kaynak in _linyePanosu)
         {
-            LinyeNo = SiradakiLinyeNoBul(SeciliPano, kaynak.YukTipiAd),
+            var yeni = LinyeKopyasiOlustur(kaynak, SiradakiLinyeNoBul(SeciliPano, kaynak.YukTipiAd));
+            SeciliPano.Linyeler.Add(yeni);
+            eklenen.Add(yeni);
+        }
+        LinyeleriYenidenNumaralandir(SeciliPano);
+        TumunuHesapla();
+        return eklenen;
+    }
+
+    // Kontrol panosu buton atamaları kopyalanmaz: kopya yeni kimlikli bağımsız bir devredir.
+    private static Linye LinyeKopyasiOlustur(Linye kaynak, string linyeNo)
+    {
+        return new Linye
+        {
+            LinyeNo = linyeNo,
             YukTipiAd = kaynak.YukTipiAd,
             FazTipi = kaynak.FazTipi,
             SortiSayisi = kaynak.SortiSayisi,
@@ -404,22 +535,19 @@ public partial class TekHatSemasiViewModel
             Aciklama = kaynak.Aciklama,
             SigortaCinsi = kaynak.SigortaCinsi,
             BireyselKar = kaynak.BireyselKar,
-            KabloMesafeM = kaynak.KabloMesafeM
+            KabloMesafeM = kaynak.KabloMesafeM,
+            KontaktorluMu = kaynak.KontaktorluMu,
+            DarbeKesiciMi = kaynak.DarbeKesiciMi,
+            TmsZorla = kaynak.TmsZorla,
+            KesmeKapasitesi = kaynak.KesmeKapasitesi,
+            KesmeKapasitesiManuel = kaynak.KesmeKapasitesiManuel
         };
-
-        SeciliPano.Linyeler.Add(kopya);
-        LinyeleriYenidenNumaralandir(SeciliPano);
-        TumunuHesapla();
-        return kopya;
     }
 
     public int LinyeleriIceAktar(IEnumerable<Linye> linyeler)
     {
         if (SeciliPano == null) return 0;
         if (SeciliPano.PanoTipi == PanoTipi.KontrolPanosu) return 0;
-
-        KontrolReferanslariniPanoIcinSil(SeciliPano.Ad);
-        SeciliPano.Linyeler.Clear();
 
         var adet = 0;
         foreach (var linye in linyeler)

@@ -23,9 +23,14 @@ public class BinaAciklik : IBinaAciklik
     /// Kullanıcının M50'de girdiği açıklık yüksekliği (m). 0 = girilmemiş.
     public double YukseklikM { get; set; }
 
-    /// Açıklık alt kenarının döşemeden yüksekliği (m). 0 = tip varsayılanı.
+    /// Açıklık alt kenarının döşemeden yüksekliği (m). EsikYuksekligiBelirtildi
+    /// false ise eski dosyalarla uyumlu olarak 0 = tip varsayılanı.
     /// Tip varsayılanları: Kapı → 0.0 m, Pencere → 0.9 m.
     public double EsikYuksekligiM { get; set; }
+
+    /// Çizimden okunan veya kullanıcı tarafından girilen eşik. Sıfır değerli
+    /// boydan camı, eşik bilgisi içermeyen eski kayıtlardan ayırır.
+    public bool EsikYuksekligiBelirtildi { get; set; }
 
     /// Kullanıcı "açıklık değil" derse true. Yeniden taramada korunur.
     public bool IptalEdildi { get; set; }
@@ -38,7 +43,7 @@ public class BinaAciklik : IBinaAciklik
 
     /// Etkin eşik yüksekliği — kullanıcı tanımlı varsa onu, yoksa tip varsayılanını döner.
     public double EtkinEsikYuksekligiM =>
-        EsikYuksekligiM > 0 ? EsikYuksekligiM
+        EsikYuksekligiBelirtildi || EsikYuksekligiM > 0 ? EsikYuksekligiM
         : (Tip == BinaAciklikTipi.Kapi ? 0.0 : 0.9);
 
     /// Tip varsayılan açıklık yüksekliği (m): Kapı 2.1, Pencere 1.5.

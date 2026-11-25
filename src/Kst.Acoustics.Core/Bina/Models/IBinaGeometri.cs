@@ -18,6 +18,7 @@ public interface IBinaKat
     string Ad { get; }
     int KatNo { get; }
     double KatYuksekligiM { get; }
+    double? TabanKotuM { get; }
     IReadOnlyList<IBinaOda> Odalar { get; }
     IReadOnlyList<IBinaAciklik> Acikliklar { get; }
 }
@@ -29,6 +30,8 @@ public interface IBinaOda
     double AlanM2 { get; }
     /// Oda bazlı yükseklik override. null = kat yüksekliği kullanılır.
     double? YukseklikOverrideM { get; }
+    double? TabanKotuOverrideM { get; }
+    IReadOnlyList<string> KaynakMahalAdlari { get; }
 }
 
 public interface IBinaAciklik
@@ -38,6 +41,8 @@ public interface IBinaAciklik
     double GenislikM { get; }
     double YukseklikM { get; }
     double EsikYuksekligiM { get; }
+    bool EsikYuksekligiBelirtildi { get; }
+    double EtkinEsikYuksekligiM { get; }
     bool IptalEdildi { get; }
 }
 

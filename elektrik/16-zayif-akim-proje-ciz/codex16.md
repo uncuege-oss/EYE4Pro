@@ -109,3 +109,9 @@ dotnet run --project src/Kst.Acoustics.Tests/Kst.Acoustics.Tests.csproj
 
 Son bilinen durum: build 0 hata; custom runner 309 test geçer (7 disiplin/aktarım testi dahil),
 xUnit M13 import testleri 8/8 geçer.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Yalnız karşı disiplinin mahal veya topraklama verisini içeren projeler de ayıklama akışına giriyor (A10).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

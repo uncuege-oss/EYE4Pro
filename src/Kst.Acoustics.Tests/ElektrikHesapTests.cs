@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Globalization;
+using ClosedXML.Excel;
 using Kst.Acoustics.App.Electric.ViewModels;
 using Kst.Acoustics.Core.Electric;
 using Kst.Acoustics.Core.Electric.Calculation;
@@ -261,6 +263,46 @@ public static class ElektrikHesapTests
             throw new InvalidOperationException("Tekrarla Ekle kaynak linyenin kullanıcı girdilerini korumalı.");
     }
 
+    public static void LinyeKopyalaYapistir_CokluLinyeyiBaskaPanoyaTasir()
+    {
+        var vm = new TekHatSemasiViewModel();
+        var kaynakPano = new Pano { Ad = "K", Kat = "1", PanoTipi = PanoTipi.TaliPano };
+        var hedefPano = new Pano { Ad = "H", Kat = "2", PanoTipi = PanoTipi.TaliPano };
+        var a1 = new Linye { LinyeNo = "A1", YukTipiAd = "Aydınlatma", SortiSayisi = 3, BirimGucW = 40, Aciklama = "Koridor" };
+        var p1 = new Linye { LinyeNo = "P1", YukTipiAd = "Priz", SortiSayisi = 4, BirimGucW = 300, KontaktorluMu = true };
+        kaynakPano.Linyeler.Add(a1);
+        kaynakPano.Linyeler.Add(p1);
+        hedefPano.Linyeler.Add(new Linye { LinyeNo = "P1", YukTipiAd = "Priz", BirimGucW = 300 });
+        vm.Proje.TumPanolar.Add(kaynakPano);
+        vm.Proje.TumPanolar.Add(hedefPano);
+
+        vm.SeciliPano = kaynakPano;
+        if (vm.LinyeleriKopyala(new[] { a1, p1 }) != 2)
+            throw new InvalidOperationException("İki linye panoya kopyalanmalıydı.");
+        a1.Aciklama = "Sonradan değişti"; // kopyalanan içerik kopyalama anındaki hali kalmalı
+
+        vm.SeciliPano = hedefPano;
+        var eklenen = vm.LinyeleriYapistir();
+
+        if (eklenen.Count != 2 || hedefPano.Linyeler.Count != 3)
+            throw new InvalidOperationException($"Hedef panoya 2 linye eklenmeliydi. Eklenen: {eklenen.Count}.");
+        var numaralar = string.Join(",", hedefPano.Linyeler.Select(l => l.LinyeNo).OrderBy(n => n));
+        if (numaralar != "A1,P1,P2")
+            throw new InvalidOperationException($"Yapıştırılan linyeler hedef panoda sıradaki numaraları almalı. Bulunan: {numaralar}.");
+        var aKopya = eklenen.Single(l => l.YukTipiAd == "Aydınlatma");
+        var pKopya = eklenen.Single(l => l.YukTipiAd == "Priz");
+        if (aKopya.Aciklama != "Koridor" || aKopya.SortiSayisi != 3 || !pKopya.KontaktorluMu)
+            throw new InvalidOperationException("Yapıştırılan linyeler kopyalama anındaki girdileri korumalı.");
+        if (eklenen.Any(l => l.Id == a1.Id || l.Id == p1.Id))
+            throw new InvalidOperationException("Yapıştırılan linyeler yeni kimlik almalı.");
+        if (kaynakPano.Linyeler.Count != 2)
+            throw new InvalidOperationException("Kopyalama kaynak panoyu değiştirmemeli.");
+
+        // Aynı pano içeriği ikinci kez yapıştırılabilir.
+        if (vm.LinyeleriYapistir().Count != 2 || hedefPano.Linyeler.Count != 5)
+            throw new InvalidOperationException("Pano içeriği tekrar yapıştırılabilmeli.");
+    }
+
     public static void LinyeExcelSablonu_RoundTripOkunur()
     {
         var path = Path.Combine(Path.GetTempPath(), $"m11_linye_sablon_{Guid.NewGuid():N}.xlsx");
@@ -318,8 +360,8 @@ public static class ElektrikHesapTests
 
             if (eklenen != 3)
                 throw new InvalidOperationException($"3 linye eklenmeliydi. Bulunan: {eklenen}.");
-            if (etiketler != "A1,P1,M1")
-                throw new InvalidOperationException($"Excel aktarımı eski linyeleri silip yük tipine göre sıralamalıydı. Bulunan: {etiketler}.");
+            if (pano.Linyeler.Count != 5 || etiketler != "A1,P1,A2,P2,M1")
+                throw new InvalidOperationException($"Excel aktarımı mevcut linyeleri koruyup yenilerini eklemeli ve yeniden sıralamalıydı. Bulunan: {etiketler}.");
             if (pano.AltPanolar.Count != 1 || pano.AltPanolar[0] != altPano || altPano.UstPano != pano)
                 throw new InvalidOperationException("Excel aktarımı alt pano bağlantılarına dokunmamalı.");
             if (altPano.UstPanoCikisSigortaA <= 0)
@@ -510,7 +552,7 @@ public static class ElektrikHesapTests
         proje.OrtaGerilim = new OrtaGerilimSistemi
         {
             AnaPanoAd = ana.Ad,
-            TrafoTanimAd = "Kuru Trafo 1000 kVA",
+            TrafoTanimAd = "Kuru Trafo 1000 kVA", TrafoManuel = true,
             KoskTipi = KoskTipi.DisMekanBetonKosk,
             KoskGenislikMm = 6000, KoskDerinlikMm = 3000, KoskYukseklikMm = 2800,
             SebekeHucreXlpeKablosu = new OgXlpeKablo
@@ -695,6 +737,54 @@ public static class ElektrikHesapTests
                 throw new InvalidOperationException("Eski yük tipi kütüphanesine Mekanik varsayılanı eklenmeliydi.");
             if (Math.Abs(mekanik.BirimGucW - 200) > 0.001)
                 throw new InvalidOperationException($"Mekanik varsayılan gücü 200 W olmalıydı, bulunan: {mekanik.BirimGucW} W.");
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    public static void YukTipiKutuphane_VarsayilanFazEskiDosyadaTamamlanirVeKorunur()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"m11_yuk_faz_{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(
+                Path.Combine(dir, "YukTipiKutuphanesi.json"),
+                """
+                [{ "Ad": "Aydınlatma", "BirimGucW": 40, "SigortaCinsi": "B", "TalepFaktoru": 1.0 },
+                 { "Ad": "Motor (3 Faz)", "BirimGucW": 0, "SigortaCinsi": "C", "TalepFaktoru": 1.0 },
+                 { "Ad": "Klima", "BirimGucW": 2500, "SigortaCinsi": "C", "TalepFaktoru": 1.0 }]
+                """);
+
+            var kut = new ElektrikKutuphaneServisi(dir);
+            FazTipi Faz(ElektrikKutuphaneServisi k, string ad) => k.YukTipleri.First(y => y.Ad == ad).VarsayilanFaz;
+            if (Faz(kut, "Aydınlatma") != FazTipi.Monofaze || Faz(kut, "Motor (3 Faz)") != FazTipi.Trifaze)
+                throw new InvalidOperationException("Faz alanı olmayan eski kayıtlar addan tamamlanmalı (Motor 3 Faz → trifaze).");
+
+            // Kullanıcı varsayılanı değiştirir → kaydet/aç sonrası korunur.
+            kut.YukTipleri.First(y => y.Ad == "Klima").FazSecimIndex = 1;
+            kut.Kaydet();
+            var tekrar = new ElektrikKutuphaneServisi(dir);
+            if (Faz(tekrar, "Klima") != FazTipi.Trifaze || Faz(tekrar, "Aydınlatma") != FazTipi.Monofaze)
+                throw new InvalidOperationException("Değiştirilen varsayılan faz kütüphane kaydında korunmalı.");
+
+            // Excel: boş Faz hücresi kütüphane varsayılanını alır, dolu hücre geçerli kalır.
+            var xlsx = Path.Combine(dir, "linyeler.xlsx");
+            using (var wb = new XLWorkbook())
+            {
+                var ws = wb.AddWorksheet("Linyeler");
+                ws.Cell(1, 1).Value = "Yük Tipi";
+                ws.Cell(1, 2).Value = "Faz";
+                ws.Cell(2, 1).Value = "Klima";
+                ws.Cell(3, 1).Value = "Klima";
+                ws.Cell(3, 2).Value = "Monofaze";
+                wb.SaveAs(xlsx);
+            }
+            var (linyeler, _) = TekHatLinyeExcelServisi.IceriAktar(xlsx, tekrar.YukTipleri);
+            if (linyeler.Count != 2 || linyeler[0].FazTipi != FazTipi.Trifaze || linyeler[1].FazTipi != FazTipi.Monofaze)
+                throw new InvalidOperationException("Excel'de boş Faz kütüphane varsayılanını almalı, dolu Faz korunmalı.");
         }
         finally
         {
@@ -1781,6 +1871,45 @@ public static class ElektrikHesapTests
             throw new InvalidOperationException($"Busbar kutuları elle girilen pozisyonları korumalıydı. Bulunan: {pozisyonlar}.");
         if (bb.ToplamUzunlukM < 30)
             throw new InvalidOperationException($"Elle verilen busbar uzunluğu korunmalıydı. Bulunan: {bb.ToplamUzunlukM:N1}m.");
+    }
+
+    public static void Busbar_KatYerlesimiYerelKonumlariMutlagaCevirir()
+    {
+        var proje = new ElektrikProje
+        {
+            Bina = new BinaKonfigurasyonu { ZeminVar = true, NormalKatSayisi = 2 }
+        };
+        var ana = new Pano { Ad = "Ana", Kat = "Z", PanoTipi = PanoTipi.AnaPano };
+        var p1 = new Pano { Ad = "P1", Kat = "1", BaglantiTipi = BaglantiTipi.Busbar };
+        var p2 = new Pano { Ad = "P2", Kat = "2", BaglantiTipi = BaglantiTipi.Busbar };
+        var bb = new BusbarHatti { Ad = "BB", UstPanoAd = ana.Ad };
+        p1.BaglandigiBusbarId = bb.Id;
+        p2.BaglandigiBusbarId = bb.Id;
+        proje.TumPanolar.AddRange([ana, p1, p2]);
+        bb.CikisKutulari.Add(new BusbarCikisKutusu { BagliPanoAd = p1.Ad, KatPozisyonM = 2 });
+        bb.CikisKutulari.Add(new BusbarCikisKutusu { BagliPanoAd = p2.Ad, KatPozisyonM = 1 });
+
+        BusbarYerlesimServisi.Uygula(proje, bb,
+        [
+            new BusbarKatBolumu { Kat = "Z", UzunlukM = 4 },
+            new BusbarKatBolumu { Kat = "1", UzunlukM = 3 },
+            new BusbarKatBolumu { Kat = "2", UzunlukM = 5 }
+        ]);
+
+        var k1 = bb.CikisKutulari.First(k => k.BagliPanoAd == p1.Ad);
+        var k2 = bb.CikisKutulari.First(k => k.BagliPanoAd == p2.Ad);
+        if (Math.Abs(bb.ToplamUzunlukM - 12) > 0.001 ||
+            Math.Abs(k1.PozisyonM - 6) > 0.001 || Math.Abs(k2.PozisyonM - 8) > 0.001)
+            throw new InvalidOperationException(
+                $"Kat yerleşimi hatalı: toplam={bb.ToplamUzunlukM}, P1={k1.PozisyonM}, P2={k2.PozisyonM}.");
+
+        proje.TumBusbarlar.Add(bb);
+        var json = System.Text.Json.JsonSerializer.Serialize(proje);
+        var geri = System.Text.Json.JsonSerializer.Deserialize<ElektrikProje>(json)!;
+        var geriBb = geri.TumBusbarlar.Single();
+        if (geriBb.KatBolumleri.Count != 3 ||
+            Math.Abs(geriBb.CikisKutulari.First().KatPozisyonM.GetValueOrDefault() - 2) > 0.001)
+            throw new InvalidOperationException("Busbar kat yerleşimi proje kayıt/açılışında korunmalı.");
     }
 
     public static void Busbar_CikisKutusuSigortasiYukDegisinceGuncellenir()
@@ -2924,7 +3053,7 @@ public static class ElektrikHesapTests
         var ana = AnaPanoYap(proje, new Linye { FazTipi = FazTipi.Trifaze, SortiSayisi = 1, BirimGucW = 5000 });
         proje.OrtaGerilim = new OrtaGerilimSistemi
         {
-            AnaPanoAd = ana.Ad, OgGerilimKV = 34.5, SebekeKisaDevreMVA = 350, TrafoTanimAd = trafo.Ad
+            AnaPanoAd = ana.Ad, OgGerilimKV = 34.5, SebekeKisaDevreMVA = 350, TrafoTanimAd = trafo.Ad, TrafoManuel = true
         };
         HesaplaTumu(proje, kut);
 
@@ -3014,7 +3143,7 @@ public static class ElektrikHesapTests
         var og = new OrtaGerilimSistemi
         {
             AnaPanoAd = ana.Ad,
-            TrafoTanimAd = trafo.Ad,
+            TrafoTanimAd = trafo.Ad, TrafoManuel = true,
             CikisBaglanti = new TrafoCikisBaglanti
             {
                 Tip = TrafoCikisBaglantiTipi.Kablo,
@@ -3138,7 +3267,7 @@ public static class ElektrikHesapTests
         proje.OrtaGerilim = new OrtaGerilimSistemi
         {
             AnaPanoAd = ana.Ad, KoskTipi = KoskTipi.BinaAlti, OgGerilimKV = 31.5, SebekeKisaDevreMVA = 400,
-            TrafoTanimAd = kut.Trafolar.First().Ad,
+            TrafoTanimAd = kut.Trafolar.First().Ad, TrafoManuel = true,
             SebekeHucreXlpeKablosu = new OgXlpeKablo
             {
                 IletkenMalzemesi = OgKabloIletkenMalzemesi.Aluminyum, KesitMm2 = 95, UzunlukM = 73
@@ -3185,7 +3314,7 @@ public static class ElektrikHesapTests
         proje.OrtaGerilim = new OrtaGerilimSistemi
         {
             AnaPanoAd = ana.Ad,
-            TrafoTanimAd = kut.Trafolar.First().Ad,
+            TrafoTanimAd = kut.Trafolar.First().Ad, TrafoManuel = true,
             SebekeHucreXlpeKablosu = new OgXlpeKablo
             {
                 IletkenMalzemesi = OgKabloIletkenMalzemesi.Aluminyum, KesitMm2 = 95, UzunlukM = 73
@@ -3226,7 +3355,311 @@ public static class ElektrikHesapTests
         var ana = vm.Proje.KokPano!;
         vm.OrtaGerilimEkle(ana);
         vm.PanoyuYenidenAdlandir(ana, "Ana Pano 2");
-        if (vm.Proje.OrtaGerilim!.AnaPanoAd != "Ana Pano 2")
-            throw new InvalidOperationException($"Ana pano yeniden adlandırılınca OG.AnaPanoAd güncellenmeliydi, bulunan: {vm.Proje.OrtaGerilim.AnaPanoAd}.");
+        if (ana.Ad != "Ana Pano" || vm.Proje.OrtaGerilim!.AnaPanoAd != "Ana Pano")
+            throw new InvalidOperationException("Ana pano adı her zaman 'Ana Pano' olarak korunmalı.");
+    }
+
+    public static void M11Duzeltme_MonofazePanoEnYukluFazaGoreBoyutlanir()
+    {
+        var vm = new TekHatSemasiViewModel();
+        vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+        vm.YeniPanoEkle("Mono", "1", PanoTipi.TaliPano);
+        var pano = vm.SeciliPano!;
+        pano.Linyeler.Add(new Linye { FazTipi = FazTipi.Monofaze, BirimGucW = 10_000 });
+        vm.TumunuHesapla();
+        double enYuklu = Math.Max(pano.FazDagilimi.R_A, Math.Max(pano.FazDagilimi.S_A, pano.FazDagilimi.T_A));
+        if (pano.GirisAkimA + 0.001 < enYuklu || pano.GirisSigortaA < enYuklu)
+            throw new InvalidOperationException("Monofaze pano beslemesi en yüklü faz akımını taşımalı.");
+    }
+
+    public static void M11Duzeltme_UpsGirisiBeslemeZincirineYansirVeOtomatikBuyur()
+    {
+        var vm = new TekHatSemasiViewModel();
+        vm.Proje.CosF = 0.99;
+        vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+        var ana = vm.Proje.KokPano!;
+        var ups = vm.MerkeziUpsKur();
+        var kritik = vm.MerkeziUpsDagitimPanosu()!;
+        string ilkTip = ups.UpsTanimAd;
+        kritik.Linyeler.Add(new Linye { FazTipi = FazTipi.Trifaze, BirimGucW = 20_000 });
+        vm.TumunuHesapla();
+        if (!ups.YukYeterliMi || ups.UpsTanimAd == ilkTip)
+            throw new InvalidOperationException("Otomatik UPS yük büyüyünce yeniden seçilmeli.");
+        if (kritik.TalepAkimA + 0.001 < ups.GirisAkimA ||
+            kritik.GirisSigortaA < PanoHesapServisi.GirisSigortaHesapla(ups.GirisAkimA) ||
+            ana.GirisAkimA + 0.001 < ups.GirisAkimA)
+            throw new InvalidOperationException("UPS giriş akımı pano koruma ve üst besleme zincirine yansımalı.");
+    }
+
+    public static void M11Duzeltme_KompanzasyonBusbariSonAkimlaHesaplanir()
+    {
+        var vm = new TekHatSemasiViewModel();
+        vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+        var ana = vm.Proje.KokPano!;
+        ana.Linyeler.Add(new Linye { FazTipi = FazTipi.Trifaze, BirimGucW = 300_000 });
+        var bb = vm.BusbarEkle(ana, vm.BusbarTipleri[0], 20);
+        vm.YeniPanoEkle("Komp", "Z", PanoTipi.Kompanzasyon);
+        var komp = vm.SeciliPano!;
+        vm.PanoyuBusbarBagla(komp, bb, 20, 400, 2);
+        vm.TumunuHesapla();
+        if (komp.GirisAkimA <= 0 || Math.Abs(bb.ToplamAkimA - komp.TalepAkimA) > 0.01)
+            throw new InvalidOperationException("Busbar kompanzasyon panosunun kesinleşen banka akımını taşımalı.");
+    }
+
+    public static void M11Duzeltme_AsiriTalepKabloyuYetersizIsaretler()
+    {
+        var vm = new TekHatSemasiViewModel();
+        vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+        vm.YeniPanoEkle("Büyük Yük", "1", PanoTipi.TaliPano);
+        var pano = vm.SeciliPano!;
+        pano.Linyeler.Add(new Linye { FazTipi = FazTipi.Trifaze, BirimGucW = 4_000_000 });
+        vm.TumunuHesapla();
+        if (pano.KabloKesitiYeterli)
+            throw new InvalidOperationException("Gerçek talebi taşımayan azami paralel kablo düzeni yetersiz işaretlenmeli.");
+    }
+
+    public static void M11Duzeltme_BusbarBaglantisiDonguyuReddeder()
+    {
+        var vm = new TekHatSemasiViewModel();
+        vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+        vm.YeniPanoEkle("Tali", "1", PanoTipi.TaliPano);
+        var tali = vm.SeciliPano!;
+        var bb = vm.BusbarEkle(tali, vm.BusbarTipleri[0], 10);
+        bool reddedildi = false;
+        try { vm.PanoyuBusbarBagla(tali, bb, 5, 32, 2); }
+        catch (InvalidOperationException) { reddedildi = true; }
+        if (!reddedildi || tali.UstPano == tali || tali.AltPanolar.Contains(tali))
+            throw new InvalidOperationException("Pano kendi busbarına bağlanamamalı.");
+    }
+
+    public static void M11Duzeltme_ExcelAktarimiBoskenMevcuduKorur()
+    {
+        var vm = new TekHatSemasiViewModel();
+        vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+        var pano = vm.SeciliPano!;
+        var mevcut = new Linye { Aciklama = "Korunacak" };
+        pano.Linyeler.Add(mevcut);
+        if (vm.LinyeleriIceAktar(Array.Empty<Linye>()) != 0 || !pano.Linyeler.Contains(mevcut))
+            throw new InvalidOperationException("Boş Excel aktarımı mevcut linyeleri silmemeli.");
+    }
+
+    public static void M11Duzeltme_PanoAdlariVeAnaPanoTipiKorunur()
+    {
+        var vm = new TekHatSemasiViewModel();
+        vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+        vm.YeniPanoEkle("Tali", "1", PanoTipi.TaliPano);
+        var tali = vm.SeciliPano!;
+        bool adReddedildi = false, anaReddedildi = false;
+        try { vm.YeniPanoEkle("Tali", "2", PanoTipi.TaliPano); }
+        catch (InvalidOperationException) { adReddedildi = true; }
+        try { vm.PanoTipiniDegistir(tali, PanoTipi.AnaPano); }
+        catch (InvalidOperationException) { anaReddedildi = true; }
+        var ana = vm.Proje.KokPano!;
+        vm.PanoyuYenidenAdlandir(ana, "Başka Ad");
+        if (!adReddedildi || !anaReddedildi || ana.Ad != "Ana Pano")
+            throw new InvalidOperationException("Pano adları benzersiz, ana pano tekil ve adı sabit olmalı.");
+    }
+
+    public static void M11Duzeltme_ExcelMetinOndalikAyiraciDogruOkunur()
+    {
+        var eskiKultur = CultureInfo.CurrentCulture;
+        var path = Path.Combine(Path.GetTempPath(), $"m11_decimal_{Guid.NewGuid():N}.xlsx");
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            using (var wb = new XLWorkbook())
+            {
+                var ws = wb.AddWorksheet("Linyeler");
+                ws.Cell(1, 1).Value = "Yük Tipi";
+                ws.Cell(1, 2).Value = "Birim Güç (W)";
+                ws.Cell(1, 3).Value = "Talep Faktörü";
+                ws.Cell(1, 4).Value = "Kablo Mesafesi (m)";
+                ws.Cell(2, 1).Value = "Priz";
+                ws.Cell(2, 2).Value = "300,5";
+                ws.Cell(2, 3).Value = "0,5";
+                ws.Cell(2, 4).Value = "10,5";
+                wb.SaveAs(path);
+            }
+            var (linyeler, _) = TekHatLinyeExcelServisi.IceriAktar(path);
+            var l = linyeler.Single();
+            if (Math.Abs(l.BirimGucW - 300.5) > 0.001 || Math.Abs(l.TalepFaktoru - 0.5) > 0.001 ||
+                Math.Abs(l.KabloMesafeM - 10.5) > 0.001)
+                throw new InvalidOperationException("Excel metin hücrelerindeki virgüllü ondalıklar doğru okunmalı.");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = eskiKultur;
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    public static void M11Duzeltme_UpsVeTransferPanoTipleriKorunur()
+    {
+        var vm = new TekHatSemasiViewModel();
+        var upsPano = new Pano { Ad = "UPS Kritik", PanoTipi = PanoTipi.UpsPanosu };
+        var transferPano = new Pano { Ad = "Transfer", PanoTipi = PanoTipi.TransferPanosu };
+        vm.Proje.TumPanolar.Add(upsPano);
+        vm.Proje.TumPanolar.Add(transferPano);
+
+        bool upsReddedildi = false, transferReddedildi = false;
+        try { vm.PanoTipiniDegistir(upsPano, PanoTipi.TaliPano); }
+        catch (InvalidOperationException) { upsReddedildi = true; }
+        try { vm.PanoTipiniDegistir(transferPano, PanoTipi.TaliPano); }
+        catch (InvalidOperationException) { transferReddedildi = true; }
+
+        if (!upsReddedildi || !transferReddedildi ||
+            upsPano.PanoTipi != PanoTipi.UpsPanosu || transferPano.PanoTipi != PanoTipi.TransferPanosu)
+            throw new InvalidOperationException("UPS ve transfer pano tipleri genel pano düzenlemesinde korunmalı.");
+    }
+
+    public static void M11Duzeltme_OgOnizlemeAnaPanoyuDegistirmez()
+    {
+        var kut = new ElektrikKutuphaneServisi();
+        var proje = new ElektrikProje();
+        var ana = AnaPanoYap(proje, new Linye { FazTipi = FazTipi.Trifaze, BirimGucW = 20_000 });
+        HesaplaTumu(proje, kut);
+        ana.KabloMesafeM = 3; ana.KabloKesiti = "4x16"; ana.KabloTipi = "NHXMH";
+        var og = new OrtaGerilimSistemi
+        {
+            AnaPanoAd = ana.Ad,
+            CikisBaglanti = new TrafoCikisBaglanti { UzunlukM = 60, ReferansAd = "NYY" }
+        };
+        OrtaGerilimHesapServisi.Hesapla(og, ana, proje, kut, anaPanoyaYansit: false);
+        if (ana.KabloMesafeM != 3 || ana.KabloKesiti != "4x16" || ana.KabloTipi != "NHXMH")
+            throw new InvalidOperationException("OG önizlemesi canlı ana panoyu değiştirmemeli.");
+    }
+
+    public static void OrtaGerilim_OtomatikTrafoYukArttikcaBuyurManuelKorunur()
+    {
+        var kut = new ElektrikKutuphaneServisi();
+        var proje = new ElektrikProje();
+        var yuk = new Linye { FazTipi = FazTipi.Trifaze, SortiSayisi = 1, BirimGucW = 100_000 };
+        var ana = AnaPanoYap(proje, yuk);
+        proje.OrtaGerilim = new OrtaGerilimSistemi { AnaPanoAd = ana.Ad };
+        HesaplaTumu(proje, kut);
+        double ilkKVA = kut.Trafolar.First(t => t.Ad == proje.OrtaGerilim.TrafoTanimAd).GucKVA;
+
+        yuk.BirimGucW = 900_000; // yük artar → otomatik trafo yeniden seçilmeli
+        HesaplaTumu(proje, kut);
+        var og = proje.OrtaGerilim;
+        double yeniKVA = kut.Trafolar.First(t => t.Ad == og.TrafoTanimAd).GucKVA;
+        if (yeniKVA <= ilkKVA || !og.TrafoYeterliMi)
+            throw new InvalidOperationException(
+                $"Otomatik trafo yük artınca büyümeliydi. İlk {ilkKVA} kVA, yeni {yeniKVA} kVA, yeterli={og.TrafoYeterliMi}.");
+
+        // Elle sabitlenen trafo yük artsa da değişmez (yetersiz işaretlenir).
+        var sabit = kut.Trafolar.OrderBy(t => t.GucKVA).First();
+        og.TrafoTanimAd = sabit.Ad;
+        og.TrafoManuel = true;
+        yuk.BirimGucW = 1_500_000;
+        HesaplaTumu(proje, kut);
+        if (og.TrafoTanimAd != sabit.Ad || og.TrafoYeterliMi)
+            throw new InvalidOperationException("Elle seçilen trafo korunmalı ve yetersiz işaretlenmeliydi.");
+    }
+
+    /// <summary>
+    /// "Kaydedilmedi" göstergesi proje JSON'unu kayıttaki haliyle karşılaştırır; değişiklik yokken
+    /// yeniden hesap JSON'u değiştirirse gösterge yanlışlıkla yanar. Hesap tekrarlanabilir olmalı.
+    /// </summary>
+    public static void TekHat_YenidenHesapProjeJsonunuDegistirmez()
+    {
+        var opts = new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+        };
+        var vm = new TekHatSemasiViewModel();
+        var yol = Environment.GetEnvironmentVariable("E4P_PARMAKIZI_PROJE");
+        if (!string.IsNullOrEmpty(yol))
+        {
+            vm.ProjeyiYukle(System.Text.Json.JsonSerializer.Deserialize<ElektrikProje>(File.ReadAllText(yol), opts)!);
+        }
+        else
+        {
+            vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+            var ana = vm.Proje.KokPano!;
+            ana.Linyeler.Add(new Linye { FazTipi = FazTipi.Trifaze, BirimGucW = 120_000 });
+            ana.Linyeler.Add(new Linye { FazTipi = FazTipi.Monofaze, SortiSayisi = 6, BirimGucW = 300 });
+            vm.YeniPanoEkle("T1", "Z", PanoTipi.TaliPano);
+            vm.Proje.TumPanolar.First(p => p.Ad == "T1").Linyeler.Add(new Linye { BirimGucW = 2000 });
+            vm.OrtaGerilimEkle(ana);
+        }
+        vm.TumunuHesapla();
+        vm.KaydetmeyeHazirla();
+        var ilk = System.Text.Json.JsonSerializer.Serialize(vm.Proje, opts);
+        vm.TumunuHesapla();
+        vm.KaydetmeyeHazirla();
+        var ikinci = System.Text.Json.JsonSerializer.Serialize(vm.Proje, opts);
+        if (ilk != ikinci)
+        {
+            int i = 0;
+            while (i < Math.Min(ilk.Length, ikinci.Length) && ilk[i] == ikinci[i]) i++;
+            var bas = Math.Max(0, i - 200);
+            throw new InvalidOperationException(
+                $"Değişiklik yokken yeniden hesap proje JSON'unu değiştirdi (konum {i}): …{ilk.Substring(bas, Math.Min(260, ilk.Length - bas))}…");
+        }
+    }
+
+    public static void M11Duzeltme_LinyeTekrariEkipmanTercihleriniKorur()
+    {
+        var vm = new TekHatSemasiViewModel();
+        var pano = new Pano { Ad = "P" };
+        var kaynak = new Linye
+        {
+            KontaktorluMu = true, DarbeKesiciMi = true, TmsZorla = true,
+            KesmeKapasitesiManuel = true, KesmeKapasitesi = "100kA"
+        };
+        pano.Linyeler.Add(kaynak); vm.Proje.TumPanolar.Add(pano); vm.SeciliPano = pano;
+        var kopya = vm.LinyeTekrarlaEkle(kaynak)!;
+        if (!kopya.KontaktorluMu || !kopya.DarbeKesiciMi || !kopya.TmsZorla ||
+            !kopya.KesmeKapasitesiManuel || kopya.KesmeKapasitesi != "100kA")
+            throw new InvalidOperationException("Tekrarlanan linye ekipman ve manuel koruma tercihlerini korumalı.");
+    }
+
+    public static void M11Duzeltme_DxfUpsBeslemeyiSeriCizer()
+    {
+        var vm = new TekHatSemasiViewModel();
+        vm.YeniPanoEkle("Ana Pano", "Z", PanoTipi.AnaPano);
+        var ana = vm.Proje.KokPano!;
+        var ups = vm.UpsEkle(ana);
+        var kritik = vm.Proje.TumPanolar.First(p => p.Ad == ups.KritikPanoAd);
+        kritik.Linyeler.Add(new Linye { FazTipi = FazTipi.Trifaze, BirimGucW = 10_000 });
+        vm.TumunuHesapla();
+        var path = Path.Combine(Path.GetTempPath(), $"m11_ups_series_{Guid.NewGuid():N}.dxf");
+        try
+        {
+            TekHatSemasiDxfServisi.DxfCiktiAl(vm.Proje, path, vm.Kutuphane);
+            var doc = DxfDocument.Load(path);
+            var upsKutuYataylari = doc.Entities.Lines
+                .Where(l => l.Layer.Name == "M11-UPS" &&
+                    Math.Abs(l.StartPoint.Y - l.EndPoint.Y) < 0.01 &&
+                    Math.Abs(Math.Abs(l.StartPoint.X - l.EndPoint.X) - 72) < 0.01)
+                .ToList();
+            double upsUst = upsKutuYataylari.Max(l => l.StartPoint.Y);
+            var ustKenar = upsKutuYataylari.First(l => Math.Abs(l.StartPoint.Y - upsUst) < 0.01);
+            double cx = (ustKenar.StartPoint.X + ustKenar.EndPoint.X) / 2.0;
+            bool girisVar = doc.Entities.Lines.Any(l => l.Layer.Name == "M11-UPS" &&
+                ((Math.Abs(l.StartPoint.X - cx) < 0.01 && Math.Abs(l.StartPoint.Y - upsUst) < 0.01) ||
+                 (Math.Abs(l.EndPoint.X - cx) < 0.01 && Math.Abs(l.EndPoint.Y - upsUst) < 0.01)));
+            if (!girisVar) throw new InvalidOperationException("Üst pano hattı UPS giriş kenarına bağlanmalı.");
+        }
+        finally { if (File.Exists(path)) File.Delete(path); }
+    }
+
+    public static void M11Duzeltme_BusbarDiversiteTalebiniKullanir()
+    {
+        var kut = new ElektrikKutuphaneServisi();
+        var proje = new ElektrikProje();
+        var ana = AnaPanoYap(proje);
+        var tali = TaliPanoYap(proje, ana, "Tali", 5,
+            new Linye { FazTipi = FazTipi.Trifaze, BirimGucW = 200_000 });
+        tali.EszamanlilikFaktoru = 0.5;
+        HesaplaTumu(proje, kut);
+        var bb = new BusbarHatti { BusbarTipiAd = kut.BusbarTipleri[0].Ad };
+        bb.CikisKutulari.Add(new BusbarCikisKutusu { BagliPanoAd = tali.Ad, PozisyonM = 5 });
+        BusbarHesapServisi.Hesapla(bb, proje, kut);
+        if (Math.Abs(bb.ToplamAkimA - tali.TalepAkimA) > 0.01)
+            throw new InvalidOperationException("Busbar bağlı akım yerine diversite uygulanmış talep akımını kullanmalı.");
     }
 }

@@ -1,13 +1,13 @@
 [
-  { "Ad": "Aydınlatma",       "BirimGucW": 40,    "SigortaCinsi": "B", "TalepFaktoru": 1.0, "Aciklama": "Genel aydınlatma noktası" },
-  { "Ad": "Priz",              "BirimGucW": 300,   "SigortaCinsi": "B", "TalepFaktoru": 1.0, "Aciklama": "Normal priz çıkışı" },
-  { "Ad": "Islak Hacim Priz",  "BirimGucW": 300,   "SigortaCinsi": "B", "TalepFaktoru": 1.0, "Aciklama": "Banyo/mutfak ıslak hacim prizi" },
-  { "Ad": "Klima",             "BirimGucW": 2500,  "SigortaCinsi": "C", "TalepFaktoru": 1.0, "Aciklama": "Split klima ünitesi" },
-  { "Ad": "Mekanik",           "BirimGucW": 200,   "SigortaCinsi": "B", "TalepFaktoru": 1.0, "Aciklama": "Mekanik yardımcı yük" },
-  { "Ad": "Elektrikli Şofben", "BirimGucW": 4500,  "SigortaCinsi": "B", "TalepFaktoru": 1.0, "Aciklama": "Ani su ısıtıcı" },
-  { "Ad": "Çamaşır Makinesi",  "BirimGucW": 2200,  "SigortaCinsi": "C", "TalepFaktoru": 1.0, "Aciklama": "Motorlu ev aleti" },
-  { "Ad": "Fırın",             "BirimGucW": 3000,  "SigortaCinsi": "B", "TalepFaktoru": 1.0, "Aciklama": "Elektrikli fırın" },
-  { "Ad": "Motor (3 Faz)",     "BirimGucW": 0,     "SigortaCinsi": "C", "TalepFaktoru": 1.0, "Aciklama": "3 fazlı motor — güç elle girilir" },
-  { "Ad": "Asansör",           "BirimGucW": 0,     "SigortaCinsi": "D", "TalepFaktoru": 1.0, "Aciklama": "Asansör motoru — güç elle girilir" },
-  { "Ad": "Özel Yük",          "BirimGucW": 0,     "SigortaCinsi": "B", "TalepFaktoru": 1.0, "Aciklama": "Kullanıcı tanımlı yük — güç elle girilir" }
+  { "Ad": "Aydınlatma",       "BirimGucW": 40,    "SigortaCinsi": "B", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Genel aydınlatma noktası" },
+  { "Ad": "Priz",              "BirimGucW": 300,   "SigortaCinsi": "B", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Normal priz çıkışı" },
+  { "Ad": "Islak Hacim Priz",  "BirimGucW": 300,   "SigortaCinsi": "B", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Banyo/mutfak ıslak hacim prizi" },
+  { "Ad": "Klima",             "BirimGucW": 2500,  "SigortaCinsi": "C", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Split klima ünitesi" },
+  { "Ad": "Mekanik",           "BirimGucW": 200,   "SigortaCinsi": "B", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Mekanik yardımcı yük" },
+  { "Ad": "Elektrikli Şofben", "BirimGucW": 4500,  "SigortaCinsi": "B", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Ani su ısıtıcı" },
+  { "Ad": "Çamaşır Makinesi",  "BirimGucW": 2200,  "SigortaCinsi": "C", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Motorlu ev aleti" },
+  { "Ad": "Fırın",             "BirimGucW": 3000,  "SigortaCinsi": "B", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Elektrikli fırın" },
+  { "Ad": "Motor (3 Faz)",     "BirimGucW": 0,     "SigortaCinsi": "C", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Trifaze",  "Aciklama": "3 fazlı motor — güç elle girilir" },
+  { "Ad": "Asansör",           "BirimGucW": 0,     "SigortaCinsi": "D", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Trifaze",  "Aciklama": "Asansör motoru — güç elle girilir" },
+  { "Ad": "Özel Yük",          "BirimGucW": 0,     "SigortaCinsi": "B", "TalepFaktoru": 1.0, "VarsayilanFazTipi": "Monofaze", "Aciklama": "Kullanıcı tanımlı yük — güç elle girilir" }
 ]

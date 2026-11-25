@@ -58,6 +58,9 @@ public static class HafriyatRaporServisi
 
         if (sonuc.KapsamDisiHucreSayisi > 0)
             sb.AppendLine($"Uyarı: {sonuc.KapsamDisiHucreSayisi} hücre mevcut yüzey kapsamı dışında.");
+        if (sonuc.SevHucreSayisi > 0)
+            sb.AppendLine($"Şev alanı (ızgara): {(sonuc.SevHucreSayisi * sonuc.HucreAlaniM2).ToString("N1", Tr)} m²; hacimlere dahildir.");
+        foreach (var uyari in sonuc.Uyarilar) sb.AppendLine("Uyarı: " + uyari);
 
         return sb.ToString();
     }

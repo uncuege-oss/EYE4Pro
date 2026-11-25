@@ -33,6 +33,7 @@ public static class OdaEslestirmeServisi
 
             yeni.Id = eslesen.Id;
             yeni.YukseklikOverrideM = eslesen.YukseklikOverrideM;
+            yeni.TabanKotuOverrideM = eslesen.TabanKotuOverrideM;
             eslesenEskiIdler.Add(eslesen.Id);
         }
 

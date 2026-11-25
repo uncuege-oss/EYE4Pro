@@ -20,7 +20,7 @@ public static class BusbarHesapServisi
         {
             var bagliPano = proje.TumPanolar.FirstOrDefault(p => p.Ad == kutu.BagliPanoAd);
             if (bagliPano != null)
-                toplamI += bagliPano.GirisAkimA;
+                toplamI += BeslemeAkimi(bagliPano);
         }
         busbar.ToplamAkimA = toplamI;
 
@@ -63,7 +63,7 @@ public static class BusbarHesapServisi
             // Bu kutudan ayrılan akımı düş
             var bagliPano = proje.TumPanolar.FirstOrDefault(p => p.Ad == kutu.BagliPanoAd);
             if (bagliPano != null)
-                kalanAkim -= bagliPano.GirisAkimA;
+                kalanAkim -= BeslemeAkimi(bagliPano);
             oncekiPoz = kutu.PozisyonM;
         }
 
@@ -81,7 +81,7 @@ public static class BusbarHesapServisi
             pLoss += 3.0 * kalanAkim * kalanAkim * rSeg;
             var bagliPano = proje.TumPanolar.FirstOrDefault(p => p.Ad == kutu.BagliPanoAd);
             if (bagliPano != null)
-                kalanAkim -= bagliPano.GirisAkimA;
+                kalanAkim -= BeslemeAkimi(bagliPano);
             oncekiPoz = kutu.PozisyonM;
         }
         busbar.IsiKaybiW = pLoss;
@@ -99,4 +99,7 @@ public static class BusbarHesapServisi
                 .OrderByDescending(b => b.NominalAkimA)
                 .FirstOrDefault();
     }
+
+    private static double BeslemeAkimi(Pano pano)
+        => pano.TalepAkimA > 0 ? pano.TalepAkimA : pano.GirisAkimA;
 }

@@ -7,6 +7,7 @@ using Kst.Acoustics.Core.Architecture.Layout;
 using Kst.Acoustics.Core.Architecture.Materials;
 using Kst.Acoustics.Core.Architecture.Model3D;
 using Kst.Acoustics.Core.Architecture.Models;
+using Kst.Acoustics.Core.Common;
 
 namespace Kst.Acoustics.Core.Architecture.Services;
 
@@ -37,12 +38,21 @@ public static class MimariProjeServisi
         if (string.IsNullOrWhiteSpace(dosyaYolu))
             throw new ArgumentException("Mimari proje dosya yolu boş olamaz.", nameof(dosyaYolu));
 
-        proje.SemaSurum = GuncelSemaSurum;
-        proje.DosyaYolu = dosyaYolu;
-        proje.GuncellemeZamani = DateTime.Now;
-
-        var json = JsonSerializer.Serialize(proje, JsonAyar);
-        File.WriteAllText(dosyaYolu, json);
+        if (proje.SemaSurum > GuncelSemaSurum)
+            throw new InvalidDataException("Mimari proje sürümü bu uygulamadan daha yeni.");
+        var onceki = (proje.SemaSurum, proje.DosyaYolu, proje.GuncellemeZamani);
+        try
+        {
+            proje.SemaSurum = GuncelSemaSurum;
+            proje.DosyaYolu = dosyaYolu;
+            proje.GuncellemeZamani = DateTime.Now;
+            GuvenliDosyaYazmaServisi.Yaz(dosyaYolu, JsonSerializer.Serialize(proje, JsonAyar));
+        }
+        catch
+        {
+            (proje.SemaSurum, proje.DosyaYolu, proje.GuncellemeZamani) = onceki;
+            throw;
+        }
     }
 
     public static MimariProje Ac(string dosyaYolu)
@@ -62,6 +72,8 @@ public static class MimariProjeServisi
 
     private static void Migrate(MimariProje proje)
     {
+        if (proje.SemaSurum > GuncelSemaSurum)
+            throw new InvalidDataException("Mimari proje sürümü bu uygulamadan daha yeni.");
         if (proje.SemaSurum >= GuncelSemaSurum) return;
 
         // Sürüm 0 -> 1: ilk resmi mimari BIM şeması; özel dönüşüm gerekmez.

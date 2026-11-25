@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kst.Acoustics.Core.Terrain.Models;
+using Kst.Acoustics.Core.Common;
 
 namespace Kst.Acoustics.Core.Terrain.Services;
 
@@ -12,7 +13,7 @@ namespace Kst.Acoustics.Core.Terrain.Services;
 public static class AraziGeometriServisi
 {
     /// Geçerli şema sürümü — migrasyon tetikleyicisi.
-    public const int GuncelSemaSurum = 1;
+    public const int GuncelSemaSurum = 3;
 
     private static readonly JsonSerializerOptions JsonAyar = new()
     {
@@ -23,10 +24,24 @@ public static class AraziGeometriServisi
     /// Araziyi kaydet. `GeometriRevizyon` her kayıtta artırılır (tüketici fark uyarısı için).
     public static void Kaydet(AraziModeli arazi, string dosyaYolu)
     {
-        arazi.GeometriRevizyon++;
-        arazi.DosyaYolu = dosyaYolu;
-        var json = JsonSerializer.Serialize(arazi, JsonAyar);
-        File.WriteAllText(dosyaYolu, json);
+        if (arazi.SemaSurum > GuncelSemaSurum)
+            throw new InvalidDataException("Arazi dosyası sürümü bu uygulamadan daha yeni.");
+        var onceki = (arazi.GeometriRevizyon, arazi.DosyaYolu, arazi.SemaSurum);
+        try
+        {
+            // Eski uygulamaların şev alanlarını sessizce düz platform gibi okumasını engeller.
+            if (arazi.KaynakUcgenleri != null) arazi.SemaSurum = 3;
+            else if (arazi.Tasarim.Bolgeler.Any(b => b.KenarGecisi == TasarimKenarTipi.Sev || b.KenarAyarlari.Count > 0))
+                arazi.SemaSurum = Math.Max(arazi.SemaSurum, 2);
+            arazi.GeometriRevizyon = checked(arazi.GeometriRevizyon + 1);
+            arazi.DosyaYolu = dosyaYolu;
+            GuvenliDosyaYazmaServisi.Yaz(dosyaYolu, JsonSerializer.Serialize(arazi, JsonAyar));
+        }
+        catch
+        {
+            (arazi.GeometriRevizyon, arazi.DosyaYolu, arazi.SemaSurum) = onceki;
+            throw;
+        }
     }
 
     /// Dosyadan yükle ve gerekiyorsa migrasyon uygula. TIN ve hafriyat sonucu serileştirilmez;
@@ -57,9 +72,9 @@ public static class AraziGeometriServisi
 
     private static void Migrate(AraziModeli arazi)
     {
-        if (arazi.SemaSurum >= GuncelSemaSurum) return;
-
-        // Sürüm 0 → 1: ilk resmi şema; özel dönüşüm gerekmez.
-        arazi.SemaSurum = GuncelSemaSurum;
+        if (arazi.SemaSurum > GuncelSemaSurum)
+            throw new InvalidDataException("Arazi dosyası sürümü bu uygulamadan daha yeni.");
+        // Sürüm 1 alanları yeni modelin varsayılanlarıyla uyumludur; mevcut araziyi sırf açarken yükseltme.
+        if (arazi.SemaSurum < 1) arazi.SemaSurum = 1;
     }
 }

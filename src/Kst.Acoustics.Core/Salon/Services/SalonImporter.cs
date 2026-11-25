@@ -16,6 +16,11 @@ public static class SalonImporter
     {
         ArgumentNullException.ThrowIfNull(salon);
         SalonGeometriServisi.Normalize(salon);
+        if (salon.SerbestTasarim)
+        {
+            var errors = SalonTasarimDogrulama.Kontrol(salon).Where(x=>x.Hata).ToList();
+            if (errors.Count > 0) throw new InvalidDataException(string.Join("\n",errors.Select(x=>x.Mesaj)));
+        }
         var surfaces = Salon3DGorunumServisi.YuzeyleriOlustur(salon);
         if (surfaces.Count == 0)
         {

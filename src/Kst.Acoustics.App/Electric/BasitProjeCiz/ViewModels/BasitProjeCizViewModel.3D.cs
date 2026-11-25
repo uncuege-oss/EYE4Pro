@@ -109,9 +109,8 @@ public partial class BasitProjeCizViewModel
         if (BasitProjeCizKabloServisi.ElemanPrizMi(el.Tip))
             return AktifPafta == BpcPaftaTipi.Priz;
 
-        // Priz buatı da yalnız Priz paftasında görünür
-        if (el.Tip == BpcElemanTipi.Buat && el.PaftaTipi == BpcPaftaTipi.Priz)
-            return AktifPafta == BpcPaftaTipi.Priz;
+        if (el.Tip == BpcElemanTipi.Buat)
+            return AktifPafta == el.PaftaTipi;
 
         if (AktifPafta == BpcPaftaTipi.KabloTavasi)
             return false;

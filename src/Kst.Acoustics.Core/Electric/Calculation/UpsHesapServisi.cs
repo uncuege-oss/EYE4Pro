@@ -39,9 +39,9 @@ public static class UpsHesapServisi
 
         // 2) UPS seçimi (atanmamışsa otomatik)
         UpsTanim? upsTanim = null;
-        if (!string.IsNullOrEmpty(ups.UpsTanimAd))
+        if (ups.UpsTanimManuel && !string.IsNullOrEmpty(ups.UpsTanimAd))
             upsTanim = kutuphane.Upsler.FirstOrDefault(u => u.Ad == ups.UpsTanimAd);
-        if (upsTanim == null)
+        if (!ups.UpsTanimManuel || upsTanim == null)
         {
             upsTanim = UygunUpsSec(ups.GerekliKVA, gerekliKW, kutuphane);
             ups.UpsTanimAd = upsTanim?.Ad ?? "";

@@ -7,8 +7,10 @@ namespace Kst.Acoustics.Core.Electric.BasitProjeCiz.Services;
 public readonly record struct DisiplinSayim(int KuvvetliEleman, int ZayifEleman,
     int KuvvetliKablo, int ZayifKablo, int KuvvetliDevre, int ZayifDevre)
 {
-    public bool KuvvetliVar => KuvvetliEleman + KuvvetliKablo + KuvvetliDevre > 0;
-    public bool ZayifVar    => ZayifEleman + ZayifKablo + ZayifDevre > 0;
+    public int KuvvetliEkIcerik { get; init; }
+    public int ZayifEkIcerik { get; init; }
+    public bool KuvvetliVar => KuvvetliEleman + KuvvetliKablo + KuvvetliDevre + KuvvetliEkIcerik > 0;
+    public bool ZayifVar    => ZayifEleman + ZayifKablo + ZayifDevre + ZayifEkIcerik > 0;
 }
 
 /// Disiplin ayıklamanın sonucu — durum mesajı için özet sayılar.
@@ -24,6 +26,7 @@ public static class DisiplinAyiklamaServisi
     public static DisiplinSayim Say(BasitProjeCizProje proje)
     {
         int kE = 0, zE = 0, kK = 0, zK = 0, kD = 0, zD = 0;
+        int kEk = 0, zEk = 0;
         foreach (var kat in proje.Katlar)
         {
             foreach (var el in kat.Elemanlar)
@@ -37,8 +40,15 @@ public static class DisiplinAyiklamaServisi
             kD += kat.Devreler.Count + kat.VavienGruplari.Count + kat.PrizDevreleri.Count
                 + kat.MekanikDevreleri.Count + kat.BuatPanoBaglantilari.Count;
             zD += kat.SistemDevreleri.Count;
+            foreach (var satir in kat.MahalListesi)
+            {
+                if (BpcSistemKatalogu.Disiplini(satir.Tip) == BpcDisiplin.ZayifAkim) zEk++; else kEk++;
+            }
+            kEk += kat.KabloTavalari.Count + kat.PanoBeslemeHatlari.Count
+                + kat.Topraklama.Seritler.Count + kat.Topraklama.Kaziklar.Count
+                + kat.Topraklama.SecimNoktalari.Count + (kat.Topraklama.EkTopraklamaVar ? 1 : 0);
         }
-        return new DisiplinSayim(kE, zE, kK, zK, kD, zD);
+        return new DisiplinSayim(kE, zE, kK, zK, kD, zD) { KuvvetliEkIcerik = kEk, ZayifEkIcerik = zEk };
     }
 
     /// Projeyi verilen disipline indirger: diğer disiplinin elemanları, kabloları,

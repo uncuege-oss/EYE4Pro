@@ -201,3 +201,9 @@ Son bilinen genel hedef:
 5. UI değişikliği için `RoomModesViewModel`, `RoomModesWindow` ve ilgili kontrol dosyalarını kontrol et.
 6. Formülasyon/görsel örnekleme değişirse regresyon testi ekle veya mevcut M06 testlerini çalıştır.
 7. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Aday mod hesabı tamsayı dönüşümünden önce sınırlandırıldı; en çok 2 milyon aday, aşımda uyarılı boş sonuç (A07).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

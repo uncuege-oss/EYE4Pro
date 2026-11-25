@@ -6,6 +6,9 @@ namespace Kst.Acoustics.Core.Electric.KesifHazirla;
 
 public static class KesifPozImportServisi
 {
+    private static readonly string[] AdBasliklari = ["birimadi", "imalatadi", "imalatincinsi", "tanim", "tanimi", "pozadi", "aciklama"];
+    private static readonly string[] FiyatBasliklari = ["birimfiyat", "birimfiyati", "fiyat"];
+
     public static IReadOnlyList<KesifPoz> DosyadanOku(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -24,51 +27,72 @@ public static class KesifPozImportServisi
     public static IReadOnlyList<KesifPoz> ExceldenOku(string path)
     {
         using var workbook = new XLWorkbook(path);
-        var sheet = workbook.Worksheets.First();
-        var headerRow = sheet.FirstRowUsed() ?? throw new InvalidOperationException("Excel dosyasında başlık satırı bulunamadı.");
-
-        // Başlık → GERÇEK kolon numarası eşlemesi. CellsUsed() boş hücreleri atladığından
-        // sıralı indeks kullanmak kolonları kaydırırdı; hücrenin gerçek adresini kullanıyoruz.
-        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var cell in headerRow.CellsUsed())
-        {
-            var key = NormalizeHeader(cell.GetString());
-            if (!string.IsNullOrWhiteSpace(key) && !headers.ContainsKey(key))
-                headers[key] = cell.Address.ColumnNumber;
-        }
-
         var result = new List<KesifPoz>();
-        foreach (var row in sheet.RowsUsed().Skip(1))
+        var baslikBulundu = false;
+        foreach (var sheet in workbook.Worksheets)
         {
-            var pozNo = ReadCell(row, headers, "pozno");
-            var birimAdi = ReadCell(row, headers, "birimadi", "imalatadi", "tanim", "tanimi", "pozadi", "aciklama");
-            var birim = ReadCell(row, headers, "birim");
-
-            if (string.IsNullOrWhiteSpace(pozNo) && string.IsNullOrWhiteSpace(birimAdi))
-                continue;
-
-            result.Add(new KesifPoz
+            Dictionary<string, int>? headers = null;
+            var baslikSatiri = 0;
+            foreach (var row in sheet.RowsUsed().Take(100))
             {
-                PozNo = pozNo,
-                BirimAdi = birimAdi,
-                Birim = string.IsNullOrWhiteSpace(birim) ? "adet" : birim,
-                BirimFiyat = ReadDecimal(row, headers, "birimfiyat", "fiyat"),
-                Aciklama = ReadCell(row, headers, "not"),
-                Kategori = ReadCell(row, headers, "kategori")
-            });
+                var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                foreach (var cell in row.CellsUsed())
+                    map.TryAdd(NormalizeHeader(cell.GetFormattedString()), cell.Address.ColumnNumber);
+                if (!GecerliBasliklar(map)) continue;
+                headers = map;
+                baslikSatiri = row.RowNumber();
+                break;
+            }
+            if (headers is null) continue; // Kapak/açıklama sayfaları veri sayfası değildir.
+            baslikBulundu = true;
+            var kategori = "";
+            foreach (var row in sheet.RowsUsed().Where(r => r.RowNumber() > baslikSatiri))
+            {
+                // Yaklaşık maliyet cetvellerindeki birleştirilmiş iş grubu satırları.
+                var grup = row.CellsUsed().Select(c => c.GetFormattedString().Trim())
+                    .FirstOrDefault(v => NormalizeHeader(v).StartsWith("isgrubu", StringComparison.Ordinal));
+                if (grup is not null)
+                {
+                    kategori = grup.Contains(':') ? grup[(grup.IndexOf(':') + 1)..].Trim() : grup;
+                    continue;
+                }
+                var pozNo = ReadCell(row, headers, "pozno");
+                var birimAdi = ReadCell(row, headers, AdBasliklari);
+                var birim = ReadCell(row, headers, "birim");
+                if (string.IsNullOrWhiteSpace(pozNo) && string.IsNullOrWhiteSpace(birimAdi)) continue;
+                if (NormalizeHeader(pozNo) == "pozno" && AdBasliklari.Contains(NormalizeHeader(birimAdi))) continue;
+                var satirKategorisi = ReadCell(row, headers, "kategori");
+                result.Add(new KesifPoz
+                {
+                    PozNo = pozNo,
+                    BirimAdi = birimAdi,
+                    Birim = string.IsNullOrWhiteSpace(birim) ? "adet" : birim,
+                    BirimFiyat = ReadDecimal(row, headers, FiyatBasliklari),
+                    Aciklama = ReadCell(row, headers, "not"),
+                    Kategori = string.IsNullOrWhiteSpace(satirKategorisi) ? kategori : satirKategorisi
+                });
+            }
         }
-
+        if (!baslikBulundu) throw BaslikHatasi();
         return result;
     }
 
+    private static bool GecerliBasliklar(Dictionary<string, int> headers)
+        => AdBasliklari.Any(headers.ContainsKey) && FiyatBasliklari.Any(headers.ContainsKey)
+           && (headers.ContainsKey("pozno") || headers.ContainsKey("birim"));
+
+    private static InvalidOperationException BaslikHatasi()
+        => new("Poz başlıkları bulunamadı. Poz No, İmalat Adı (veya İmalatın Cinsi), Birim ve Birim Fiyat kolonlarını kontrol edin.");
+
     private static IReadOnlyList<KesifPoz> AyracliMetindenOku(string path, char? delimiter)
     {
-        var lines = File.ReadAllLines(path, Encoding.UTF8).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+        var lines = AyracliKayitlariOku(File.ReadAllText(path, Encoding.UTF8)).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
         if (lines.Count == 0)
             return [];
 
         var effectiveDelimiter = delimiter ?? DetectDelimiter(lines[0]);
         var headers = HeaderMap(ParseDelimitedLine(lines[0], effectiveDelimiter));
+        if (!GecerliBasliklar(headers)) throw BaslikHatasi();
         var result = new List<KesifPoz>();
         foreach (var line in lines.Skip(1))
         {
@@ -84,7 +108,7 @@ public static class KesifPozImportServisi
             }
 
             var pozNo = Read("pozno");
-            var birimAdi = Read("birimadi", "imalatadi", "tanim", "tanimi", "pozadi", "aciklama");
+            var birimAdi = Read(AdBasliklari);
             if (string.IsNullOrWhiteSpace(pozNo) && string.IsNullOrWhiteSpace(birimAdi))
                 continue;
 
@@ -93,13 +117,35 @@ public static class KesifPozImportServisi
                 PozNo = pozNo,
                 BirimAdi = birimAdi,
                 Birim = string.IsNullOrWhiteSpace(Read("birim")) ? "adet" : Read("birim"),
-                BirimFiyat = ParseDecimal(Read("birimfiyat", "fiyat")),
+                BirimFiyat = ParseDecimal(Read(FiyatBasliklari)),
                 Aciklama = Read("not"),
                 Kategori = Read("kategori")
             });
         }
 
         return result;
+    }
+
+    private static IEnumerable<string> AyracliKayitlariOku(string text)
+    {
+        var baslangic = 0;
+        var tirnakIcinde = false;
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] == '"')
+            {
+                if (tirnakIcinde && i + 1 < text.Length && text[i + 1] == '"') i++;
+                else tirnakIcinde = !tirnakIcinde;
+            }
+            else if (!tirnakIcinde && text[i] is '\r' or '\n')
+            {
+                yield return text[baslangic..i];
+                if (text[i] == '\r' && i + 1 < text.Length && text[i + 1] == '\n') i++;
+                baslangic = i + 1;
+            }
+        }
+        if (tirnakIcinde) throw new InvalidOperationException("CSV dosyasında kapanmamış tırnaklı alan var.");
+        if (baslangic < text.Length) yield return text[baslangic..];
     }
 
     private static char DetectDelimiter(string headerLine)
@@ -201,7 +247,7 @@ public static class KesifPozImportServisi
 
     internal static string NormalizeHeader(string value)
     {
-        var text = value.Trim().ToLowerInvariant()
+        var text = value.Trim().Replace('İ', 'I').ToLowerInvariant()
             .Replace("ı", "i", StringComparison.Ordinal)
             .Replace("ğ", "g", StringComparison.Ordinal)
             .Replace("ü", "u", StringComparison.Ordinal)

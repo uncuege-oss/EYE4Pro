@@ -21,6 +21,8 @@ public partial class BinaGeometriWindow : Window
 {
     private readonly BinaGeometriViewModel _vm = new();
     private bool _kapanisOnaylandi;
+    private BinaKat? _sonIceriAktarmaCizimi;
+    private string? _sonIceriAktarmaRaporu;
 
     // Geri butonunun döneceği pencere fabrikası — her launcher kendi tipini iletir.
     private readonly Func<Window>? _geriPencere;
@@ -109,7 +111,8 @@ public partial class BinaGeometriWindow : Window
             SyncOfsetXText();
         else if (e.PropertyName == nameof(BinaGeometriViewModel.KatOfsetY))
             SyncOfsetYText();
-        else if (e.PropertyName == nameof(BinaGeometriViewModel.SeciliOdaId))
+        else if (e.PropertyName == nameof(BinaGeometriViewModel.SeciliOdaId) ||
+                 e.PropertyName == nameof(BinaGeometriViewModel.SeciliOdaBilgi))
             SyncIzlenenOda();
     }
 
@@ -122,6 +125,69 @@ public partial class BinaGeometriWindow : Window
         _izlenenOda = _vm.SeciliOda;
         if (_izlenenOda is not null)
             _izlenenOda.PropertyChanged += OnOdaPropertyChanged;
+        SyncOdaOlcuPaneli();
+    }
+
+    private void SyncOdaOlcuPaneli()
+    {
+        var oda = _vm.SeciliOda;
+        if (OdaTabanKotuText is { } kot) kot.Text = oda?.TabanKotuOverrideM?.ToString("0.###") ?? "";
+        if (OdaYukseklikText is { } yukseklik) yukseklik.Text = oda?.YukseklikOverrideM?.ToString("0.###") ?? "";
+        if (OdaKaynakAdlariText is { } adlar) adlar.Text = oda?.KaynakMahalAdlari.Count > 0
+            ? oda.KaynakMahalOzeti : "Kaynak mahal adı bulunamadı.";
+        if (OdaCokluAdIpucu is { } ipucu) ipucu.IsVisible = oda?.KaynakMahalAdlari.Count > 1;
+    }
+
+    private void OdaOlcu_GotFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        // Düzenleme sürerken başka oda seçilirse eski metni yeni odaya uygulama.
+        if (sender is TextBox box) box.Tag = _vm.SeciliOdaId;
+    }
+
+    private void OdaTabanKotu_LostFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        => OdaOlcuUygula(OdaTabanKotuText, yukseklikMi: false);
+    private void OdaYukseklik_LostFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        => OdaOlcuUygula(OdaYukseklikText, yukseklikMi: true);
+    private void OdaTabanKotu_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Return) return;
+        OdaOlcuUygula(OdaTabanKotuText, yukseklikMi: false); e.Handled = true;
+    }
+    private void OdaYukseklik_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Return) return;
+        OdaOlcuUygula(OdaYukseklikText, yukseklikMi: true); e.Handled = true;
+    }
+
+    private void OdaOlcuUygula(TextBox? box, bool yukseklikMi)
+    {
+        if (box is null || _vm.SeciliOda is not { } oda) return;
+        if (box.Tag is string editingId && editingId != oda.Id) { SyncOdaOlcuPaneli(); return; }
+        string text = box.Text?.Trim() ?? "";
+        double? value = null;
+        if (text.Length > 0)
+        {
+            if (!double.TryParse(text.Replace(',', '.'), System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out double parsed) || !double.IsFinite(parsed) ||
+                (yukseklikMi && parsed <= 0))
+            {
+                _vm.DurumMesaji = yukseklikMi ? "Oda yüksekliği pozitif bir sayı olmalı; önceki değer korundu."
+                    : "Oda taban kotu geçerli bir sayı olmalı; önceki değer korundu.";
+                SyncOdaOlcuPaneli(); return;
+            }
+            value = parsed;
+        }
+        double? old = yukseklikMi ? oda.YukseklikOverrideM : oda.TabanKotuOverrideM;
+        if (old != value)
+        {
+            _vm.UndoSnapshotAl();
+            if (yukseklikMi) oda.YukseklikOverrideM = value;
+            else oda.TabanKotuOverrideM = value;
+            _vm.Kirlet();
+            _vm.DurumMesaji = $"'{oda.Ad}' oda {(yukseklikMi ? "yüksekliği" : "taban kotu")} güncellendi.";
+            PlanCanvas?.InvalidateVisual();
+        }
+        SyncOdaOlcuPaneli();
     }
 
     private void OnOdaPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -147,6 +213,7 @@ public partial class BinaGeometriWindow : Window
         // Yükseklik textbox
         if (KatYukseklikText is { } yt)
             yt.Text = kat?.KatYuksekligiM.ToString("F2") ?? "";
+        if (KatTabanKotuText is { } zt) zt.Text = kat?.TabanKotuM?.ToString("F2") ?? "";
 
         SyncOfsetXText();
         SyncOfsetYText();
@@ -169,6 +236,7 @@ public partial class BinaGeometriWindow : Window
                 break;
             case nameof(BinaKat.Ad):
             case nameof(BinaKat.KatYuksekligiM):
+            case nameof(BinaKat.TabanKotuM):
                 _vm.Kirlet();
                 break;
         }
@@ -178,6 +246,17 @@ public partial class BinaGeometriWindow : Window
     {
         if (OfsetXText is { } x)
             x.Text = _vm.KatOfsetX.ToString("F2");
+    }
+
+    private void KatTabanKotu_LostFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_vm.SeciliKat is not { } kat) return;
+        string text = KatTabanKotuText?.Text?.Trim() ?? "";
+        if (text.Length == 0) kat.TabanKotuM = null;
+        else if (double.TryParse(text.Replace(',', '.'), System.Globalization.NumberStyles.Float,
+                     System.Globalization.CultureInfo.InvariantCulture, out double z) && double.IsFinite(z))
+            kat.TabanKotuM = z;
+        if (KatTabanKotuText is { } box) box.Text = kat.TabanKotuM?.ToString("F2") ?? "";
     }
 
     private void SyncOfsetYText()
@@ -240,6 +319,8 @@ public partial class BinaGeometriWindow : Window
             return;
 
         _vm.Geo = BinaGeometriServisi.YeniOlustur();
+        _sonIceriAktarmaCizimi = null;
+        _sonIceriAktarmaRaporu = null;
         _vm.SeciliKat = null;
         _vm.UndoYiginlariniTemizle();
         _vm.DurumMesaji = "Yeni bina geometrisi oluşturuldu.";
@@ -268,6 +349,8 @@ public partial class BinaGeometriWindow : Window
         try
         {
             _vm.Geo = BinaGeometriServisi.Ac(path);
+            _sonIceriAktarmaCizimi = null;
+            _sonIceriAktarmaRaporu = null;
             _vm.SeciliKat = _vm.Geo.Katlar.Count > 0 ? _vm.Geo.Katlar[0] : null;
             _vm.UndoYiginlariniTemizle();
             _vm.DurumMesaji = $"Açıldı: {Path.GetFileName(path)}  (Rev. {_vm.Geo.GeometriRevizyon})";
@@ -370,80 +453,62 @@ public partial class BinaGeometriWindow : Window
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "DXF Kat Planı Seç",
+            Title = "Mimari Proje Seç — Otomatik Bina Oluştur",
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("DXF Dosyaları") { Patterns = ["*.dxf"] }]
+            FileTypeFilter = [new FilePickerFileType("Mimari CAD Projesi") { Patterns = ["*.dwg", "*.dxf"] }]
         });
         var path = files.Count > 0 ? files[0].Path.LocalPath : null;
         if (string.IsNullOrWhiteSpace(path)) return;
-
-        _vm.DurumMesaji = "DXF taranıyor…";
+        IsEnabled = false;
+        _vm.DurumMesaji = "Mimari proje okunuyor; katman önizlemesi hazırlanıyor…";
         try
         {
-            var yukleyici = new BinaServices.DxfKatYukleyici();
-
-            // Tek dosyada yan yana birden fazla kat planı olup olmadığını önce
-            // otomatik tespit et (codex50 §9). Çoklu plan bulunursa dağıtım
-            // diyaloğu açılır; tek plansa mevcut tek-kat akışı aynen sürer.
-            var cokluSonuc = await Task.Run(() => yukleyici.CokluKatTespitEt(path));
-
-            if (cokluSonuc is not null)
+            using var cad = await MimariCadDosyasi.AcAsync(path);
+            var cizim = await Task.Run(() => new DxfKatPlaniParser().KatmanliOku(cad.DxfYolu));
+            IsEnabled = true;
+            _vm.DurumMesaji = "Katmanları açıp kapatın; hazır olduğunuzda Üret'e basın.";
+            var katmanlar = await new MimariKatmanSecimWindow(cizim).ShowDialog<List<string>?>(this);
+            if (katmanlar is null)
             {
-                var dialog = new CokluKatDagitimWindow(cokluSonuc);
-                bool onay = await dialog.ShowDialog<bool>(this);
-                if (!onay)
-                {
-                    _vm.DurumMesaji = "Çoklu kat dağıtımı iptal edildi.";
-                    return;
-                }
-
-                var secilenler = dialog.OnaylananSatirlar;
-                if (secilenler.Count == 0)
-                {
-                    _vm.DurumMesaji = "Hiçbir kat seçilmedi — dağıtım yapılmadı.";
-                    return;
-                }
-
-                int baslangicNo = _vm.Geo.Katlar.Count;
-                var yeniKatlar = await Task.Run(() =>
-                {
-                    var liste = new List<BinaKat>();
-                    for (int i = 0; i < secilenler.Count; i++)
-                    {
-                        var satir = secilenler[i];
-                        liste.Add(yukleyici.CokluKatUret(satir.Aday, baslangicNo + i + 1, satir.Ad, satir.YukseklikM));
-                    }
-                    return liste;
-                });
-
-                foreach (var yeniKat in yeniKatlar) _vm.Geo.Katlar.Add(yeniKat);
-                _vm.SeciliKat = yeniKatlar[0];
-                _vm.Kirlet();
-                PlanCanvas?.FitAll();
-                _vm.DurumMesaji = $"{yeniKatlar.Count} kat DXF'ten dağıtıldı: " +
-                    string.Join(", ", yeniKatlar.Select(k => k.Ad));
+                _vm.DurumMesaji = "İçe aktarma iptal edildi; mevcut bina değiştirilmedi.";
                 return;
             }
-
-            int no = _vm.Geo.Katlar.Count + 1;
-            var katAd = $"Kat {no}";
-
-            var kat = await Task.Run(() => yukleyici.Yukle(path, no, katAd, 3.0));
-
-            _vm.Geo.Katlar.Add(kat);
-            _vm.SeciliKat = kat;
-            _vm.Kirlet();
-            PlanCanvas?.FitAll();
-
-            string uyari = kat.UnitWarning is { } w ? $"  ⚠ {w}" : "";
-            _vm.DurumMesaji = $"DXF yüklendi: '{kat.Ad}'  · {kat.Odalar.Count} oda, {kat.Acikliklar.Count} açıklık{uyari}";
+            IsEnabled = false;
+            _vm.DurumMesaji = "Açık katmanlardan katlar, odalar ve açıklıklar üretiliyor…";
+            // Üretim kat bulamasa da kaynak çizim incelenebilmeli. Bu bağımsız
+            // kopya DWG oturumunun geçici DXF'i silindikten sonra da kullanılabilir.
+            var onizleme = await Task.Run(() => cizim.HamKatOlustur(katmanlar));
+            onizleme.DxfFilePath = path;
+            var result = await Task.Run(() => new DxfKatYukleyici().OtomatikYukle(cizim.HamKatOlustur(katmanlar), path));
+            _sonIceriAktarmaCizimi = onizleme;
+            _sonIceriAktarmaRaporu = string.Join("\n\n", result.Notlar);
+            foreach (var kat in result.Katlar) _vm.Geo.Katlar.Add(kat);
+            if (result.Katlar.Count > 0)
+            {
+                for (int i = 0; i < _vm.Geo.Katlar.Count; i++) _vm.Geo.Katlar[i].KatNo = i + 1;
+                _vm.SeciliKat = result.Katlar[0];
+                _vm.Kirlet();
+                PlanCanvas?.FitAll();
+            }
+            _vm.DurumMesaji = result.Katlar.Count == 0
+                ? "Kat planı ayrılamadı. İçe Aktarma Raporu → Çizimi incele ile yüklenen çizimi görüntüleyebilirsiniz."
+                : $"{result.Katlar.Count} kat, {result.Katlar.Sum(k => k.Odalar.Count)} oda, {result.Katlar.Sum(k => k.Acikliklar.Count)} açıklık oluşturuldu. İçe aktarma raporundaki kontrol notlarını inceleyin.";
+            IsEnabled = true;
+            await IceriAktarimRaporuGoster(_sonIceriAktarmaRaporu);
         }
-        catch (Exception ex)
-        {
-            _vm.DurumMesaji = $"DXF yüklenemedi: {ex.Message}";
-        }
+        catch (Exception ex) { _vm.DurumMesaji = $"Mimari proje yüklenemedi: {ex.Message}"; }
+        finally { IsEnabled = true; }
     }
 
+    private async void IceriAktarimRaporu_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        => await IceriAktarimRaporuGoster(_sonIceriAktarmaRaporu ?? string.Join("\n\n", _vm.Geo.Katlar.SelectMany(k =>
+            k.IceriAktarimNotlari.Select(n => $"{k.Ad}: {n}"))));
+
+    private async Task IceriAktarimRaporuGoster(string text)
+    {
+        var window = new MimariIceriAktarimRaporuWindow(text, _sonIceriAktarmaCizimi ?? _vm.SeciliKat);
+        await window.ShowDialog(this);
+    }
     // ── Kat sırası / silme ────────────────────────────────────────────────────
 
     private void KatYukari_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -487,20 +552,32 @@ public partial class BinaGeometriWindow : Window
 
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "DXF Kat Planı Seç",
+            Title = "Seçili Kat İçin DWG/DXF Planı Seç",
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("DXF Dosyaları") { Patterns = ["*.dxf"] }]
+            FileTypeFilter = [new FilePickerFileType("Mimari CAD Projesi") { Patterns = ["*.dwg", "*.dxf"] }]
         });
         var path = files.Count > 0 ? files[0].Path.LocalPath : null;
         if (string.IsNullOrWhiteSpace(path)) return;
 
-        _vm.DurumMesaji = $"'{kat.Ad}' için DXF yükleniyor…";
+        _vm.DurumMesaji = $"'{kat.Ad}' için katman önizlemesi hazırlanıyor…";
+        IsEnabled = false;
         try
         {
+            using var cad = await MimariCadDosyasi.AcAsync(path);
+            var cizim = await Task.Run(() => new DxfKatPlaniParser().KatmanliOku(cad.DxfYolu));
+            IsEnabled = true;
+            var katmanlar = await new MimariKatmanSecimWindow(cizim).ShowDialog<List<string>?>(this);
+            if (katmanlar is null)
+            {
+                _vm.DurumMesaji = "Kat planı yükleme iptal edildi; mevcut kat değiştirilmedi.";
+                return;
+            }
+            IsEnabled = false;
+            _vm.DurumMesaji = $"'{kat.Ad}' açık katmanlardan üretiliyor…";
             var yeniKat = await Task.Run(() =>
             {
                 var yukleyici = new BinaServices.DxfKatYukleyici();
-                return yukleyici.Yukle(path, kat.KatNo, kat.Ad, kat.KatYuksekligiM);
+                return yukleyici.Yukle(cizim.HamKatOlustur(katmanlar), kat.KatNo, kat.Ad, kat.KatYuksekligiM);
             });
 
             var eskiOdalar = kat.Odalar.ToList();
@@ -511,6 +588,10 @@ public partial class BinaGeometriWindow : Window
             var silinenOdaIdler = BinaServices.OdaEslestirmeServisi.Eslestir(yeniKat.Odalar, eskiOdalar);
 
             kat.DxfFilePath  = path;
+            // Seçili kata yeni DXF atamak önceki kaynağın katman seçimini değiştirir.
+            kat.KaynakKatmanlari = yeniKat.KaynakKatmanlari;
+            kat.KayitliTespitSegmentleri = yeniKat.KayitliTespitSegmentleri;
+            kat.HamTespitSegmentler = yeniKat.HamTespitSegmentler;
             kat.DxfSegmentler = yeniKat.DxfSegmentler;
             kat.DxfArclar    = yeniKat.DxfArclar;
             kat.UnitWarning  = yeniKat.UnitWarning;
@@ -526,12 +607,21 @@ public partial class BinaGeometriWindow : Window
                 .Select(a => (a.Merkez, a.R, a.BasAciDeg, a.BitAciDeg))
                 .ToList();
             kat.Acikliklar = BinaServices.AciklikTespitServisi.Bul(
-                yeniKat.HamSegmentler, arclarTuple, eskiAcikliklar);
+                yeniKat.HamTespitSegmentler, arclarTuple, eskiAcikliklar);
             BinaServices.AciklikYardimci.DisindaKalanlariSil(kat);
             BinaServices.AciklikYardimci.KomsuDuvarlariTamamla(kat);
+            BinaServices.AciklikTespitServisi.DegismeyenAciklikBilgileriniKoru(kat.Acikliklar, eskiAcikliklar);
             kat.SayilariYenile();
             kat.HamSegmentler = yeniKat.HamSegmentler;
             kat.HamMetinler  = yeniKat.HamMetinler;
+            var odaMetinleri = MimariProjeMetinServisi.OdaYukseklikleriniUygula(kat);
+            var aciklikMetinleri = MimariProjeMetinServisi.AciklikBoyutlariniUygula(kat);
+            kat.IceriAktarimNotlari = yeniKat.IceriAktarimNotlari.Concat(odaMetinleri.Uyarilar)
+                .Concat(aciklikMetinleri.Uyarilar).Concat(MimariGeometriKaliteServisi.Uygula(kat)).ToList();
+            kat.IceriAktarimNotlari.Insert(0, $"Üretimde kullanılan katmanlar: {string.Join(", ", katmanlar)}");
+            _sonIceriAktarmaCizimi = cizim.HamKatOlustur(katmanlar);
+            _sonIceriAktarmaCizimi.DxfFilePath = path;
+            _sonIceriAktarmaRaporu = string.Join("\n\n", kat.IceriAktarimNotlari);
 
             // Askıda birleşim bırakma: eşleşmeyen (silinmiş sayılan) eski odaların
             // düşey birleşimleri kaldırılır (aksi halde hayalet açık tavan/döşeme kalır).
@@ -552,8 +642,9 @@ public partial class BinaGeometriWindow : Window
         }
         catch (Exception ex)
         {
-            _vm.DurumMesaji = $"DXF yüklenemedi: {ex.Message}";
+            _vm.DurumMesaji = $"Kat planı yüklenemedi: {ex.Message}";
         }
+        finally { IsEnabled = true; }
     }
 
     // ── Kat yüksekliği TextBox ────────────────────────────────────────────────
@@ -881,8 +972,8 @@ public partial class BinaGeometriWindow : Window
                 System.Globalization.CultureInfo.InvariantCulture,
                 out double v) && v >= 0)
         {
-            if (System.Math.Abs(ac.EsikYuksekligiM - v) > 1e-9) _vm.Kirlet();
-            ac.EsikYuksekligiM = v;
+            if (!ac.EsikYuksekligiBelirtildi || System.Math.Abs(ac.EsikYuksekligiM - v) > 1e-9) _vm.Kirlet();
+            ac.EsikYuksekligiM = v; ac.EsikYuksekligiBelirtildi = true;
         }
         if (AciklikEsikText is { } tb) tb.Text = ac.EtkinEsikYuksekligiM.ToString("F2");
     }

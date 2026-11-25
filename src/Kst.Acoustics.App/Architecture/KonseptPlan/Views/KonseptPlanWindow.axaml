@@ -9,7 +9,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0A1015"
-        Title="Eye4Pro Architecture - Konsept Plan">
+        Title="Eye4Pro Mimarlık - Konsept Plan">
 
     <Window.Styles>
         <Style Selector="TextBlock.label">
@@ -458,7 +458,7 @@
         </Grid>
 
         <Border Grid.Row="2" Background="#070C11" BorderBrush="#1B2A36" BorderThickness="0,1,0,0" Padding="0,10">
-            <TextBlock Text="Eye4Pro Architecture"
+            <TextBlock Text="Eye4Pro Mimarlık"
                        HorizontalAlignment="Center"
                        Foreground="#5E7282"
                        FontSize="11"/>

@@ -38,7 +38,9 @@ public static class TekHatLinyeExcelServisi
         wb.SaveAs(filePath);
     }
 
-    public static (List<Linye> Linyeler, List<string> Hatalar) IceriAktar(string filePath)
+    /// <param name="yukTipleri">Verilirse, Faz hücresi boş satırlar yük tipinin kütüphane varsayılan fazını alır.</param>
+    public static (List<Linye> Linyeler, List<string> Hatalar) IceriAktar(
+        string filePath, IReadOnlyCollection<YukTipiTanim>? yukTipleri = null)
     {
         var linyeler = new List<Linye>();
         var hatalar = new List<string>();
@@ -72,7 +74,9 @@ public static class TekHatLinyeExcelServisi
             {
                 LinyeNo = ReadString(ws, row, map.GetValueOrDefault("Linye No")),
                 YukTipiAd = yukTipi,
-                FazTipi = ParseFaz(ReadString(ws, row, map.GetValueOrDefault("Faz"))),
+                FazTipi = ParseFaz(ReadString(ws, row, map.GetValueOrDefault("Faz")),
+                    yukTipleri?.FirstOrDefault(y => y.Ad.Equals(yukTipi, StringComparison.OrdinalIgnoreCase))?.VarsayilanFaz
+                    ?? FazTipi.Monofaze),
                 SortiSayisi = ReadInt(ws, row, map.GetValueOrDefault("Sorti Sayısı"), 1, hatalar),
                 BirimGucW = ReadDouble(ws, row, map.GetValueOrDefault("Birim Güç (W)"), VarsayilanBirimGuc(yukTipi), hatalar),
                 TalepFaktoru = ReadDouble(ws, row, map.GetValueOrDefault("Talep Faktörü"), 1.0, hatalar),
@@ -175,16 +179,21 @@ public static class TekHatLinyeExcelServisi
     private static double ReadDouble(IXLWorksheet ws, int row, int col, double fallback, List<string> hatalar)
     {
         if (col <= 0 || ws.Cell(row, col).IsEmpty()) return fallback;
-        if (ws.Cell(row, col).TryGetValue<double>(out var value)) return value;
-        if (NumberHelper.TryParse(ws.Cell(row, col).GetValue<string>(), out value)) return value;
+        var cell = ws.Cell(row, col);
+        // Metin hücresini önce kültürden bağımsız ortak ayrıştırıcıya ver. ClosedXML'in doğrudan
+        // double dönüşümü karşı kültürün ondalık ayracını binlik ayracı sayıp 300,5'i 3005 yapabilir.
+        if (cell.DataType == XLDataType.Text && NumberHelper.TryParse(cell.GetString(), out var value))
+            return value;
+        if (cell.TryGetValue<double>(out value)) return value;
+        if (NumberHelper.TryParse(cell.GetValue<string>(), out value)) return value;
         hatalar.Add($"Satır {row}, sütun {col}: sayı okunamadı; {fallback:0.##} kabul edildi.");
         return fallback;
     }
 
-    private static FazTipi ParseFaz(string text)
+    private static FazTipi ParseFaz(string text, FazTipi bosIse)
     {
         var s = text.Trim();
-        if (string.IsNullOrWhiteSpace(s)) return FazTipi.Monofaze;
+        if (string.IsNullOrWhiteSpace(s)) return bosIse;
         if (s.Contains('3') || s.Contains("tri", StringComparison.OrdinalIgnoreCase)) return FazTipi.Trifaze;
         return FazTipi.Monofaze;
     }

@@ -69,6 +69,7 @@ public static class Arazi3DGorunumServisi
     /// Tasarım bölgesi dışındaki üçgenler haritaya girmez (nötr/soluk kalır).
     public static Dictionary<int, double> HafriyatRenkHaritasi(AraziYuzeyi yuzey, TasarimYuzeyi tasarim)
     {
+        var tesviye = new AraziTesviyeServisi(yuzey, tasarim);
         var diffler = new Dictionary<int, double>();
         int id = 1;
         double maxAbs = 0;
@@ -81,10 +82,10 @@ public static class Arazi3DGorunumServisi
             double cy = (a.Y + b.Y + c.Y) / 3.0;
             double cz = (a.Z + b.Z + c.Z) / 3.0;
 
-            var hedef = tasarim.HedefKot(cx, cy);
-            if (hedef.HasValue)
+            var hedef = tesviye.Sorgula(cx, cy);
+            if (hedef is not null)
             {
-                double d = cz - hedef.Value;
+                double d = cz - hedef.HedefKotM;
                 diffler[id] = d;
                 double abs = d < 0 ? -d : d;
                 if (abs > maxAbs) maxAbs = abs;

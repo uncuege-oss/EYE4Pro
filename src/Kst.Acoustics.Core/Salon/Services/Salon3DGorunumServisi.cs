@@ -37,6 +37,7 @@ public static class Salon3DGorunumServisi
 
     public static List<ProjectSurface> YuzeyleriOlustur(SalonGeometri salon)
     {
+        if (salon.SerbestTasarim) return SalonTasarimMeshServisi.Uret(salon).Yuzeyler;
         var surfaces = new List<ProjectSurface>();
         int id = 1;
         const double taban = 0.0;
@@ -55,7 +56,7 @@ public static class Salon3DGorunumServisi
         foreach (var oge in salon.CizimOgeleri)
         {
             var katman = salon.Katmanlar.FirstOrDefault(k => k.Id == oge.KatmanId);
-            if (katman is { Gorunur: false }) continue;
+
 
             var poly = oge.KapaliPoligon(faset);
             if (poly.Count >= 3)
@@ -133,12 +134,12 @@ public static class Salon3DGorunumServisi
                 double zAlt = sahne.TabanKotuM;
                 double zUst = sahne.TabanKotuM + (sahne.YukseklikM > 0 ? sahne.YukseklikM : 0.0);
 
-                surfaces.Add(new ProjectSurface(id++, "Sahne", "Sahne",
+                surfaces.Add(new ProjectSurface(id++, "Sahne", KatmanAdi(salon,SalonKatmanTipi.Sahne,"Sahne"),
                     poly.Select(p => new Point3D(p.X, p.Y, zUst)).ToList()));
 
                 if (zUst - zAlt > 1e-6)
                     for (int i = 0; i < poly.Count; i++)
-                        surfaces.Add(DuvarYuzeyi(id++, poly[i], poly[(i + 1) % poly.Count], zAlt, zUst - zAlt, "Sahne-Yan"));
+                        surfaces.Add(DuvarYuzeyi(id++, poly[i], poly[(i + 1) % poly.Count], zAlt, zUst - zAlt, KatmanAdi(salon,SalonKatmanTipi.Sahne,"Sahne")+"-Yan"));
             }
         }
 
@@ -177,7 +178,13 @@ public static class Salon3DGorunumServisi
         foreach (var balkon in salon.Balkonlar)
             surfaces.AddRange(SalonBalkonServisi.Yuzeyler(balkon, ref id, kabukHalkalari));
 
-        return surfaces;
+        var categoryMap=new Dictionary<string,string> {
+            ["Seyirci"]=KatmanAdi(salon,SalonKatmanTipi.Seyirci,"Seyirci"),
+            ["Korniş"]=KatmanAdi(salon,SalonKatmanTipi.Kornis,"Korniş"),
+            ["Balkon"]=KatmanAdi(salon,SalonKatmanTipi.Balkon,"Balkon"),
+            ["Balkon-Alt"]=KatmanAdi(salon,SalonKatmanTipi.Balkon,"Balkon")+"-Alt",
+            ["Balkon-Parapet"]=KatmanAdi(salon,SalonKatmanTipi.Balkon,"Balkon")+"-Parapet" };
+        return surfaces.Select(p=>categoryMap.TryGetValue(p.Category,out var category)?p with { Category=category }:p).ToList();
     }
 
     /// Tavan halka kümesini panellere ayırır. Profil yoksa yalnız keyhole ayrıştırma;

@@ -116,6 +116,9 @@ public class Pano
     public double TalepAkimA { get; set; }
 
     public int GirisSigortaA { get; set; }
+    /// Proje tasarımında elle seçilmiş pano girişi ve üst pano çıkışı. Null = otomatik.
+    public int? ManuelGirisSigortaA { get; set; }
+    public int? ManuelUstPanoCikisSigortaA { get; set; }
 
     /// <summary>Trafo–ana pano arası giriş şalteri anma akımı (A). Yalnız ana pano için anlamlı;
     /// trafo varsa trafo AG çıkış akımına, yoksa ana pano talep akımına göre seçilir.</summary>

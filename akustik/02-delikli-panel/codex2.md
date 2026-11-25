@@ -188,3 +188,9 @@ Bu denetim sonunda eklenen/korunan önemli regresyonlar:
 4. UI değişikliği gerekiyorsa `PanelDesignWindow` ve ilgili ViewModel dosyalarını kontrol et.
 5. Formülasyon değişikliği yapıldıysa regresyon testi ekle veya mevcut panel testlerini çalıştır.
 6. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+NaN/Infinity/negatif emilim verisinden sahte alpha-w sınıfı üretilmesi engellendi (A02).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

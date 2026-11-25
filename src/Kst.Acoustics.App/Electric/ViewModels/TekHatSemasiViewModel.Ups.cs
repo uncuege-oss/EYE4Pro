@@ -67,6 +67,7 @@ public partial class TekHatSemasiViewModel
             OtonomiDk = otonomiDk,
             EmniyetFaktoru = emniyetFaktoru,
             UpsTanimAd = upsTanim?.Ad ?? "",
+            UpsTanimManuel = upsTanim != null,
             AkuTanimAd = akuTanim?.Ad ?? ""
         };
         Proje.Upsler.Add(ups);
@@ -126,6 +127,7 @@ public partial class TekHatSemasiViewModel
     public void UpsTipiAyarla(Ups ups, UpsTanim? tip)
     {
         ups.UpsTanimAd = tip?.Ad ?? "";
+        ups.UpsTanimManuel = tip != null;
         TumunuHesapla();
     }
 

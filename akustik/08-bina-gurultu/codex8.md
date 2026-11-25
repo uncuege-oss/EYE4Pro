@@ -571,3 +571,9 @@ Son bilinen genel hedef:
 5. UI değişikliği için ilgili `BuildingAcoustics/Views` ve `BinaProjesiViewModel` alanlarını incele.
 6. Formülasyon veya regresyon riski varsa test ekle veya mevcut M08 testlerini çalıştır.
 7. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Kütüphane kayıt hatası testi Windows UnauthorizedAccessException davranışıyla uyumlu hale getirildi; üretim hataları yutulmuyor (T01).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

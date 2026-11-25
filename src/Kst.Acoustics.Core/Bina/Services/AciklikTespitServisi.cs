@@ -8,7 +8,7 @@ namespace Kst.Acoustics.Core.Bina.Services;
 
 /// Bir katın DXF verisinden açıklıkları (kapı + pencere) iki yöntemle tespit eder:
 /// (A) ARC parametrelerinden kapı yayları, (B) duvar koordinat eksenlerinde boşluk analizi.
-/// Manuel eklenen veya iptal edilen kayıtlar yeniden taramada korunur.
+/// Manuel/iptal kayıtlar ve aynı geometride yeniden bulunan açıklıkların bilgileri korunur.
 public static class AciklikTespitServisi
 {
     public sealed class Ayarlar
@@ -34,7 +34,8 @@ public static class AciklikTespitServisi
     }
 
     /// Açıklık tespitini çalıştırır. Mevcut listede ManuelEklendi=true veya IptalEdildi=true
-    /// olan kayıtlar korunur; otomatik olanlar yenilenir.
+    /// olan kayıtlar korunur; otomatik açıklıklar yeniden tespit edilir. İki ucu da
+    /// değişmeyen, tekil eşleşen açıklıkların kimliği ve düzenlenmiş bilgileri devralınır.
     public static List<BinaAciklik> Bul(
         IReadOnlyList<(Point2D A, Point2D B)> duvarSegmentleri,
         IReadOnlyList<(Point2D Merkez, double R, double BasDeg, double BitDeg)> arclar,
@@ -52,13 +53,20 @@ public static class AciklikTespitServisi
                 GenislikM = a.GenislikM,
                 YukseklikM = a.YukseklikM,
                 EsikYuksekligiM = a.EsikYuksekligiM,
+                EsikYuksekligiBelirtildi = a.EsikYuksekligiBelirtildi,
                 IptalEdildi = a.IptalEdildi, ManuelEklendi = a.ManuelEklendi, Kaynak = a.Kaynak
             })
             .ToList();
 
+        // Çift kanatta kapalı uç iki yayın buluştuğu noktadır. Açık kanat
+        // çizgisine olan mesafe de sıfır olabildiği için yalnız "duvara en
+        // yakın uç" karşılaştırması bu kapıları açık yönde kapatıyordu.
+        var ciftKanatUclari = CiftKanatKapaliUclari(arclar, duvarSegmentleri, ayar);
+
         // (A) ARC tabanlı — yüksek güven
-        foreach (var (merkez, r, basDeg, bitDeg) in arclar)
+        for (int arcNo = 0; arcNo < arclar.Count; arcNo++)
         {
+            var (merkez, r, basDeg, bitDeg) = arclar[arcNo];
             if (r < ayar.MinKapiR || r > ayar.MaxKapiR) continue;
             double sweep = NormSweep(basDeg, bitDeg);
             if (sweep < ayar.MinKapiSweepDeg || sweep > ayar.MaxKapiSweepDeg) continue;
@@ -74,7 +82,8 @@ public static class AciklikTespitServisi
 
             double dBas = MinSegMesafesi(bas, duvarSegmentleri);
             double dBit = MinSegMesafesi(bit, duvarSegmentleri);
-            var aciklikUcu = dBas <= dBit ? bas : bit;
+            var aciklikUcu = ciftKanatUclari.TryGetValue(arcNo, out var ortakUc)
+                ? ortakUc : dBas <= dBit ? bas : bit;
 
             if (!CakisiyorMu(sonuc, merkez, aciklikUcu, ayar.DedupTolM))
             {
@@ -92,7 +101,105 @@ public static class AciklikTespitServisi
                 sonuc.Add(aciklik);
         }
 
+        DegismeyenAciklikBilgileriniKoru(sonuc, mevcut);
         return sonuc;
+    }
+
+    private static Dictionary<int, Point2D> CiftKanatKapaliUclari(
+        IReadOnlyList<(Point2D Merkez, double R, double BasDeg, double BitDeg)> arclar,
+        IReadOnlyList<(Point2D A, Point2D B)> duvarSegmentleri,
+        Ayarlar ayar)
+    {
+        const double birlesmeToleransiM = 0.10;
+        var adaylar = new List<(int ArcNo, Point2D Merkez, double R, Point2D[] Uclar)>();
+        for (int i = 0; i < arclar.Count; i++)
+        {
+            var a = arclar[i];
+            double sweep = NormSweep(a.BasDeg, a.BitDeg);
+            if (a.R < ayar.MinKapiR || a.R > ayar.MaxKapiR ||
+                sweep < ayar.MinKapiSweepDeg || sweep > ayar.MaxKapiSweepDeg) continue;
+            if (MinSegMesafesi(a.Merkez, duvarSegmentleri) > ayar.MaxMenteseWallDistM) continue;
+            Point2D Uc(double derece) => new(a.Merkez.X + a.R * Math.Cos(derece * Math.PI / 180),
+                a.Merkez.Y + a.R * Math.Sin(derece * Math.PI / 180));
+            adaylar.Add((i, a.Merkez, a.R, [Uc(a.BasDeg), Uc(a.BitDeg)]));
+        }
+
+        var esler = new List<(int Diger, Point2D Uc)>[adaylar.Count];
+        for (int i = 0; i < esler.Length; i++) esler[i] = new();
+        for (int i = 0; i < adaylar.Count; i++)
+        for (int j = i + 1; j < adaylar.Count; j++)
+        {
+            var a = adaylar[i]; var b = adaylar[j];
+            // Aynı menteşedeki kopya yaylar veya yan yana açılan bağımsız
+            // kapılar çift kanat değildir; iki yarıçap karşı karşıya uzanmalı.
+            double menteşeMesafesi = Mesafe(a.Merkez, b.Merkez);
+            if (menteşeMesafesi < (a.R + b.R) * 0.95 ||
+                menteşeMesafesi > a.R + b.R + birlesmeToleransiM) continue;
+            foreach (var au in a.Uclar)
+            foreach (var bu in b.Uclar)
+            {
+                if (Mesafe(au, bu) > birlesmeToleransiM) continue;
+                double cos = ((au.X - a.Merkez.X) * (bu.X - b.Merkez.X) +
+                              (au.Y - a.Merkez.Y) * (bu.Y - b.Merkez.Y)) / (a.R * b.R);
+                if (cos > -0.90) continue;
+                esler[i].Add((j, au)); esler[j].Add((i, bu));
+            }
+        }
+
+        var sonuc = new Dictionary<int, Point2D>();
+        for (int i = 0; i < adaylar.Count; i++)
+            if (esler[i].Count == 1 && esler[esler[i][0].Diger].Count == 1)
+                sonuc[adaylar[i].ArcNo] = esler[i][0].Uc;
+        return sonuc;
+    }
+
+    /// <summary>
+    /// Yeniden tespit ve komşu yüz tamamlama sonrasında, aynı geometride kalan
+    /// tekil açıklıkların bilgilerini önceki listeden devralır. Yalnız bulunan
+    /// kayıtları günceller; eski açıklıkları listeye eklemez veya kaynağı değiştirmez.
+    /// </summary>
+    public static void DegismeyenAciklikBilgileriniKoru(
+        IReadOnlyList<BinaAciklik> bulunan, IReadOnlyList<BinaAciklik> mevcut)
+    {
+        // Bu tolerans oda/duvar yakınlığını değil, aynı açıklığın yeniden
+        // okunmasındaki küçük sayısal farkları kapsar. Merkez yakınlığı tek
+        // başına yeterli değildir: genişleyen kapıya eski ölçü aktarılmamalı.
+        const double ucToleransiM = 0.02;
+        var eski = mevcut.Where(a => !a.ManuelEklendi && !a.IptalEdildi).ToList();
+        var yeni = bulunan.Where(a => !a.ManuelEklendi && !a.IptalEdildi).ToList();
+        var adaylar = new List<int>[yeni.Count];
+        var eskiKullanimSayisi = new int[eski.Count];
+        for (int i = 0; i < yeni.Count; i++)
+        {
+            adaylar[i] = new List<int>();
+            for (int j = 0; j < eski.Count; j++)
+            {
+                bool ayni = Mesafe(yeni[i].Bas, eski[j].Bas) <= ucToleransiM &&
+                            Mesafe(yeni[i].Bit, eski[j].Bit) <= ucToleransiM;
+                bool ters = Mesafe(yeni[i].Bas, eski[j].Bit) <= ucToleransiM &&
+                            Mesafe(yeni[i].Bit, eski[j].Bas) <= ucToleransiM;
+                if (!ayni && !ters) continue;
+                adaylar[i].Add(j);
+                eskiKullanimSayisi[j]++;
+            }
+        }
+
+        for (int i = 0; i < yeni.Count; i++)
+        {
+            // Sıralama veya en yakın adaya göre rastgele seçim yapma. Hem yeni
+            // hem eski kayıt yönünde bire bir eşleşme gerekir.
+            if (adaylar[i].Count != 1 || eskiKullanimSayisi[adaylar[i][0]] != 1) continue;
+            var onceki = eski[adaylar[i][0]];
+            var simdiki = yeni[i];
+            if (!string.IsNullOrWhiteSpace(onceki.Id)) simdiki.Id = onceki.Id;
+            simdiki.Tip = onceki.Tip;
+            simdiki.YukseklikM = onceki.YukseklikM;
+            simdiki.EsikYuksekligiM = onceki.EsikYuksekligiM;
+            simdiki.EsikYuksekligiBelirtildi = onceki.EsikYuksekligiBelirtildi;
+            simdiki.Kaynak = onceki.Kaynak ?? simdiki.Kaynak;
+            // Bas/Bit ve GenislikM güncel çizimden kalır. Önceki nesneye dokunma;
+            // çağıranın undo kopyaları ve diğer referansları geçerliliğini korur.
+        }
     }
 
     private static IEnumerable<BinaAciklik> DuvarBosluklariBul(

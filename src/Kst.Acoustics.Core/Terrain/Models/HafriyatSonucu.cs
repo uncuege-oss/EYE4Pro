@@ -5,6 +5,7 @@ namespace Kst.Acoustics.Core.Terrain.Models;
 /// Tek bir tasarım bölgesinin yarma/dolgu dökümü.
 public class HafriyatBolgeSonucu
 {
+    public string BolgeId { get; set; } = "";
     public string BolgeAdi { get; set; } = "";
     public double HedefKotM { get; set; }
     public double YarmaHacmiM3 { get; set; }
@@ -28,6 +29,8 @@ public class HafriyatSonucu
     public int YarmaHucreSayisi { get; set; }
     public int DolguHucreSayisi { get; set; }
     public int DegerlendirilenHucreSayisi { get; set; }
+    public int SevHucreSayisi { get; set; }
+    public List<string> Uyarilar { get; set; } = new();
 
     /// Tasarım bölgesi içinde olup mevcut yüzey kapsamı dışında kalan (kot bulunamayan)
     /// hücre sayısı — uyarı amaçlı.

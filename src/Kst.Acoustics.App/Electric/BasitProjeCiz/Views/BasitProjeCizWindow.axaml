@@ -9,7 +9,7 @@
         MinWidth="1180" MinHeight="700"
         WindowStartupLocation="CenterScreen"
         Background="#071009"
-        Title="Eye4Pro Electric - Proje Tasarımı">
+        Title="Eye4Pro Elektrik - Proje Tasarımı">
     <Window.Styles>
         <Style Selector="Button">
             <Setter Property="CornerRadius" Value="6"/>
@@ -352,7 +352,7 @@
                             <TextBlock Classes="toolbarLabel" Text="Aktar"/>
                         </StackPanel>
                     </Button>
-                    <Button Classes="toolbarButton toolbarPanel" Click="ToolbarKablo_Click" ToolTip.Tip="Kablo modu paneli">
+                    <Button Classes="toolbarButton toolbarPanel" Click="ToolbarKablo_Click" ToolTip.Tip="Kablo modu paneli" IsVisible="{Binding !AsamaliPaftaAktif}">
                         <StackPanel>
                             <TextBlock Classes="toolbarIcon" Text="〰"/>
                             <TextBlock Classes="toolbarLabel" Text="Kablo"/>
@@ -379,8 +379,9 @@
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
                                 Spacing="6"
-                                IsVisible="{Binding KuvvetliAkimAktif}"/>
+                                IsVisible="{Binding !AsamaliPaftaAktif}"/>
                     <Button Click="MahalListesi_OnClick"
+                            IsVisible="{Binding !AsamaliPaftaAktif}"
                             Padding="12,6"
                             Background="#16301A" Foreground="#BFE8C6"
                             BorderBrush="#245424" BorderThickness="1"
@@ -434,7 +435,7 @@
                 </StackPanel>
                 </Grid>
 
-                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="12" IsVisible="{Binding !AsamaliPaftaAktif}">
                     <ScrollViewer Grid.Column="0"
                                   HorizontalScrollBarVisibility="Auto"
                                   VerticalScrollBarVisibility="Disabled">
@@ -452,6 +453,44 @@
                                 IsVisible="{Binding AydinlatmaAktif}"/>
                 </Grid>
             </Grid>
+        </Border>
+
+        <Border Grid.Row="1" IsVisible="{Binding AsamaliPaftaAktif}" Background="#101F17"
+                Padding="14,5,14,8" BorderBrush="#2B4433" BorderThickness="0,0,0,1">
+            <StackPanel Spacing="4">
+                <ListBox ItemsSource="{Binding AktifTasarimAsamalari}" SelectedItem="{Binding SeciliAsamaSecenegi, Mode=TwoWay}"
+                         Background="Transparent" BorderThickness="0" Padding="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Ad}" FontSize="12" FontWeight="SemiBold"/></DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="{Binding SeciliAsamaSecenegi.Yonerge}" FontSize="12" Foreground="#C3D8CA" Margin="4,0"/>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding AsamaAraclariEtkin}">
+                        <Button Content="Mahal listesi" Click="MahalListesi_OnClick" IsVisible="{Binding AsamaMahalListesiVar}"/>
+                        <Button Content="Kata yerleştir" Command="{Binding MahalListesindenOtomatikYerlestirCommand}"
+                                ToolTip.Tip="{Binding YerlestirModuAciklama}" IsVisible="{Binding AsamaMahalListesiVar}"/>
+                        <Button Content="Gerekli buatları oluştur" Command="{Binding MahalListesindenOtomatikYerlestirCommand}"
+                                ToolTip.Tip="{Binding YerlestirModuAciklama}" IsVisible="{Binding AsamaBuatMi}"/>
+                        <StackPanel x:Name="AsamaSembolBar" Orientation="Horizontal" Spacing="4" IsVisible="{Binding AsamaYerlesimMi}"/>
+                        <Button Content="Seçileni sil" Click="AsamaElemanSil_OnClick" IsVisible="{Binding AsamaYerlesimMi}"/>
+                        <Button Content="Mahal içi kabloları çek" Command="{Binding MahalAydinlatmaKablolariniCekCommand}" IsVisible="{Binding AsamaMahalKablosuMu}"/>
+                        <Button Content="Elle kablola" Click="AsamaManuelKablo_OnClick" IsVisible="{Binding AsamaMahalKablosuMu}"/>
+                        <Button Content="Atanan panolara bağla" Command="{Binding AtanmisPanolaraKabloCekCommand}" IsVisible="{Binding AsamaPanoKablosuMu}"/>
+                        <Button Content="Elle bağla" Click="AsamaManuelKablo_OnClick" IsVisible="{Binding AsamaPanoKablosuMu}"/>
+                        <Button Content="Mahal içi kabloları çek" Command="{Binding PrizMahalKablolariniCekCommand}" IsVisible="{Binding PrizMahalKablosuAdimi}"/>
+                        <Button Content="Elle kablola" Command="{Binding PrizAsamasiManuelKabloCommand}" IsVisible="{Binding PrizMahalKablosuAdimi}"/>
+                        <Button Content="Atanan panolara bağla" Command="{Binding PrizPanoKablolariniCekCommand}" IsVisible="{Binding PrizPanoKablosuAdimi}"/>
+                        <Button Content="Elle bağla" Command="{Binding PrizAsamasiManuelKabloCommand}" IsVisible="{Binding PrizPanoKablosuAdimi}"/>
+                        <Button Content="Seçili hattı sil" Command="{Binding KabloSilCommand}" IsVisible="{Binding AsamaKabloMu}"/>
+                        <Button Content="Aydınlatmayı tamamla" Click="AsamaSigortaOlustur_OnClick" IsVisible="{Binding AsamaPanoKablosuMu}"/>
+                        <Button Content="Priz projesini tamamla" Click="AsamaSigortaOlustur_OnClick" IsVisible="{Binding PrizPanoKablosuAdimi}"/>
+                        <Button Content="Sigortaları güncelle" Click="AsamaSigortaOlustur_OnClick" IsVisible="{Binding AsamaSigortaMi}"/>
+                        <Button Content="Sigortaları düzenle" Click="PanoSigortalari_OnClick" IsVisible="{Binding AsamaSigortaMi}"/>
+                        <Button Content="Priz planına geç" Click="PrizPlaninaGec_OnClick" IsVisible="{Binding AydinlatmaSigortaAdimi}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </StackPanel>
         </Border>
 
         <Grid x:Name="MainGrid" Grid.Row="2" ColumnDefinitions="320,4,*,4,330">
@@ -609,7 +648,9 @@
                                                      Tapped="OdaAdi_Tapped"/>
                                             <ToggleButton Grid.Column="1"
                                                           Classes="roomFlag"
-                                                          IsChecked="{Binding GecisSecili, Mode=TwoWay}"
+                                                          IsChecked="{Binding GecisSecili, Mode=OneWay}"
+                                                          IsEnabled="{Binding $parent[Window].DataContext.ProjeDuzenlenebilir}"
+                                                          Click="GecisMahali_OnClick"
                                                           Content="Geçiş"
                                                           ToolTip.Tip="Buat-pano kablosu bu odadan geçebilir"
                                                           MinWidth="48"
@@ -793,6 +834,7 @@
                                                        ToolTip.Tip="Tüm katlardaki açıklık özeti (salt bilgi — düzenleme M50'de)"/>
                                             <Separator Background="#2A4A2A" Height="1" Margin="8,4"/>
                                             <Button Content="🗺 Mahalden Otomatik Yerleştir"
+                                                    IsVisible="{Binding !AsamaliPaftaAktif}"
                                                     Command="{Binding MahalListesindenOtomatikYerlestirCommand}"
                                                     ToolTip.Tip="{Binding YerlestirModuAciklama}"/>
                                         </StackPanel>
@@ -911,7 +953,7 @@
                                                                Classes="value" FontWeight="SemiBold"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1">
-                                                    <TextBlock Text="Toplam Güç" Classes="label"/>
+                                                    <TextBlock Text="{Binding PanoGucBasligi}" Classes="label"/>
                                                     <TextBlock Text="{Binding SeciliPanoOzet.ToplamGucW, StringFormat='{}{0:N0} W'}"
                                                                Classes="value" FontWeight="SemiBold"/>
                                                 </StackPanel>
@@ -963,65 +1005,6 @@
                 <ScrollViewer>
                     <StackPanel Spacing="12">
 
-                        <!-- ── Priz Paftası ── -->
-                        <StackPanel IsVisible="{Binding PrizAktif}" Spacing="12">
-                            <TextBlock Text="Priz Paftası" Foreground="#FFD880" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Classes="label" Text="Priz tipi seç ve canvas'a tıkla"/>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <ComboBox Grid.Column="0" x:Name="ManuelTipComboPriz" SelectedIndex="0" HorizontalAlignment="Stretch">
-                                    <ComboBoxItem Content="Seç/Taşı"/>
-                                    <ComboBoxItem Content="Priz"/>
-                                    <ComboBoxItem Content="Kapaklı Priz"/>
-                                    <ComboBoxItem Content="Sıvaüstü Priz"/>
-                                    <ComboBoxItem Content="Trifaze Priz"/>
-                                    <ComboBoxItem Content="Kombine Priz Panosu"/>
-                                    <ComboBoxItem Content="Tavan Prizi"/>
-                                    <ComboBoxItem Content="USB'li Masa Prizi"/>
-                                    <ComboBoxItem Content="UPS Prizi"/>
-                                    <ComboBoxItem Content="Kapaklı UPS Prizi"/>
-                                    <ComboBoxItem Content="Sıva Üstü UPS Prizi"/>
-                                    <ComboBoxItem Content="İkili Priz"/>
-                                    <ComboBoxItem Content="Üçlü Priz"/>
-                                    <ComboBoxItem Content="Buat"/>
-                                    <ComboBoxItem Content="Kat Panosu"/>
-                                </ComboBox>
-                                <Button Grid.Column="1" Content="Sil" Click="ElemanSil_OnClick" Padding="12,6" Background="#3A1A1A" Foreground="#FF8888" BorderBrush="#552222" BorderThickness="1"/>
-                            </Grid>
-
-                            <!-- Priz Kablo Modu Kontrolleri -->
-                            <StackPanel IsVisible="{Binding KabloModuAktif}" Spacing="6" Margin="0,5,0,5">
-                                <Border Height="1" Background="#2A4A2A" Margin="0,4"/>
-                                <TextBlock Text="Priz Kablo" Foreground="#FFD880" FontSize="13" FontWeight="SemiBold"/>
-                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="5" ColumnSpacing="5">
-                                    <Button Grid.Row="0" Grid.Column="0" Content="Manuel Mod"
-                                            Classes.kmAktif="{Binding KabloAltModPrizManuelMi}"
-                                            Command="{Binding PrizManuelModuSecCommand}"
-                                            ToolTip.Tip="Manuel: Prize tıkla, buata bağla"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="0" Grid.Column="1" Content="Mahal Modu"
-                                            Classes.kmAktif="{Binding KabloAltModPrizMahalMi}"
-                                            Command="{Binding PrizMahaliOtomatikBaglaCommand}"
-                                            ToolTip.Tip="Mahal Modu: Odaya tıkla, o odanın prizleri priz buatına bağlanır"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="1" Grid.Column="0" Content="Tüm Kat Modu"
-                                            Command="{Binding KatPrizleriniOtomatikKablolaCommand}"
-                                            ToolTip.Tip="Tüm Kat: Kattaki tüm prizleri otomatik priz buatlarına bağlar"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="1" Grid.Column="1" Content="Seçili Hattı Sil"
-                                            Command="{Binding KabloSilCommand}"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="2" Grid.Column="0" Content="Tamamını Sil"
-                                            Command="{Binding KabloTumunuSilCommand}"
-                                            ToolTip.Tip="Kattaki tüm priz devrelerini sıfırlar"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <ToggleButton Grid.Row="2" Grid.Column="1" Content="Boştakileri Göster"
-                                                  IsChecked="{Binding BostakileriGosterAktif, Mode=TwoWay}"
-                                                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                </Grid>
-                            </StackPanel>
-
-                            <Border Height="1" Background="#3A2A08" Margin="0,4"/>
-                        </StackPanel>
 
                         <!-- ── Mekanik Paftası ── -->
                         <StackPanel IsVisible="{Binding MekanikAktif}" Spacing="12">
@@ -1148,54 +1131,18 @@
                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
                             </Grid>
 
-                            <!-- Aydınlatma Kablo Modu Kontrolleri -->
-                            <StackPanel IsVisible="{Binding AydinlatmaAktif}" Spacing="6" Margin="0,5,0,5">
-                                <Border Height="1" Background="#2A4A2A" Margin="0,4"/>
-                                <TextBlock Text="Aydınlatma" Foreground="#FFD880" FontSize="13" FontWeight="SemiBold"/>
-                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="5" ColumnSpacing="5">
-                                    <Button Grid.Row="0" Grid.Column="0" Content="Manuel Mod"
-                                            Classes.kmAktif="{Binding KabloAltModManuelMi}"
-                                            Command="{Binding AydinlatmaManuelModuSecCommand}"
-                                            ToolTip.Tip="Manuel mod: Anahtara tıklayın, sonra armatürleri seçin"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="0" Grid.Column="1" Content="Mahal Modu"
-                                            Classes.kmAktif="{Binding KabloAltModMahalMi}"
-                                            Command="{Binding AydinlatmaMahaliOtomatikBaglaCommand}"
-                                            ToolTip.Tip="Mahal Modu: Bir anahtara tıklayın; o anahtarın odasındaki boş armatürler otomatik bağlanır"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="1" Grid.Column="0" Content="Tüm Katı Kablola"
-                                            Command="{Binding KatAydinlatmasiniOtomatikKablolaCommand}"
-                                            ToolTip.Tip="Tek seferlik komut: Kat genelindeki boş armatürleri otomatik odalarındaki anahtarlara bağlar"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="1" Grid.Column="1" Content="Buat → Pano"
-                                            Classes.kmAktif="{Binding KabloAltModBuatPanoMi}"
-                                            Command="{Binding SeciliBuatPanoBaglaCommand}"
-                                            ToolTip.Tip="Buata, sonra kat panosuna tıklayın (buata tıklamak bu akışı otomatik de başlatır)"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="2" Grid.Column="0" Content="Seçili Hattı Sil"
-                                            Command="{Binding KabloSilCommand}"
-                                            ToolTip.Tip="Seçili devreyi temizler"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="2" Grid.Column="1" Content="Tamamını Sil"
-                                            Command="{Binding KabloTumunuSilCommand}"
-                                            ToolTip.Tip="Kattaki tüm aydınlatma devrelerini sıfırlar"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <ToggleButton Grid.Row="3" Grid.Column="0" Content="Boştakileri Göster"
-                                                  IsChecked="{Binding BostakileriGosterAktif, Mode=TwoWay}"
-                                                  ToolTip.Tip="Bağlantısız kalmış armatür, buat ve anahtarları ekranda vurgular"
-                                                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                    <Button Grid.Row="3" Grid.Column="1" Content="⚡ Odadakileri Ata"
-                                            IsVisible="{Binding GosterOdadakileriAta}"
-                                            Command="{Binding OdadakiArmaturleriAtaCommand}"
-                                            ToolTip.Tip="Seçili anahtarın odasındaki tüm boş armatürleri tek tıkla bu devreye atar"
-                                            Background="#1E4A12" BorderBrush="#4EE09A" BorderThickness="1"
-                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="11"/>
-                                </Grid>
+                            <StackPanel IsVisible="{Binding AsamaMahalKablosuMu}" Spacing="5">
+                                <ToggleButton Content="Bağlantısız elemanları göster" IsChecked="{Binding BostakileriGosterAktif, Mode=TwoWay}"/>
+                                <Button Content="Odadaki boş armatürleri ata" Command="{Binding OdadakiArmaturleriAtaCommand}"
+                                        IsVisible="{Binding GosterOdadakileriAta}"/>
                             </StackPanel>
 
 
-                            <TextBlock Classes="label" Text="Rota tipi"/>
+                            <ToggleButton Content="Bağlantısız prizleri göster" IsVisible="{Binding PrizMahalKablosuAdimi}"
+                                          IsChecked="{Binding BostakileriGosterAktif, Mode=TwoWay}"/>
+                            <TextBlock Classes="label" Text="Rota tipi" IsVisible="{Binding !PrizAkisiAktif}"/>
                             <ComboBox x:Name="RotaTipiCombo" SelectedIndex="0"
+                                      IsVisible="{Binding !PrizAkisiAktif}"
                                       SelectionChanged="RotaTipi_SelectionChanged"
                                       HorizontalAlignment="Stretch" FontSize="11">
                                 <ComboBoxItem Content="Armatür → Armatür → Switch (Daisy-Chain)"/>
@@ -1212,10 +1159,14 @@
                                 <Button Content="2" Click="KomutatorDevre2_OnClick"
                                         Classes.kmAktif="{Binding KomutatorDevre2Mi}"
                                         Padding="8,2" FontSize="11"/>
+                                <Button Content="3" Click="KomutatorDevre3_OnClick"
+                                        IsVisible="{Binding GosterUcuncuDevre}" Classes.kmAktif="{Binding KomutatorDevre3Mi}"
+                                        Padding="8,2" FontSize="11"/>
                             </StackPanel>
 
                             <!-- Hızlı bağlama ve kablo yenileme -->
                             <Button Content="Boştakileri Panoya Bağla"
+                                    IsVisible="{Binding !AsamaliPaftaAktif}"
                                     Command="{Binding BosUclariEnYakinPanoyaBaglaCommand}"
                                     ToolTip.Tip="Boştaki tüm linye, kablo ve sistem uçlarını en yakın panoya bağlar"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
@@ -1414,12 +1365,12 @@
                                     <StackPanel Spacing="5" IsVisible="{Binding GosterSeciliElemanTaliPanoBaglanti}">
                                         <Border Height="1" Background="#1A3018"/>
                                         <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <TextBlock Classes="label" Text="Servis ettiği oda:"/>
+                                            <TextBlock Classes="label" Text="Bulunduğu mahal"/>
                                             <TextBlock Text="{Binding TaliPanoOdaAdi}"
                                                        Foreground="#FFDD88" FontSize="11"
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
-                                        <TextBlock Classes="label" Text="Bağlı kat panosu"/>
+                                        <TextBlock Classes="label" Text="Bağlı üst pano"/>
                                         <ComboBox ItemsSource="{Binding TaliPanoKatPanoSecenekleri}"
                                                   SelectedItem="{Binding SeciliTaliPanoHedefPano, Mode=TwoWay}"
                                                   PlaceholderText="(Otomatik)"
@@ -1446,7 +1397,7 @@
                                     <StackPanel Spacing="4" IsVisible="{Binding GosterSeciliElemanPanoOdalari}">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Classes="label" Text="Bağlı Odalar" VerticalAlignment="Center"/>
-                                            <CheckBox Content="Kat arası seç" IsChecked="{Binding PanoKatArasiSecim, Mode=TwoWay}"
+                                            <CheckBox Content="Kat arası seç" IsVisible="{Binding !AydinlatmaAkisiAktif}" IsChecked="{Binding PanoKatArasiSecim, Mode=TwoWay}"
                                                       FontSize="11" Foreground="#A8C898"/>
                                         </StackPanel>
                                         <Border Background="#0A140B" BorderBrush="#1A3018" BorderThickness="1" CornerRadius="4" Padding="6">
@@ -1574,7 +1525,7 @@
 
                             <DataGrid x:Name="ElemanGrid" x:CompileBindings="False" AutoGenerateColumns="False" IsReadOnly="True" Height="260"
                                       ItemsSource="{Binding FiltrelenmisElemanlar}"
-                                      SelectedItem="{Binding SeciliEleman, Mode=TwoWay}">
+                                      SelectedItem="{Binding SeciliEleman, Mode=OneWay}" SelectionChanged="ElemanGrid_SelectionChanged">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Tip" Binding="{Binding Tip}" Width="110"/>
                                     <DataGridTextColumn Header="Ad" Binding="{Binding Ad}" Width="90"/>

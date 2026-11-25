@@ -21,6 +21,7 @@ public static class SalonDogrulamaServisi
 
     public static List<string> Dogrula(SalonGeometri salon)
     {
+        if (salon.SerbestTasarim) return SalonTasarimDogrulama.Kontrol(salon).Select(x=>x.Mesaj).ToList();
         var uyarilar = new List<string>();
 
         // Kabuk poligonları (görünür Zemin tipli / katmansız kapalı öğeler)
@@ -29,14 +30,14 @@ public static class SalonDogrulamaServisi
         foreach (var oge in salon.CizimOgeleri)
         {
             var katman = salon.Katmanlar.FirstOrDefault(k => k.Id == oge.KatmanId);
-            if (katman is { Gorunur: false }) { gizliOge++; continue; }
+            if (katman is { Gorunur: false }) gizliOge++;
             if (katman is not null && katman.Tip != SalonKatmanTipi.Zemin) continue;
             var poly = oge.KapaliPoligon(Salon3DGorunumServisi.Faset(salon));
             if (poly.Count >= 3) kabukPoligonlari.Add(poly);
         }
 
         if (gizliOge > 0)
-            uyarilar.Add($"{gizliOge} öğe gizli katmanda — 3D/DXF/M01 çıktısına dahil edilmez.");
+            uyarilar.Add($"{gizliOge} öğe görünümde gizli; hesap ve çıktıya dahildir.");
 
         // Tavan profili tutarlılığı
         if (salon.TavanProfili.Count == 1)
@@ -44,9 +45,8 @@ public static class SalonDogrulamaServisi
                          "noktası gerekir; şu an düz tavan kullanılıyor.");
         if (salon.TavanProfili.Any(n => n.KotM <= 0))
             uyarilar.Add("Tavan profilinde kot ≤ 0 olan nokta var — tavan zeminin altına iner.");
-        if (SalonTavanServisi.ProfilliMi(salon))
         {
-            double minKot = salon.TavanProfili.Min(n => n.KotM);
+            double minKot = SalonTavanServisi.ProfilliMi(salon) ? salon.TavanProfili.Min(n => n.KotM) : salon.SalonYuksekligiM;
             double maksPlatform = 0;
             if (salon.Sahne is { } sp) maksPlatform = Math.Max(maksPlatform, sp.TabanKotuM + sp.YukseklikM);
             foreach (var sk in salon.SeyirciSekciyonlari)
@@ -111,6 +111,10 @@ public static class SalonDogrulamaServisi
             }
         }
 
+        var copy=SalonGeometriServisi.KopyadanYukle(SalonGeometriServisi.KopyaJson(salon));
+        SalonTasarimServisi.Hazirla(copy);
+        var overlapping=SalonTasarimMeshServisi.Cakismalar(SalonTasarimServisi.Paneller(copy,SalonTasarimServisi.Kabuk(copy)));
+        if(overlapping.Count>0)uyarilar.Add("Bölgeler aynı hacimde üst üste geliyor; yerleşimi düzeltin.");
         return uyarilar;
     }
 
@@ -125,7 +129,7 @@ public static class SalonDogrulamaServisi
         foreach (var oge in salon.CizimOgeleri)
         {
             var katman = salon.Katmanlar.FirstOrDefault(k => k.Id == oge.KatmanId);
-            if (katman is { Gorunur: false }) continue;
+
             if (oge.KapaliPoligon(Salon3DGorunumServisi.Faset(salon)).Count >= 3) continue; // kapalı → kabukta
             foreach (var s in oge.Segmentler(Salon3DGorunumServisi.Faset(salon)))
                 segmentler.Add(s);

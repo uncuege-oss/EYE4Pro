@@ -18,6 +18,11 @@ public partial class OzelPozlarWindow : Window
         Close();
     }
 
+    private async void TopluPozEkle_OnClick(object? sender, RoutedEventArgs e)
+    {
+        await new TopluOzelPozWindow(ViewModel).ShowDialog(this);
+    }
+
     private void OzelGrid_CellEditEnded(object? sender, DataGridCellEditEndedEventArgs e)
     {
         if (e.Row.DataContext is KesifPoz poz)

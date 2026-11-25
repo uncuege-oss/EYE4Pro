@@ -196,6 +196,11 @@ public class OrtaGerilimSistemi
     /// <summary>Kütüphaneden seçilen trafo tipi adı (tek trafo).</summary>
     public string TrafoTanimAd { get; set; } = "";
 
+    /// <summary>Trafo kullanıcı tarafından sabitlendi mi? false ise yük değiştikçe trafo her hesapta
+    /// yeniden seçilir (<see cref="TrafoTanimAd"/> yalnız sonucu tutar). Eski projelerde bulunmayan
+    /// alan false kabul edilir ve trafo güncel yüke göre yeniden boyutlandırılır.</summary>
+    public bool TrafoManuel { get; set; }
+
     /// <summary>Trafo/OG sisteminin bulunduğu kat etiketi (örn. "Bodrum 2", "Çatı"). Boş ise OG bloğu
     /// şemanın en üstündeki ayrılmış banda (geleneksel OG girişi) çizilir; doluysa o katın üstündeki
     /// ayrılmış banda yerleştirilir (trafo o kat seviyesinde görünür).</summary>

@@ -48,7 +48,13 @@ Faz 2 (tamamlandı) — Otomatik metraj aktarımı + öğrenen eşleşme:
 - **Referanslar** penceresi (toolbar): metraj excel'lerini yönetir — Excel Yükle / Excel Sil / Excel Şablonu.
   Bir excel silinince ondan üretilen otomatik satırlar kaldırılır; öğrenilen eşleşmeler KORUNUR.
 - Eşleşmesi olan kalemler **seçili (aktif) keşif tablosuna** `KaynakTipi=Otomatik`, `KaynakModul`,
-  `KaynakReferansId` etiketiyle yazılır (idempotent: referans yeniden işlenince eski otomatik satırlar temizlenir).
+  `KaynakReferansId` etiketiyle ilk kez yazılır (yeniden işlemede aynı hedefte katkılar idempotent güncellenir).
+- 2026-10-15: İlk aktarımın yaprak tablo kimliği `KesifReferansDosyasi.HedefTabloId` ile kalıcıdır.
+  Yeniden işleme mevcut katkıları aynı hedefte günceller; bütün referansları o anki seçime taşımaz.
+  Satır nesnesi, elle düzenlenmiş fiyat/açıklama ve manuel miktar farkı korunur. Eski dosyanın hedefi
+  mevcut referans katkısından bulunur; belirsiz veya silinmiş hedeflerde satır taşınmaz/silinmez, uyarı verilir.
+  Aktif/fiyatlı kütüphane pozuna çözülemeyen öğrenilmiş eşleşme Poz Atama bekleyenlere dahil edilir;
+  sıfır fiyatlı yeni satır üretilmez ve mevcut bedel korunur.
 - Eşleşme anahtarı (tam kimlik): **Ana Grup + Alt Grup + Teknik Özellik + Birim** (`KesifEslemeAnahtar.Uret`).
 
 Faz 2 kararları (kullanıcı onayı):
@@ -65,6 +71,23 @@ Faz 2.1 (tamamlandı) — Hiyerarşik tablolar + Proje Bilgileri:
   ağacı dolaşır. Otomatik metraj satırları yalnız yaprak seçili tabloya yazılır.
 - UI: "Keşif Tabloları" ListBox → **TreeView** (ağaç). Toolbar'a "Alt Tablo Ekle" butonu. `TabloSil`
   ebeveynden (alt tabloysa) ya da en üst listeden siler. Seçim TreeView `SelectionChanged` ile `SeciliTablo`'ya bağlanır.
+- Ağaçtaki her tablo/alt tablo adının yanında sağa hizalı toplam bedel (`Toplam`, `N2 ₺`) görünür.
+  Üst tablolar alt tablolarının toplamını gösterir; satır işlemleri sonrası tutarlar güncellenir.
+- Her tablo/alt tablo adının yanında manuel tamamlanma tiki vardır (`KesifTablosu.TamamlandiMi`).
+  İşaretli tablo adı yeşil olur; tik kaldırılınca normal renge döner. İşaret her seviyede bağımsızdır,
+  hesapları etkilemez, `.e4p14` içinde saklanır ve kaydedilmemiş değişiklik sayılır.
+- Tamamlandı tiki aynı zamanda düzenleme kilididir. Üst tablo tamamlanınca altındaki tüm tablolar da
+  kilitlenir; alt tabloların kendi tikleri değişmez. Önce üst kilit kaldırılmalıdır; kendi tiki kalan
+  alt tablo ayrıca kilitli kalır. Satır grid'i salt okunur olur; ekleme/silme, ad değiştirme, alt tablo
+  ekleme ve tamamlanmış alt tablo içeren üst tabloyu silme komutları engellenir.
+- Kilitli tabloya metraj alınamaz; bu tabloda kullanılan referans silinemez veya poz eşleşmesi
+  değiştirilemez. Otomatik atama kilitli kalemleri atlar; yeniden işleme ve tekilleştirme kilitli satırları
+  değiştirmez. Görüntüleme, kaydetme ve Excel raporu alınabilir. Tik konmadan önce açık hücre düzenlemesi
+  doğrulanıp tamamlanır; geçersiz hücre varsa kilit uygulanmaz. UI kilidi dışında ViewModel/Core
+  komutlarında da denetim vardır. M14 regresyonları: 58/58 (5 yeni kilit senaryosu dahil).
+  Güncel App derlemesi 0 hata/0 uyarı. Genel koşucu 750/751; kalan M08 Windows dosya-hatası
+  testi önceki doğrulamadakiyle aynıdır. Kilit, kaydet/aç, üst/alt tablo, referans ve poz atama
+  senaryoları otomatik doğrulandı; canlı GUI etkileşim testi yapılmadı.
 - **Proje Bilgileri** paneli: tablo ağacının sağındaki künye formu (İşveren, Yüklenici, İl/İlçe, Ada/Parsel,
   Sözleşme No, Tarih) → `KesifProje.Bilgiler` (`KesifProjeBilgileri`). Excel "Genel İcmal" alt başlığına künye yazılır.
 - **Excel raporu hiyerarşik**: detay sayfası yalnız yaprak (satırlı) tablolar için; "Tablo Özeti" ağacı
@@ -191,27 +214,46 @@ Başlık eşleştirme:
   - Ek: `Kategori`, `Not`
 
 Excel okuma:
+- Başlık satırı ilk 100 kullanılan satırda içerik üzerinden bulunur; kapak sayfaları atlanır.
+- `İmalatın Cinsi` ve `Birim Fiyatı` başlıkları, büyük Türkçe harfler, C:G gibi ofsetli kolonlar
+  ve `İş Grubu:` kategori satırları desteklenir. Gerekli başlıklar bulunamazsa açık hata verilir.
 - Başlık hücrelerinin gerçek kolon numarası kullanılmalıdır; boş başlık hücreleri kolon kaydırmamalıdır.
 - Sayısal hücreler kültürden bağımsız doğrudan okunmalıdır.
 - Para/sayı parse işlemi hem `1.107.437,49` hem `1234.56` gibi formatları doğru okumalıdır.
 - Küsuratsız binlik formatlar (`1.107.437`, `1,107,437`) ondalık sanılmamalıdır.
 - Aynı `PozNo` tekrar içe aktarılırsa mevcut poz güncellenir.
 - CSV okuma quoted alanları ve noktalı virgül ayracını desteklemelidir.
+- Quoted CSV alanındaki satır sonu yeni kayıt değildir; kapanmamış tırnak açık hata verir.
 
 ---
 
 ## 7. UI İş Akışı
 
 Ana pencere:
-- Üst: dosya/komut çubuğu ve `Ana İcmal` butonu
+- Üst: tüm ana ekran butonları tek yatay komut çubuğundadır (dosya işlemleri, `Ana İcmal`,
+  `Poz Atama`, `Referanslar`, `Tablo Ekle`, `Alt Tablo Ekle`, poz/liste yönetimi, mod geçişi,
+  `Excel Çıktısı`). Dar alanda komut çubuğu yatay kaydırılabilir; ikinci satıra taşmaz.
+- Butonlar 11 punto / 26 px asgari yükseklik, veri satırları 24 px ve sütun başlıkları 26 px'tir.
+  Poz araması bölüm başlığıyla aynı satırdadır; alt buton satırı kaldırılmış, iç boşluklar azaltılmıştır.
+  Başlangıçta keşif alanı / poz alanı oranı 3:2, tablo ağacı ve künye yüksekliği 124 px'tir.
+- Komut çubuğunun altında keşif adı, işlem durumu, `Kaydedilmedi` ve genel toplam tek satırdadır.
+  Uzun keşif adı ve durum metni kısaltılır; tamamı fareyle üzerine gelindiğinde görünür.
 - `Kaydet`, açılmış veya daha önce kaydedilmiş mevcut `.e4p14` yoluna doğrudan yazar; yalnız yeni ve
   henüz yolu olmayan projede dosya seçtirir. `Farklı Kaydet` her zaman yeni konum/ad seçtirir.
 - Farklı Kaydet önerisi uzantısız `kesif` adıdır; dosya seçici `.e4p14` uzantısını yalnız bir kez ekler.
 - `Yeni`, `Aç`, `Geri` ve pencere kapatma işlemleri yalnız gerçek proje değişikliği varsa
   `Kaydet / Kaydetmeden Devam / İptal` onayı gösterir. `Ctrl/Cmd+S` ve
   `Ctrl/Cmd+Shift+S` kısayolları desteklenir.
+- Proje adının yanında, kaydedilmemiş kalıcı içerik değişikliği varsa amber renkli **Kaydedilmedi**
+  yazısı görünür. Tablo/satır/künye/liste/özel poz/referans değişiklikleri olaylarla izlenir; arama,
+  seçim ve computed toplam bildirimleri değişiklik sayılmaz. Toplu işlemlerde parmak izi bir kez
+  kontrol edilir. Başarılı kayıt, Yeni ve Aç göstergeyi günceller; kayıt sırasındaki yeni düzenleme
+  kaydedilmiş sayılmaz. `KesifProjeDegisiklikIzleyici` eski belge/silinen öğe aboneliklerini bırakır.
+  Kayıt göstergesi ve yeni/silinen öğe takibi regresyonlarıyla M14 testleri 60/60 geçti.
 - Proje JSON'u UI thread'inde üretilir, aynı klasörde geçici dosyaya yazılır ve atomik olarak hedefe
   geçirilir; önceki sağlam sürüm `<dosya>.e4p14.bak` olarak korunur.
+- Asenkron kayıt gerçekten yazdığı JSON parmak izini döndürür; kayıt sırasında yapılan yeni
+  düzenlemeler kirli kalır. Dosya yazımı/açılışı sürerken ikinci kayıt ve belge geçişi engellenir.
 - Sol/orta bölünmüş alan:
   - Üst: keşif tabloları ve seçili tablo satırları
   - Alt: birim fiyat pozları veya özel pozlar
@@ -221,13 +263,15 @@ Ana pencere:
 - Ana icmal ayrı `KesifIcmalWindow` penceresinde açılır.
 - Ana İcmal, Poz Atama ve Referanslar pencereleri M14'e sahipli (`Show(this)`) açılır; alt pencere
   kapanınca ana M14 penceresi görünür ve etkin kalır.
-- Sağ alt: `Excel Çıktısı` butonu; `.xlsx` kayıt konumu seçtirir.
+- Üst komut çubuğundaki `Excel Çıktısı` butonu `.xlsx` kayıt konumu seçtirir.
 
 Poz alanı:
 - Birim fiyat listeleri sürekli tablo olarak görünmez; flyout ile yönetilir.
 - Arama alanı poz no ve birim adı üzerinde canlı filtreleme yapar.
 - Birim fiyat modu ve özel poz modu ayrı tutulur.
 - Kütüphane grid'i salt okunurdur.
+- Birim adı hücresine gelince tam imalat tanımı satırlara bölünen bilgi balonunda gösterilir;
+  hücrede sığmayan metin üç noktayla kısaltılır.
 - Pozu tabloya ekleme çift tık ile yapılabilir.
 - Keşif satırı çift tık ile silinebilir; miktar kolonu bu davranıştan hariçtir.
 
@@ -240,6 +284,21 @@ Poz Atama:
 Özel pozlar:
 - `OzelPozlarWindow` ayrı penceredir.
 - Özel poz ekleme/silme/düzenleme burada yapılır.
+- Ana ekranda yalnız **Özel Pozlar** butonu vardır; ekle/sil butonları bu pencerededir.
+  Üst çubuktaki bu buton hem birim fiyat hem özel poz modunda görünür; düzenleme için mod geçişi gerekmez.
+- Özel Pozlar penceresindeki `Toplu Poz Ekle`, `Poz Ekle`, `Poz Sil` ve `Değişiklikleri Kaydet` butonları sağ alt
+  köşede tek yatay sırada, 11 punto ve 28 px asgari yükseklikte görünür; liste üzerinde buton bulunmaz.
+- `TopluOzelPozWindow` dört düzenlenebilir sütun sunar: poz adı/no, poz tanımı, poz birimi, poz fiyatı.
+  Excel'den kopyalanan aralık Ctrl+V veya `Panodan Yapıştır` ile seçili hücreden başlayarak yapıştırılır;
+  satırlar gerektiğinde otomatik çoğalır. Sütun sırası/sıralama sabittir; genişlikler ayarlanabilir.
+- `KesifTopluPozServisi` TSV pano verisini, tırnaklı çok satırlı/sekme içeren hücreleri, başlık ve boş
+  satırları, ayrı ₺/TL sütununu ve Türkçe/İngilizce fiyat biçimlerini işler. Bozuk pano taslağı değiştirmez.
+- `Özel Pozlara Ekle` bütün satırları doğrular: eksik alan, geçersiz/negatif fiyat, giriş içi veya mevcut
+  kütüphanedeki (pasif listeler dahil) poz kodu çakışması ilgili satırın hata sütununda gösterilir.
+  Hata varsa hiçbir poz aktarılmaz; mevcut pozlara yazılmaz. Sıfır fiyat geçerlidir, boş satırlar atlanır.
+- `TopluOzelPozEkle` başarılı aktarımı `ManuelPozlar` kaynağına ekler; kütüphane ve atama adaylarını tek
+  seferde yeniler, ilk yeni pozu seçer. İptal edilen taslak projeyi değiştirmez; eklenenler mevcut kayıt
+  göstergesi ve proje kaydet/aç akışıyla korunur. 7 yeni toplu giriş + 26 güvenilirlik testi **33/33** geçti.
 - Özel poz güncelleme tarihi değişiklikte otomatik güncellenir.
 
 Tablo adı:
@@ -274,6 +333,12 @@ Tablo adı:
 - Pencere ctor sırası ve kolon referansları dikkatli kurulmalıdır.
 - Aktif/pasif liste değişince filtrelenmiş poz kütüphanesi yenilenmelidir.
 - Son özel poz silindikten sonra `ManuelPozlar` içinde eski kopya bırakılmamalıdır; aksi halde kütüphane yenilemede poz geri döner.
+- Özel poz penceresi `SeciliOzelPozSilCommand`, ana ekran `OzelPozSilCommand` kullanır; iki seçimin
+  birbirinden bağımsız olması yanlış kayıt silmeye yol açmamalıdır.
+- Kütüphane değişimleri Poz Atama adaylarını ve çözülemeyen kalemleri de yeniler.
+- İcmal kırılımı tablo adına değil `TabloId` kimliğine göre gruplanır.
+- Kritik anma değerleri otomatik eşleştirmede zorunlu filtredir; metin puanı uyumsuz kapasiteyi
+  telafi edemez. Hedef poz değişince `KontrolEdildi` onayı kaldırılır; aynı hedef kaydında korunur.
 
 ---
 
@@ -316,6 +381,7 @@ App:
 
 Test:
 - `src/Kst.Acoustics.Tests/KesifHazirlaTests.cs`
+- `src/Kst.Acoustics.Tests/KesifGuvenilirlikTests.cs` (2026-10-15: 18 güvenilirlik regresyonu)
 
 ---
 
@@ -414,6 +480,15 @@ Son bilinen genel hedef:
   Yeni/Aç/Geri/X için koşullu kayıt onayı, kaydetme kısayolları, tek `.e4p14` uzantısı, iki taraflı Poz Atama
   araması ve taşmayan iki satırlı üst komut/proje bilgisi düzeni eklendi. Atomik yedek ve arama regresyonları
   genişletildi; çözüm build **0 hata, 0 uyarı**, özel test paketi **668/668** geçti.
+- 2026-10-15: `m14-hata-incelemesi.md` içindeki 12 bulgu düzeltildi. M14 testleri **52/52**
+  (34 mevcut + 18 yeni) geçti. Kullanıcının `birim fiyat 2026.xlsx` dosyasında 7. satır başlığı,
+  `İmalatın Cinsi` / `Birim Fiyatı` ve iş grupları doğrulandı: **14.838 kaynak satırı → 14.837 benzersiz poz**.
+  `35.505.2100` aynı ad/fiyatla iki kez var; liste kuralı gereği tekilleşir. Dosyadaki 1.360 sıfır fiyat
+  aynen okunur; otomatik poz ataması yalnız pozitif fiyatlı adayları kullanır. Gerçek dosyanın yükleme
+  ve proje JSON kaydet/aç kontrolü geçti. App/Tests derleme 0 hata, 0 uyarı (AvaloniaStats atlandı).
+  Genel koşucu **744/745**: M14 dışı M08 `MaterialLibrarySaveFailureIsReportedToCaller`, Windows'ta
+  dizine dosya yazma hatasında beklediği IOException yerine UnauthorizedAccessException aldığı için başarısız.
+  Tests koşucusu mevcut Library proje ayarında `-p:OutputType=Exe` ile derlenip çalıştırıldı.
 
 ---
 

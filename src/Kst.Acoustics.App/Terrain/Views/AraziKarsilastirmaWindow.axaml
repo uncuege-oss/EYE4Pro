@@ -1,0 +1,73 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Kst.Acoustics.App.Terrain.Views" x:Class="Kst.Acoustics.App.Terrain.Views.AraziKarsilastirmaWindow"
+        Title="Hafriyat Hesapla — İlk ve Son Hâl" Width="1280" Height="800" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterOwner" Background="#091610">
+    <Window.Styles>
+        <Style Selector="TextBlock"><Setter Property="Foreground" Value="#DCEDE3"/></Style>
+        <Style Selector="Button"><Setter Property="Background" Value="#204D38"/><Setter Property="Foreground" Value="#EEF8F1"/><Setter Property="Padding" Value="12,7"/></Style>
+        <Style Selector="ComboBox"><Setter Property="Background" Value="#163022"/><Setter Property="Foreground" Value="#EEF8F1"/></Style>
+    </Window.Styles>
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="14" RowSpacing="10">
+        <Grid x:Name="Kaynaklar" ColumnDefinitions="*,*" ColumnSpacing="12">
+            <Border Padding="12" Background="#12291E" CornerRadius="5">
+                <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <Button Content="İlk hâli yükle" Click="IlkYukle"/>
+                        <TextBlock x:Name="IlkAd" Grid.Column="1" Text="Dosya seçilmedi" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="IlkSecim" Grid.Column="2" IsVisible="False" SelectedIndex="0" SelectionChanged="YuzeyDegisti">
+                            <ComboBoxItem Content="Mevcut yüzey"/><ComboBoxItem Content="Tasarım yüzeyi"/>
+                        </ComboBox>
+                    </Grid>
+                    <TextBlock x:Name="IlkBilgi" FontSize="12" Foreground="#B2C8BD" Text="Arazi projesi, DWG veya DXF"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Padding="12" Background="#12291E" CornerRadius="5">
+                <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <Button Content="Son hâli yükle" Click="SonYukle"/>
+                        <TextBlock x:Name="SonAd" Grid.Column="1" Text="Dosya seçilmedi" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="SonSecim" Grid.Column="2" IsVisible="False" SelectedIndex="0" SelectionChanged="YuzeyDegisti">
+                            <ComboBoxItem Content="Mevcut yüzey"/><ComboBoxItem Content="Tasarım yüzeyi"/>
+                        </ComboBox>
+                    </Grid>
+                    <TextBlock x:Name="SonBilgi" FontSize="12" Foreground="#B2C8BD" Text="Arazi projesi, DWG veya DXF"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+        <Border Grid.Row="1" Padding="12" Background="#102119" CornerRadius="5">
+            <Grid ColumnDefinitions="*,*,*,*,Auto" ColumnSpacing="12">
+                <StackPanel><TextBlock Text="Yarma" Foreground="#FF9A87"/><TextBlock x:Name="Yarma" FontSize="22" Text="—"/></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="Dolgu" Foreground="#82C5FF"/><TextBlock x:Name="Dolgu" FontSize="22" Text="—"/></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="Net (yarma − dolgu)"/><TextBlock x:Name="Net" FontSize="22" Text="—"/></StackPanel>
+                <StackPanel Grid.Column="3"><TextBlock Text="Ortak alan"/><TextBlock x:Name="Alan" FontSize="22" Text="—"/></StackPanel>
+                <Button Grid.Column="4" x:Name="Csv" Content="Metrajı CSV kaydet" IsEnabled="False" Click="CsvKaydet" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="10">
+            <ComboBox x:Name="Mod" SelectedIndex="0" SelectionChanged="ModDegisti">
+                <ComboBoxItem Content="Yan yana"/><ComboBoxItem Content="Kaydırarak karşılaştır"/>
+            </ComboBox>
+            <Button Grid.Column="1" Content="Sığdır" Click="Sigdir"/>
+            <Slider Grid.Column="2" x:Name="Perde" Minimum="0" Maximum="100" Value="50" Width="155" IsVisible="False"
+                    ToolTip.Tip="İlk ve son hâl arasındaki ayırıcıyı kaydır" ValueChanged="PerdeDegisti"/>
+            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <TextBlock Text="■ Yarma" Foreground="#FF9282"/><TextBlock Text="■ Dolgu" Foreground="#83C9FF"/><TextBlock Text="■ Eşit kot" Foreground="#C2CBC7"/>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="3" RowDefinitions="Auto,*" RowSpacing="4">
+            <Grid ColumnDefinitions="*,*"><TextBlock Text="İlk hâl"/><TextBlock Grid.Column="1" Text="Son hâl · kot farkları" HorizontalAlignment="Right"/></Grid>
+            <Grid Grid.Row="1" x:Name="Sahne" ColumnDefinitions="*,*" ClipToBounds="True" SizeChanged="SahneBoyutuDegisti" Background="#0C1624">
+                <local:Arazi3DControl x:Name="IlkGorunum"/>
+                <local:Arazi3DControl x:Name="SonGorunum" Grid.Column="1"/>
+                <Border x:Name="Ayirici" Grid.ColumnSpan="2" Width="2" Background="#B8D6C7" HorizontalAlignment="Left" IsHitTestVisible="False"/>
+                <Border Grid.ColumnSpan="2" x:Name="BosSahne" Background="#0C1624">
+                    <TextBlock x:Name="Bekleme" Text="İlk ve son hâli yükleyin." HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </Grid>
+        </Grid>
+        <StackPanel Grid.Row="4" Spacing="3">
+            <TextBlock x:Name="Durum" Text="İki dosyada aynı koordinat sistemi ve kot referansını kullanın." TextWrapping="Wrap"/>
+            <TextBlock x:Name="Kapsam" FontSize="12" Foreground="#A7BDB0" TextWrapping="Wrap"/>
+        </StackPanel>
+    </Grid>
+</Window>

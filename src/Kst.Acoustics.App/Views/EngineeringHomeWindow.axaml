@@ -1,336 +1,293 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="Kst.Acoustics.App.Views.EngineeringHomeWindow"
-        Width="1180" Height="760"
-        MinWidth="980" MinHeight="660"
-        CanResize="True"
-        WindowStartupLocation="CenterScreen"
-        Background="#091019"
-        Title="Eye4Pro Complete Engineering">
-
-    <Window.Styles>
-        <Style Selector="TextBlock.familyTitle">
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#ECF4FA"/>
-        </Style>
-        <Style Selector="TextBlock.familyBody">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#9AADBC"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="LineHeight" Value="18"/>
-        </Style>
-        <Style Selector="TextBlock.statusText">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="Button.primaryEnter">
-            <Setter Property="Background" Value="#176CA6"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Padding" Value="16,8"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-        </Style>
-    </Window.Styles>
-
-    <Grid RowDefinitions="Auto,*,Auto">
-        <Border Grid.Row="0" BorderBrush="#203246" BorderThickness="0,0,0,1">
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                    <GradientStop Color="#0A121B" Offset="0"/>
-                    <GradientStop Color="#112235" Offset="0.48"/>
-                    <GradientStop Color="#0A121B" Offset="1"/>
-                </LinearGradientBrush>
-            </Border.Background>
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="22" Margin="32,22">
-                <Border Width="266" Height="82"
-                        CornerRadius="10"
-                        Background="#F5F8FB"
-                        BorderBrush="#DCE7EF"
-                        BorderThickness="1"
-                        Padding="14,9">
-                    <Grid ColumnDefinitions="70,*" ColumnSpacing="12">
-                        <Grid Width="70" Height="56">
-                            <Ellipse Width="58" Height="36" Stroke="#0B4C74" StrokeThickness="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Ellipse Width="34" Height="34" Fill="#1CB6D2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Ellipse Width="18" Height="18" Fill="#0A446A" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Path Data="M9,28 C21,12 49,12 61,28 C49,44 21,44 9,28Z"
-                                  Stroke="#0E6D9B"
-                                  StrokeThickness="2"
-                                  Fill="Transparent"/>
-                        </Grid>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
-                            <TextBlock Text="EYE4PRO"
-                                       Foreground="#0C496E"
-                                       FontSize="20"
-                                       FontWeight="Bold"/>
-                            <TextBlock Text="COMPLETE ENGINEERING"
-                                       Foreground="#1B95B2"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
-                    <TextBlock Text="Eye4Pro Complete Engineering"
-                               Foreground="#F0F7FC"
-                               FontSize="29"
-                               FontWeight="SemiBold"/>
-                    <TextBlock Text="Akustik, elektrik, mekanik, inşaat ve mimarlık disiplinleri için modüler mühendislik çalışma alanı"
-                               Foreground="#8BA4BA"
-                               FontSize="13"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <Grid Margin="32,28,32,20" RowDefinitions="Auto,*" RowSpacing="22">
-                <Grid ColumnDefinitions="*,360" ColumnSpacing="28">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Mühendislik Modül Aileleri"
-                                   Foreground="#EAF2F8"
-                                   FontSize="22"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Text="Etkin mühendislik ürün ailelerine girin; hazırlık aşamasındaki ailelerin durumu kartlarında gösterilir."
-                                   Foreground="#8FA5B8"
-                                   FontSize="13"
-                                   TextWrapping="Wrap"
-                                   LineHeight="20"/>
-                    </StackPanel>
-                    <Border Grid.Column="1"
-                            Background="#101A25"
-                            BorderBrush="#22364A"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Program"
-                                       Foreground="#70889D"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock Text="Eye4Pro Complete Engineering"
-                                       Foreground="#E6EEF6"
-                                       FontSize="16"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock Text="6 aktif ürün ailesi, 1 hazırlık aşamasındaki ürün ailesi"
-                                       Foreground="#8FA5B8"
-                                       FontSize="12"/>
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <UniformGrid Grid.Row="1" Columns="2">
-                    <Border Margin="0,0,12,12" Background="#101B25" BorderBrush="#225172" BorderThickness="1" CornerRadius="10" Padding="18">
-                        <DockPanel LastChildFill="True">
-                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="0,0,0,16">
-                                <Border Width="168" Height="64" CornerRadius="8" Background="#F4F8FB" BorderBrush="#D9E7F0" BorderThickness="1" Padding="10,7">
-                                    <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
-                                        <Grid Width="54" Height="46">
-                                            <Ellipse Width="44" Height="28" Stroke="#0B547B" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Ellipse Width="25" Height="25" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Path Data="M13,23 L20,23 M24,16 L24,30 M30,12 L30,34 M36,17 L36,29 M40,23 L48,23"
-                                                  Stroke="#0A4C72"
-                                                  StrokeThickness="2"/>
-                                        </Grid>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="15" FontWeight="Bold"/>
-                                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="10" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Classes="familyTitle" Text="eye4pro acoustics"/>
-                                    <TextBlock Classes="familyBody" Text="Akustik mühendisliği modülleri"/>
-                                </StackPanel>
-                            </Grid>
-                            <Button DockPanel.Dock="Bottom" Classes="primaryEnter" Click="OpenAcoustics_OnClick" Content="Modüllere Gir"/>
-                            <TextBlock Classes="familyBody" Text="Hacim akustiği, ses yalıtımı, panel tasarımı, ses bariyeri ve çevresel gürültü araçları."/>
-                        </DockPanel>
-                    </Border>
-
-                    <Border Margin="12,0,0,12" Background="#0F1D12" BorderBrush="#3A6620" BorderThickness="1" CornerRadius="10" Padding="18">
-                        <DockPanel LastChildFill="True">
-                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="0,0,0,16">
-                                <Border Width="168" Height="64" CornerRadius="8" Background="#F7F9F1" BorderBrush="#E0E8D2" BorderThickness="1" Padding="10,7">
-                                    <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
-                                        <Grid Width="54" Height="46">
-                                            <Ellipse Width="44" Height="28" Stroke="#526B1D" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Ellipse Width="25" Height="25" Fill="#C6E846" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Path Data="M18,28 L27,16 L27,25 L37,18 L29,32 L29,23 Z"
-                                                  Fill="#425B18"/>
-                                        </Grid>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="EYE4PRO" Foreground="#405719" FontSize="15" FontWeight="Bold"/>
-                                            <TextBlock Text="ELECTRIC" Foreground="#91B824" FontSize="10" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Classes="familyTitle" Text="eye4pro electric"/>
-                                    <TextBlock Classes="familyBody" Text="Elektrik mühendisliği modülleri"/>
-                                </StackPanel>
-                            </Grid>
-                            <Button DockPanel.Dock="Bottom" Classes="primaryEnter" Click="OpenElectric_OnClick"
-                                    Background="#3A7A18" Content="Modüllere Gir"/>
-                            <TextBlock Classes="familyBody" Text="Tek hat şeması, yük hesabı, pano ve kablo seçimi modülleri için ayrılmış ürün ailesi."/>
-                        </DockPanel>
-                    </Border>
-
-                    <Border Margin="0,12,12,12" Background="#111923" BorderBrush="#8A5A20" BorderThickness="1" CornerRadius="10" Padding="18">
-                        <DockPanel LastChildFill="True">
-                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="0,0,0,16">
-                                <Border Width="168" Height="64" CornerRadius="8" Background="#FAF7F2" BorderBrush="#EADDCB" BorderThickness="1" Padding="10,7">
-                                    <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
-                                        <Grid Width="54" Height="46">
-                                            <Ellipse Width="44" Height="28" Stroke="#784B19" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Ellipse Width="25" Height="25" Fill="#F2A33A" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Path Data="M27,12 L32,16 L30,22 L36,25 L34,31 L28,30 L24,35 L18,32 L20,26 L15,22 L20,17 Z"
-                                                  Fill="#653E15"/>
-                                        </Grid>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="EYE4PRO" Foreground="#603B13" FontSize="15" FontWeight="Bold"/>
-                                            <TextBlock Text="MECHANICS" Foreground="#D78623" FontSize="10" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Classes="familyTitle" Text="eye4pro mechanics"/>
-                                    <TextBlock Classes="familyBody" Text="Makina mühendisliği modülleri"/>
-                                </StackPanel>
-                            </Grid>
-                            <Button DockPanel.Dock="Bottom" Classes="primaryEnter" Click="OpenMechanics_OnClick"
-                                    Background="#8A5A20" Content="Modüllere Gir"/>
-                            <TextBlock Classes="familyBody" Text="HVAC, kanal hesabı, pompa-fan seçimi ve mekanik tesisat analizleri için ayrılmış ürün ailesi."/>
-                        </DockPanel>
-                    </Border>
-
-                    <Border Margin="12,12,0,12" Background="#101922" BorderBrush="#4A5967" BorderThickness="1" CornerRadius="10" Padding="18" Opacity="0.86">
-                        <DockPanel LastChildFill="True">
-                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="0,0,0,16">
-                                <Border Width="168" Height="64" CornerRadius="8" Background="#F5F7F8" BorderBrush="#DDE4EA" BorderThickness="1" Padding="10,7">
-                                    <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
-                                        <Grid Width="54" Height="46">
-                                            <Ellipse Width="44" Height="28" Stroke="#4D6070" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Ellipse Width="25" Height="25" Fill="#9CB0BE" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Path Data="M16,34 L16,18 L26,18 L26,34 M28,34 L28,13 L39,13 L39,34 M13,34 L42,34"
-                                                  Stroke="#354957"
-                                                  StrokeThickness="3"/>
-                                        </Grid>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="EYE4PRO" Foreground="#344755" FontSize="15" FontWeight="Bold"/>
-                                            <TextBlock Text="CIVIL" Foreground="#708694" FontSize="10" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Classes="familyTitle" Text="eye4pro civil"/>
-                                    <TextBlock Classes="familyBody" Text="İnşaat mühendisliği modülleri"/>
-                                </StackPanel>
-                            </Grid>
-                            <Border DockPanel.Dock="Bottom" Background="#24313B" CornerRadius="6" Padding="12,7" HorizontalAlignment="Right">
-                                <TextBlock Classes="statusText" Text="Yakında" Foreground="#B7C6D0"/>
-                            </Border>
-                            <TextBlock Classes="familyBody" Text="Kesit, taşıyıcı sistem, metraj ve saha kontrol modülleri için ayrılmış ürün ailesi."/>
-                        </DockPanel>
-                    </Border>
-
-                    <Border Margin="0,12,12,0" Background="#111824" BorderBrush="#256D7B" BorderThickness="1" CornerRadius="10" Padding="18">
-                        <DockPanel LastChildFill="True">
-                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="0,0,0,16">
-                                <Border Width="168" Height="64" CornerRadius="8" Background="#F8F4FA" BorderBrush="#E6DAEC" BorderThickness="1" Padding="10,7">
-                                    <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
-                                        <Grid Width="54" Height="46">
-                                            <Ellipse Width="44" Height="28" Stroke="#653D77" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Ellipse Width="25" Height="25" Fill="#C084D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Path Data="M14,32 L27,15 L40,32 M20,32 L20,24 L34,24 L34,32"
-                                                  Stroke="#4F2E5F"
-                                                  StrokeThickness="3"/>
-                                        </Grid>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="EYE4PRO" Foreground="#4E2E5D" FontSize="15" FontWeight="Bold"/>
-                                            <TextBlock Text="ARCHITECTURE" Foreground="#A568BC" FontSize="9" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Classes="familyTitle" Text="eye4pro architecture"/>
-                                    <TextBlock Classes="familyBody" Text="Mimarlık modülleri"/>
-                                </StackPanel>
-                            </Grid>
-                            <Button DockPanel.Dock="Bottom" Classes="primaryEnter" Click="OpenArchitecture_OnClick"
-                                    Background="#256D7B" Content="Modüllere Gir"/>
-                            <TextBlock Classes="familyBody" Text="Mimari BIM, ihtiyaç programı, mahal analizleri ve disiplin koordinasyonu için ayrılmış ürün ailesi."/>
-                        </DockPanel>
-                    </Border>
-
-                    <!-- Terrain -->
-                    <Border Margin="0,12,12,0" Background="#111824" BorderBrush="#2E7D4F" BorderThickness="1" CornerRadius="10" Padding="18">
-                        <DockPanel LastChildFill="True">
-                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="0,0,0,16">
-                                <Border Width="168" Height="64" CornerRadius="8" Background="#F2F8F4" BorderBrush="#D9E9DF" BorderThickness="1" Padding="10,7">
-                                    <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
-                                        <Grid Width="54" Height="46">
-                                            <Ellipse Width="44" Height="28" Stroke="#1F5E3A" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Ellipse Width="25" Height="25" Fill="#4FB07A" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Path Data="M12,34 L22,24 L30,30 L42,16"
-                                                  Stroke="#143F27"
-                                                  StrokeThickness="3"/>
-                                        </Grid>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="EYE4PRO" Foreground="#1F5E3A" FontSize="15" FontWeight="Bold"/>
-                                            <TextBlock Text="TERRAIN" Foreground="#4FB07A" FontSize="9" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Classes="familyTitle" Text="eye4pro terrain"/>
-                                    <TextBlock Classes="familyBody" Text="Arazi ve hafriyat modülleri"/>
-                                </StackPanel>
-                            </Grid>
-                            <Button DockPanel.Dock="Bottom" Classes="primaryEnter" Click="OpenTerrain_OnClick"
-                                    Background="#2E7D4F" Content="Modüllere Gir"/>
-                            <TextBlock Classes="familyBody" Text="DXF arazi kotlarından 3B yüzey, yarma/dolgu hafriyat hesabı ve bina temeli kota oturtma için ürün ailesi."/>
-                        </DockPanel>
-                    </Border>
-
-                    <!-- Landscape -->
-                    <Border Margin="0,12,12,0" Background="#111824" BorderBrush="#3FA46B" BorderThickness="1" CornerRadius="10" Padding="18">
-                        <DockPanel LastChildFill="True">
-                            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="0,0,0,16">
-                                <Border Width="168" Height="64" CornerRadius="8" Background="#F2F8F4" BorderBrush="#D9E9DF" BorderThickness="1" Padding="10,7">
-                                    <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
-                                        <Grid Width="54" Height="46">
-                                            <Path Data="M27,40 L27,20" Stroke="#5A3A22" StrokeThickness="4"/>
-                                            <Ellipse Width="34" Height="30" Fill="#3FA46B" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                        </Grid>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="EYE4PRO" Foreground="#1F5E3A" FontSize="15" FontWeight="Bold"/>
-                                            <TextBlock Text="LANDSCAPE" Foreground="#3FA46B" FontSize="9" FontWeight="SemiBold"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Classes="familyTitle" Text="eye4pro landscape"/>
-                                    <TextBlock Classes="familyBody" Text="Park ve peyzaj tasarım modülleri"/>
-                                </StackPanel>
-                            </Grid>
-                            <Button DockPanel.Dock="Bottom" Classes="primaryEnter" Click="OpenLandscape_OnClick"
-                                    Background="#3FA46B" Content="Modüllere Gir"/>
-                            <TextBlock Classes="familyBody" Text="Araziye ve binaya göre park tasarımı (yürüyüş yolu, oturma alanı, bank, süs havuzu) ile ağaç/bitki peyzajı için ürün ailesi."/>
-                        </DockPanel>
-                    </Border>
-                </UniformGrid>
-            </Grid>
-        </ScrollViewer>
-
-        <Border Grid.Row="2" Background="#070D13" BorderBrush="#1C2B3A" BorderThickness="0,1,0,0" Padding="0,10">
-            <TextBlock Text="Eye4Pro Complete Engineering"
-                       HorizontalAlignment="Center"
-                       Foreground="#526A7E"
-                       FontSize="11"/>
-        </Border>
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Kst.Acoustics.App.Views.EngineeringHomeWindow" Width="1180" Height="760" MinWidth="780" MinHeight="540" CanResize="True" WindowStartupLocation="CenterScreen" Background="#091019" Title="Eye4Pro Mühendislik &amp; Mimarlık">
+  <Window.Styles>
+    <Style Selector="Border.family">
+      <Setter Property="Background" Value="#101B25" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="Margin" Value="5" />
+    </Style>
+    <Style Selector="Button.module">
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="7,3" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Margin" Value="3" />
+      <Setter Property="FontSize" Value="{DynamicResource ModuleFontSize}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+  </Window.Styles>
+  <Grid RowDefinitions="Auto,*,Auto" Margin="16,8">
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+      <Viewbox Width="100" Height="100">
+        <Grid Width="150" Height="150">
+          <Image Source="/Assets/eye4pro-original.jpg" Stretch="Uniform" />
+          <Viewbox Width="55" Height="12" Stretch="Fill" Margin="86,98,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock Text="Mühendislik" Foreground="White" FontSize="12" />
+          </Viewbox>
+        </Grid>
+      </Viewbox>
+      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
+        <TextBlock Text="Eye4Pro Mühendislik &amp; Mimarlık" Foreground="#F0F7FC" FontSize="25" FontWeight="SemiBold" />
+        <TextBlock Text="Akustik, Elektrik, Mekanik, İnşaat, Çevre, Harita Ve Mimarlık Disiplinleri İçin Modüler Çalışma Alanları" Foreground="#8BA4BA" FontSize="12" TextWrapping="Wrap" />
+      </StackPanel>
     </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="3.2*,2.5*,1.8*,1.5*">
+      <Border Grid.Row="0" Grid.Column="0" Classes="family" BorderBrush="#176CA6">
+        <Grid RowDefinitions="Auto,*" RowSpacing="6">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Height="{DynamicResource FamilyLogoHeight}">
+            <Viewbox Width="{DynamicResource FamilyLogoWidth}" Height="{DynamicResource FamilyLogoHeight}" Stretch="Uniform">
+              <Border Width="168" Height="64" CornerRadius="8" Background="#F4F8FB" BorderBrush="#D9E7F0" BorderThickness="1" Padding="10,7">
+                <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
+                  <Grid Width="54" Height="46">
+                    <Ellipse Width="44" Height="28" Stroke="#0B547B" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Ellipse Width="25" Height="25" Fill="#20C3D8" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Path Data="M13,23 L20,23 M24,16 L24,30 M30,12 L30,34 M36,17 L36,29 M40,23 L48,23" Stroke="#0A4C72" StrokeThickness="2" />
+                  </Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="15" FontWeight="Bold" />
+                    <TextBlock Text="AKUSTİK" Foreground="#18A7BD" FontSize="10" FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Viewbox>
+            <TextBlock Grid.Column="1" Text="Eye4Pro Akustik" Foreground="#176CA6" FontSize="{DynamicResource FamilyFontSize}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <UniformGrid Grid.Row="1" Columns="3" VerticalAlignment="Stretch" Rows="3">
+            <Button Classes="module" Background="#176CA6" Click="AcousticsOpenRoomAcoustics_OnClick">
+              <TextBlock Text="Hacim Akustiği" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#176CA6" Click="AcousticsOpenSoundInsulation_OnClick">
+              <TextBlock Text="Ses Yalıtımı" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#176CA6" Click="AcousticsOpenPanelDesign_OnClick">
+              <TextBlock Text="Delikli Panel Tasarımı" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#176CA6" Click="AcousticsOpenBinaAkustigi_OnClick">
+              <TextBlock Text="Bina Akustiği" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#176CA6" Click="AcousticsOpenImpactSurface_OnClick">
+              <TextBlock Text="Darbe Emici Yüzey" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#176CA6" Click="AcousticsOpenNoiseBarrier_OnClick">
+              <TextBlock Text="Ses Bariyeri Tasarımı" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#176CA6" Click="AcousticsOpenRoomModes_OnClick">
+              <TextBlock Text="Oda Modları Hesabı" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#176CA6" Click="AcousticsOpenMeasurement_OnClick">
+              <TextBlock Text="Yerinde Ölçüm" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+          </UniformGrid>
+        </Grid>
+      </Border>
+      <Border Grid.Row="0" Grid.Column="1" Classes="family" BorderBrush="#637C16">
+        <Grid RowDefinitions="Auto,*" RowSpacing="6">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Height="{DynamicResource FamilyLogoHeight}">
+            <Viewbox Width="{DynamicResource FamilyLogoWidth}" Height="{DynamicResource FamilyLogoHeight}" Stretch="Uniform">
+              <Border Width="168" Height="64" CornerRadius="8" Background="#F7F9F1" BorderBrush="#E0E8D2" BorderThickness="1" Padding="10,7">
+                <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
+                  <Grid Width="54" Height="46">
+                    <Ellipse Width="44" Height="28" Stroke="#526B1D" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Ellipse Width="25" Height="25" Fill="#C6E846" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Path Data="M18,28 L27,16 L27,25 L37,18 L29,32 L29,23 Z" Fill="#425B18" />
+                  </Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="EYE4PRO" Foreground="#405719" FontSize="15" FontWeight="Bold" />
+                    <TextBlock Text="ELEKTRİK" Foreground="#91B824" FontSize="10" FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Viewbox>
+            <TextBlock Grid.Column="1" Text="Eye4Pro Elektrik" Foreground="#637C16" FontSize="{DynamicResource FamilyFontSize}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <UniformGrid Grid.Row="1" Columns="3" VerticalAlignment="Stretch" Rows="3">
+            <Button Classes="module" Background="#637C16" Click="ElectricOpenTekHat_OnClick">
+              <TextBlock Text="Tek Hat Şeması" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#637C16" Click="ElectricOpenBasitProjeCiz_OnClick">
+              <TextBlock Text="Proje Tasarımı" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#637C16" Click="ElectricOpenZayifAkimProjeCiz_OnClick">
+              <TextBlock Text="Zayıf Akım Proje Tasarımı" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#637C16" Click="ElectricOpenZayifAkimTekHat_OnClick">
+              <TextBlock Text="Zayıf Akım Tek Hat" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#637C16" Click="ElectricOpenKesifHazirla_OnClick">
+              <TextBlock Text="Keşif Hazırla" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#637C16" Click="ElectricOpenCevreAydinlatma_OnClick">
+              <TextBlock Text="Çevre Aydınlatma" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+          </UniformGrid>
+        </Grid>
+      </Border>
+      <Border Grid.Row="1" Grid.Column="0" Classes="family" BorderBrush="#8052AB">
+        <Grid RowDefinitions="Auto,*" RowSpacing="6">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Height="{DynamicResource FamilyLogoHeight}">
+            <Viewbox Width="{DynamicResource FamilyLogoWidth}" Height="{DynamicResource FamilyLogoHeight}" Stretch="Uniform">
+              <Border Width="168" Height="64" CornerRadius="8" Background="#F8F4FA" BorderBrush="#E6DAEC" BorderThickness="1" Padding="10,7">
+                <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
+                  <Grid Width="54" Height="46">
+                    <Ellipse Width="44" Height="28" Stroke="#653D77" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Ellipse Width="25" Height="25" Fill="#C084D8" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Path Data="M14,32 L27,15 L40,32 M20,32 L20,24 L34,24 L34,32" Stroke="#4F2E5F" StrokeThickness="3" />
+                  </Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="EYE4PRO" Foreground="#4E2E5D" FontSize="15" FontWeight="Bold" />
+                    <TextBlock Text="MİMARLIK" Foreground="#A568BC" FontSize="9" FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Viewbox>
+            <TextBlock Grid.Column="1" Text="Eye4Pro Mimarlık" Foreground="#8052AB" FontSize="{DynamicResource FamilyFontSize}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <UniformGrid Grid.Row="1" Columns="3" VerticalAlignment="Stretch" Rows="2">
+            <Button Classes="module" Background="#8052AB" Click="ArchitectureOpenIhtiyacProgrami_OnClick">
+              <TextBlock Text="İhtiyaç Programı" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#8052AB" Click="ArchitectureOpenKonseptPlan_OnClick">
+              <TextBlock Text="Konsept Plan" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#8052AB" Click="ArchitectureOpenModel3D_OnClick">
+              <TextBlock Text="3D BIM Model" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#8052AB" Click="ArchitectureOpenMalzemeAtama_OnClick">
+              <TextBlock Text="Detay ve Malzeme" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#8052AB" Click="ArchitectureOpenMimariCikti_OnClick">
+              <TextBlock Text="Rapor ve İhracat" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+          </UniformGrid>
+        </Grid>
+      </Border>
+      <Border Grid.Row="1" Grid.Column="1" Classes="family" BorderBrush="#AF486C">
+        <Grid RowDefinitions="Auto,*" RowSpacing="6">
+          <Grid ColumnDefinitions="*" ColumnSpacing="12" Height="{DynamicResource FamilyLogoHeight}">
+            <TextBlock Text="Eye4Pro Ortak" Foreground="#AF486C" FontSize="{DynamicResource FamilyFontSize}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <UniformGrid Grid.Row="1" Columns="2" VerticalAlignment="Stretch" Rows="2">
+            <Button Classes="module" Background="#AF486C" Click="OpenSharedBuilding_OnClick">
+              <TextBlock Text="Bina Geometrisi" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#AF486C" Click="OpenSharedHall_OnClick">
+              <TextBlock Text="Salon Tasarla" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+          </UniformGrid>
+        </Grid>
+      </Border>
+      <Border Grid.Row="2" Grid.Column="0" Classes="family" BorderBrush="#168B9A">
+        <Grid RowDefinitions="Auto,*" RowSpacing="6">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Height="{DynamicResource FamilyLogoHeight}">
+            <Viewbox Width="{DynamicResource FamilyLogoWidth}" Height="{DynamicResource FamilyLogoHeight}" Stretch="Uniform">
+              <Border Width="168" Height="64" CornerRadius="8" Background="#EFF9FA" BorderBrush="#D9E9DF" BorderThickness="1" Padding="10,7">
+                <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
+                  <Grid Width="54" Height="46">
+                    <Ellipse Width="44" Height="28" Stroke="#125D68" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Ellipse Width="25" Height="25" Fill="#52C8D5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Path Data="M12,34 L22,24 L30,30 L42,16" Stroke="#083F48" StrokeThickness="3" />
+                  </Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="EYE4PRO" Foreground="#125D68" FontSize="15" FontWeight="Bold" />
+                    <TextBlock Text="ARAZİ" Foreground="#52C8D5" FontSize="9" FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Viewbox>
+            <TextBlock Grid.Column="1" Text="Eye4Pro Arazi" Foreground="#168B9A" FontSize="{DynamicResource FamilyFontSize}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <UniformGrid Grid.Row="1" Columns="2" VerticalAlignment="Stretch" Rows="1">
+            <Button Classes="module" Background="#168B9A" Click="TerrainOpenHafriyat_OnClick">
+              <TextBlock Text="Hafriyat Hesapla (Yarma / Dolgu)" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Button Classes="module" Background="#168B9A" Click="TerrainOpenTemelOturtma_OnClick">
+              <TextBlock Text="Bina Temeli Kota Oturtma" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+          </UniformGrid>
+        </Grid>
+      </Border>
+      <Border Grid.Row="2" Grid.Column="1" Classes="family" BorderBrush="#2C8654">
+        <Grid RowDefinitions="Auto,*" RowSpacing="6">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Height="{DynamicResource FamilyLogoHeight}">
+            <Viewbox Width="{DynamicResource FamilyLogoWidth}" Height="{DynamicResource FamilyLogoHeight}" Stretch="Uniform">
+              <Border Width="168" Height="64" CornerRadius="8" Background="#F2F8F4" BorderBrush="#D9E9DF" BorderThickness="1" Padding="10,7">
+                <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
+                  <Grid Width="54" Height="46">
+                    <Path Data="M27,40 L27,20" Stroke="#5A3A22" StrokeThickness="4" />
+                    <Ellipse Width="34" Height="30" Fill="#3FA46B" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  </Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="EYE4PRO" Foreground="#1F5E3A" FontSize="15" FontWeight="Bold" />
+                    <TextBlock Text="PEYZAJ" Foreground="#3FA46B" FontSize="9" FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Viewbox>
+            <TextBlock Grid.Column="1" Text="Eye4Pro Peyzaj" Foreground="#2C8654" FontSize="{DynamicResource FamilyFontSize}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <UniformGrid Grid.Row="1" Columns="2" VerticalAlignment="Stretch" Rows="1">
+            <Button Classes="module" Background="#2C8654" Click="LandscapeOpenPark_OnClick">
+              <TextBlock Text="Park Tasarımı (Sert Zemin)" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+          </UniformGrid>
+        </Grid>
+      </Border>
+      <Border Grid.Row="3" Grid.Column="0" Classes="family" BorderBrush="#A85F19">
+        <Grid RowDefinitions="Auto,*" RowSpacing="6">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Height="{DynamicResource FamilyLogoHeight}">
+            <Viewbox Width="{DynamicResource FamilyLogoWidth}" Height="{DynamicResource FamilyLogoHeight}" Stretch="Uniform">
+              <Border Width="168" Height="64" CornerRadius="8" Background="#FAF7F2" BorderBrush="#EADDCB" BorderThickness="1" Padding="10,7">
+                <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
+                  <Grid Width="54" Height="46">
+                    <Ellipse Width="44" Height="28" Stroke="#784B19" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Ellipse Width="25" Height="25" Fill="#F2A33A" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Path Data="M27,12 L32,16 L30,22 L36,25 L34,31 L28,30 L24,35 L18,32 L20,26 L15,22 L20,17 Z" Fill="#653E15" />
+                  </Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="EYE4PRO" Foreground="#603B13" FontSize="15" FontWeight="Bold" />
+                    <TextBlock Text="MEKANİK" Foreground="#D78623" FontSize="10" FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Viewbox>
+            <TextBlock Grid.Column="1" Text="Eye4Pro Mekanik" Foreground="#A85F19" FontSize="{DynamicResource FamilyFontSize}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <UniformGrid Grid.Row="1" Columns="3" VerticalAlignment="Stretch" Rows="1">
+            <TextBlock Text="Hazırlanıyor" Foreground="#8FA5B8" VerticalAlignment="Center" Margin="4" />
+          </UniformGrid>
+        </Grid>
+      </Border>
+      <Border Grid.Row="3" Grid.Column="1" Classes="family" BorderBrush="#596579">
+        <Grid RowDefinitions="Auto,*" RowSpacing="6">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Height="{DynamicResource FamilyLogoHeight}">
+            <Viewbox Width="{DynamicResource FamilyLogoWidth}" Height="{DynamicResource FamilyLogoHeight}" Stretch="Uniform">
+              <Border Width="168" Height="64" CornerRadius="8" Background="#F5F7F8" BorderBrush="#DDE4EA" BorderThickness="1" Padding="10,7">
+                <Grid ColumnDefinitions="54,*" ColumnSpacing="8">
+                  <Grid Width="54" Height="46">
+                    <Ellipse Width="44" Height="28" Stroke="#4D6070" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Ellipse Width="25" Height="25" Fill="#9CB0BE" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Path Data="M16,34 L16,18 L26,18 L26,34 M28,34 L28,13 L39,13 L39,34 M13,34 L42,34" Stroke="#354957" StrokeThickness="3" />
+                  </Grid>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="EYE4PRO" Foreground="#344755" FontSize="15" FontWeight="Bold" />
+                    <TextBlock Text="İNŞAAT" Foreground="#708694" FontSize="10" FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Viewbox>
+            <TextBlock Grid.Column="1" Text="Eye4Pro İnşaat" Foreground="#596579" FontSize="{DynamicResource FamilyFontSize}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+          <UniformGrid Grid.Row="1" Columns="3" VerticalAlignment="Stretch" Rows="1">
+            <TextBlock Text="Hazırlanıyor" Foreground="#8FA5B8" VerticalAlignment="Center" Margin="4" />
+          </UniformGrid>
+        </Grid>
+      </Border>
+    </Grid>
+    <TextBlock Grid.Row="2" Text="Eye4Pro Mühendislik &amp; Mimarlık" HorizontalAlignment="Center" Foreground="#526A7E" FontSize="10" Margin="0,5" />
+  </Grid>
 </Window>

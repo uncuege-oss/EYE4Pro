@@ -11,14 +11,66 @@ using Kst.Acoustics.Core.Common.Geometry;
 
 namespace Kst.Acoustics.Core.Bina.Services;
 
-public class DxfKatPlaniParser
+public partial class DxfKatPlaniParser
 {
     public double UnitlessScaleMeters { get; set; } = 0.001;
     public string? UnitWarning { get; private set; }
 
+    private static DxfDocument GeometriBelgesiniOku(string filePath)
+    {
+        var dxf = DxfDocument.Load(filePath) ?? throw new InvalidOperationException("DXF okunamadı.");
+        // Bazı AutoCAD APPID kayıtları kendi kendilerine veya birbirlerine XData
+        // ile referans verir. netDxf Insert.Explode -> XData.Clone bu grafiği
+        // sınırsız kopyalayıp yakalanamayan StackOverflow ile süreci kapatır.
+        // Bina okuyucusu APPID metadata'sını kullanmaz: yalnız bellekteki kayıtların
+        // XData'sını kaldır. Nesne XData'sı, geometri, katmanlar ve kaynak dosya korunur.
+        foreach (var registry in dxf.ApplicationRegistries)
+            registry.XData.Clear();
+        return dxf;
+    }
+
+    /// Paftayı oda taramasından önce okur. Bütün paftaya flood-fill uygulamak
+    /// kesitleri ve anteti oda sayar; otomatik akış önce plan bölgelerini ayırır.
+    public BinaKat HamVeriyiOku(string filePath)
+    {
+        var dxf = GeometriBelgesiniOku(filePath);
+        double scale = HamOlcegiOku(dxf);
+        var raw = ExtractRawSegments(dxf, scale);
+        var detection = ExtractRawSegments(dxf, scale, includeAnnotationLayers: false);
+        return new BinaKat {
+            DxfFilePath = filePath, UnitWarning = UnitWarning,
+            HamSegmentler = raw, HamTespitSegmentler = detection,
+            HamMetinler = ExtractRawTexts(dxf, scale),
+            DxfArclar = ExtractRawArcs(dxf, scale).Select(a => new BinaDxfArc {
+                Merkez = a.Merkez, R = a.R, BasAciDeg = a.BasDeg, BitAciDeg = a.BitDeg }).ToList()
+        };
+    }
+
+    private double HamOlcegiOku(DxfDocument dxf)
+    {
+        double scale = GetMetersPerDrawingUnit(dxf.DrawingVariables.InsUnits);
+        if (dxf.DrawingVariables.InsUnits == DrawingUnits.Unitless)
+        {
+            var doorArcs = dxf.Entities.Arcs.Where(a =>
+                Regex.IsMatch(a.Layer.Name, "KAPI|DOOR", RegexOptions.IgnoreCase) && a.Radius > 0).ToList();
+            if (doorArcs.Count >= 3)
+            {
+                var candidates = new[] { 0.001, 0.01, 1.0 }.Select(s => (Scale: s,
+                    Count: doorArcs.Count(a => a.Radius * s >= 0.55 && a.Radius * s <= 1.8)))
+                    .OrderByDescending(x => x.Count).ToList();
+                if (candidates[0].Count >= 3 && candidates[0].Count > candidates[1].Count * 2)
+                {
+                    scale = candidates[0].Scale;
+                    UnitWarning = $"Birimsiz çizim: kapı katmanındaki {candidates[0].Count} yaydan ölçek önerildi (1 birim = {scale} m). Bilinen bir ölçüyle kontrol edin.";
+                }
+            }
+        }
+        return scale;
+    }
+
     public BinaKat Parse(string filePath, int katNo, double katYuksekligiM, bool normalizeOrigin = true)
     {
-        var dxf = DxfDocument.Load(filePath) ?? throw new Exception("DXF dosyası yüklenemedi.");
+        var dxf = GeometriBelgesiniOku(filePath);
 
         var kat = new BinaKat { KatNo = katNo, KatYuksekligiM = katYuksekligiM, DxfFilePath = filePath };
         var unitScale = GetMetersPerDrawingUnit(dxf.DrawingVariables.InsUnits);
@@ -177,6 +229,8 @@ public class DxfKatPlaniParser
         kat.HamMetinler = kat.HamMetinler
             .Select(t => (new Point2D(t.Pos.X - minX, t.Pos.Y - minY), t.Value))
             .ToList();
+        kat.HamTespitSegmentler = kat.HamTespitSegmentler.Select(s =>
+            (new Point2D(s.A.X - minX, s.A.Y - minY), new Point2D(s.B.X - minX, s.B.Y - minY))).ToList();
     }
 
     public static int OdalariBosluklardanYenidenTara(BinaKat kat)
@@ -184,7 +238,7 @@ public class DxfKatPlaniParser
         var rawArcs = kat.DxfArclar
             .Select(a => (a.Merkez, a.R, a.BasAciDeg, a.BitAciDeg))
             .ToList();
-        var odalar = DetectRoomsFromSpaces(kat.HamSegmentler, kat.HamMetinler, rawArcs, kat.KatYuksekligiM);
+        var odalar = DetectRoomsFromSpaces(kat.KaynakKatmanlari is not null || kat.HamTespitSegmentler.Count > 0 ? kat.HamTespitSegmentler : kat.HamSegmentler, kat.HamMetinler, rawArcs, kat.KatYuksekligiM);
         if (odalar.Count == 0) return 0;
         MapRoomNamesFromTexts(odalar, kat.HamMetinler);
         kat.Odalar = new ObservableCollection<BinaOda>(odalar);
@@ -193,7 +247,7 @@ public class DxfKatPlaniParser
 
     public List<(Point2D A, Point2D B)> ExtractRawSegmentsFromFile(string filePath)
     {
-        var dxf = DxfDocument.Load(filePath) ?? throw new Exception("DXF dosyası yüklenemedi.");
+        var dxf = GeometriBelgesiniOku(filePath);
         var unitScale = EstimateScaleFromTexts(dxf) ?? GetMetersPerDrawingUnit(dxf.DrawingVariables.InsUnits);
         return ExtractRawSegments(dxf, unitScale);
     }
@@ -272,15 +326,14 @@ public class DxfKatPlaniParser
         foreach (var a in dxf.Entities.Arcs)
             Ekle(a.Center.X, a.Center.Y, a.Radius, a.StartAngle, a.EndAngle);
 
-        foreach (var ins in dxf.Entities.Inserts)
+        void Visit(Insert ins, int depth)
         {
-            try
-            {
-                foreach (var e in ins.Explode())
-                    if (e is Arc aa) Ekle(aa.Center.X, aa.Center.Y, aa.Radius, aa.StartAngle, aa.EndAngle);
-            }
-            catch { /* ignore */ }
+            if (depth > 16) return;
+            foreach (var e in ins.Explode())
+                if (e is Arc aa) Ekle(aa.Center.X, aa.Center.Y, aa.Radius, aa.StartAngle, aa.EndAngle);
+                else if (e is Insert nested) Visit(nested, depth + 1);
         }
+        foreach (var ins in dxf.Entities.Inserts) Visit(ins, 0);
 
         return list;
     }
@@ -299,18 +352,19 @@ public class DxfKatPlaniParser
         foreach (var t in dxf.Entities.Texts)  Ekle(t.Position.X, t.Position.Y, t.Value);
         foreach (var t in dxf.Entities.MTexts) Ekle(t.Position.X, t.Position.Y, t.Value);
 
-        foreach (var ins in dxf.Entities.Inserts)
+        void Visit(Insert ins, int depth)
         {
-            try
+            if (depth > 16) return;
+            foreach (var attribute in ins.Attributes)
+                Ekle(attribute.Position.X, attribute.Position.Y, attribute.Value);
+            foreach (var e in ins.Explode())
             {
-                foreach (var e in ins.Explode())
-                {
-                    if (e is Text tt)   Ekle(tt.Position.X, tt.Position.Y, tt.Value);
-                    else if (e is MText mt) Ekle(mt.Position.X, mt.Position.Y, mt.Value);
-                }
+                if (e is Text tt) Ekle(tt.Position.X, tt.Position.Y, tt.Value);
+                else if (e is MText mt) Ekle(mt.Position.X, mt.Position.Y, mt.Value);
+                else if (e is Insert nested) Visit(nested, depth + 1);
             }
-            catch { /* explode hatasını yoksay */ }
         }
+        foreach (var ins in dxf.Entities.Inserts) Visit(ins, 0);
 
         return list;
     }
@@ -356,8 +410,9 @@ public class DxfKatPlaniParser
                           new Point2D(pts[0].X * unitScale, pts[0].Y * unitScale)));
         }
 
-        void ProcessEntities(IEnumerable<EntityObject> entities)
+        void ProcessEntities(IEnumerable<EntityObject> entities, int depth = 0)
         {
+            if (depth > 16) return;
             foreach (var ent in entities)
             {
                 if (!includeAnnotationLayers && IsAnnotationLayer(ent.Layer?.Name))
@@ -383,7 +438,7 @@ public class DxfKatPlaniParser
                 else if (ent is Spline sp) AddPolyPointsV3(sp.PolygonalVertexes(16), false);
                 else if (ent is Insert i)
                 {
-                    try { ProcessEntities(i.Explode()); } catch { /* Ignore explode errors */ }
+                    ProcessEntities(i.Explode(), depth + 1);
                 }
             }
         }
@@ -453,13 +508,6 @@ public class DxfKatPlaniParser
 
     // ── TEXT etiketleri son fallback ──────────────────────────────────────────
 
-    private static readonly string[] RoomKeywords =
-    {
-        "SALON","MUTFAK","BANYO","WC","YATAK","KORİDOR","BALKON","HOL",
-        "YANGIN","ÇOCUK","EBEVEYN","OFIS","ODA","HALL","KITCHEN",
-        "BATH","BEDROOM","LIVING","ROOM","KOR.","Ç.","E."
-    };
-
     private static readonly Regex AreaRegex =
         new(@"(\d+[.,]\d+)\s*m2", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -471,7 +519,7 @@ public class DxfKatPlaniParser
             .Select(t => (t.Position.X, t.Position.Y, Value: t.Value ?? ""))
             .Concat(dxf.Entities.MTexts
                 .Select(t => (t.Position.X, t.Position.Y, Value: t.Value ?? "")))
-            .Where(t => RoomKeywords.Any(k => t.Value.Contains(k, StringComparison.OrdinalIgnoreCase)))
+            .Where(t => MimariOdaEtiketServisi.ContainsRoomName(t.Value))
             .Select(t => (t.X, t.Y))
             .ToList();
 
@@ -500,7 +548,7 @@ public class DxfKatPlaniParser
             .ToList();
 
         var roomTexts = allTexts
-            .Where(t => RoomKeywords.Any(k => t.Val.Contains(k, StringComparison.OrdinalIgnoreCase)))
+            .Where(t => MimariOdaEtiketServisi.ContainsRoomName(t.Val))
             .ToList();
 
         var areaTexts = allTexts
@@ -868,25 +916,22 @@ public class DxfKatPlaniParser
 
         string? enIyi = null;
         double enYakin = double.MaxValue;
+        int enIyiPuan = -1;
         foreach (var (pos, value) in metinler)
         {
-            if (!IsimGibiMi(value)) continue;
+            var etiket = MimariOdaEtiketServisi.Degerlendir(value);
+            if (etiket is null) continue;
             if (!PoligonYardimci.IsPointInside(pos, poly)) continue;
             double dx = pos.X - merkez.X, dy = pos.Y - merkez.Y;
             double d = dx * dx + dy * dy;
-            if (d < enYakin) { enYakin = d; enIyi = value.Trim(); }
+            if (etiket.Puan > enIyiPuan || (etiket.Puan == enIyiPuan && d < enYakin))
+            { enYakin = d; enIyiPuan = etiket.Puan; enIyi = etiket.Ad; }
         }
         return enIyi;
     }
 
     private static bool IsimGibiMi(string s)
-    {
-        if (string.IsNullOrWhiteSpace(s)) return false;
-        var t = s.Trim();
-        if (t.Length > 40) return false;
-        if (Regex.IsMatch(t, @"^\s*\d+([.,]\d+)?\s*(m2|m²|M2|mm|cm|m)?\s*$")) return false;
-        return t.Count(char.IsLetter) >= 2;
-    }
+        => MimariOdaEtiketServisi.TryName(s, out _);
 
     private List<Point2D> GetPolygon(Polyline2D poly, double unitScale) =>
         poly.Vertexes.Select(v => new Point2D(v.Position.X * unitScale, v.Position.Y * unitScale)).ToList();
@@ -910,16 +955,16 @@ public class DxfKatPlaniParser
 
     private static bool IsWallLayer(string? name)
     {
-        var s = (name ?? "").ToUpperInvariant();
+        var s = (name ?? "").ToUpperInvariant().Replace('ı', 'I').Replace('İ', 'I').Replace('Ş', 'S').Replace('Ö', 'O').Replace('Ü', 'U').Replace('Ç', 'C').Replace('Ğ', 'G');
         return s.Contains("DUVAR") || s.Contains("WALL") || s.Contains("A-WALL");
     }
 
     private static bool IsAnnotationLayer(string? name)
     {
-        var s = (name ?? "").ToUpperInvariant();
+        var s = (name ?? "").ToUpperInvariant().Replace('ı', 'I').Replace('İ', 'I').Replace('Ş', 'S').Replace('Ö', 'O').Replace('Ü', 'U').Replace('Ç', 'C').Replace('Ğ', 'G');
         if (string.IsNullOrWhiteSpace(s)) return false;
 
-        return s.Contains("YAZI")
+        return s.Contains("TEFR") || s.Contains("TARAMA") || s.Contains("HATCH") || s.Contains("FURN") || s.Contains("ESYA") || s.Contains("AKS") || s == "KOT" || s.Contains("MERDIVEN") || s.Contains("YAZI")
             || s.Contains("TEXT")
             || s.Contains("MTEXT")
             || s.Contains("DIM")
@@ -932,7 +977,7 @@ public class DxfKatPlaniParser
 
     private static bool IsRoomLayer(string? name)
     {
-        var s = (name ?? "").ToUpperInvariant();
+        var s = (name ?? "").ToUpperInvariant().Replace('ı', 'I').Replace('İ', 'I').Replace('Ş', 'S').Replace('Ö', 'O').Replace('Ü', 'U').Replace('Ç', 'C').Replace('Ğ', 'G');
         return s.Contains("ODA") || s.Contains("ROOM") || s.Contains("A-ROOM");
     }
 

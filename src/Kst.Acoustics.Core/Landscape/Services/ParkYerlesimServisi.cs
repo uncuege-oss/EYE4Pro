@@ -79,6 +79,12 @@ public static class ParkYerlesimServisi
         ParkOgesi oge, IReadOnlyList<IReadOnlyList<Point2D>> kullanilabilir, AraziTuketim? arazi = null)
     {
         var d = new YerlesimDogrulama();
+        var noktalar = KontrolNoktalari(oge);
+        if (noktalar.Count == 0 || noktalar.Any(n => !double.IsFinite(n.X) || !double.IsFinite(n.Y)))
+        {
+            d.Uyarilar.Add($"Öğe '{Ad(oge)}' geçerli geometri içermiyor.");
+            return d;
+        }
 
         foreach (var n in KontrolNoktalari(oge))
         {
@@ -88,6 +94,19 @@ public static class ParkYerlesimServisi
                                "(park sınırı dışı veya bina+setback üstünde).");
                 break;
             }
+        }
+
+        // Vertices alone miss edges spanning a hole/concavity and paths whose
+        // centreline fits but whose width extends outside the usable area.
+        if (oge is not Bank)
+        {
+            var ayakIzleri = oge is YuruyusYolu yol
+                ? ClipperAdaptor.YolTamponu(yol.Guzergah, yol.GenislikM)
+                : new List<List<Point2D>> { noktalar.ToList() };
+            if (ClipperAdaptor.NetAlan(ayakIzleri) <= 1e-6)
+                d.Uyarilar.Add($"Öğe '{Ad(oge)}' pozitif alan veya yol genişliği içermiyor.");
+            else if (d.Gecerli && ClipperAdaptor.NetAlan(ClipperAdaptor.Fark(ayakIzleri, kullanilabilir)) > 1e-6)
+                d.Uyarilar.Add($"Öğe '{Ad(oge)}' alanı veya yol genişliği kullanılabilir park alanı dışına taşıyor.");
         }
 
         if (arazi is not null)

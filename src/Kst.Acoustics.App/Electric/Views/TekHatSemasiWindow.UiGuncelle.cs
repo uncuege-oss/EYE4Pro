@@ -190,10 +190,10 @@ public partial class TekHatSemasiWindow
         {
             var bb = _vm.Proje.TumBusbarlar.FirstOrDefault(b => b.Id == pano.BaglandigiBusbarId);
             var kutu = bb?.CikisKutulari.FirstOrDefault(k => k.BagliPanoAd == pano.Ad);
-            double kutuPozisyonM = kutu?.PozisyonM ?? 0;
+            double kutuPozisyonM = kutu?.KatPozisyonM ?? kutu?.PozisyonM ?? 0;
             BusbarBaglantiText.Text = bb == null
                 ? "—"
-                : $"Hat: {bb.Ad} ({bb.BusbarTipiAd})\nKutu Pozisyonu: {kutuPozisyonM:0.##} m\nÇıkış Kutusu Sigortası: {pano.CikisKutusuSigortaA} A\nKutu-Pano Kablo: {pano.KabloMesafeM} m";
+                : $"Hat: {bb.Ad} ({bb.BusbarTipiAd})\nKat: {pano.Kat} • Kat içi kutu konumu: {kutuPozisyonM:0.##} m\nÇıkış Kutusu Sigortası: {pano.CikisKutusuSigortaA} A\nKutu-Pano Kablo: {pano.KabloMesafeM} m";
         }
 
         // Bu panodan çıkan busbarlar

@@ -141,7 +141,7 @@
                         </Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
                             <TextBlock Text="EYE4PRO" Foreground="#0B4568" FontSize="14" FontWeight="Bold"/>
-                            <TextBlock Text="ACOUSTICS" Foreground="#18A7BD" FontSize="9" FontWeight="SemiBold"/>
+                            <TextBlock Text="AKUSTİK" Foreground="#18A7BD" FontSize="9" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Grid>
                     </Border>

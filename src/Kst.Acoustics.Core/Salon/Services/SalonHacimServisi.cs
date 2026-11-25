@@ -17,6 +17,7 @@ public static class SalonHacimServisi
     public static double Hesapla(SalonGeometri salon)
     {
         ArgumentNullException.ThrowIfNull(salon);
+        if (salon.SerbestTasarim) return SalonTasarimMeshServisi.Uret(salon).Hacim;
         double h = salon.SalonYuksekligiM > 0 ? salon.SalonYuksekligiM : 3.0;
 
         var kabukPoligonlari = KabukPoligonlari(salon);
@@ -24,6 +25,10 @@ public static class SalonHacimServisi
             return BboxHacim(salon, h);
 
         var kabuk = ClipperAdaptor.Birlestir(kabukPoligonlari);
+        var copy=SalonGeometriServisi.KopyadanYukle(SalonGeometriServisi.KopyaJson(salon));
+        SalonTasarimServisi.Hazirla(copy);
+        if(SalonTasarimMeshServisi.Cakismalar(SalonTasarimServisi.Paneller(copy,kabuk)).Count>0)
+            throw new InvalidDataException("Üst üste gelen bölgeler için hacim hesaplanamaz; yerleşimi düzeltin.");
         double alan = ClipperAdaptor.NetAlan(kabuk);
         if (alan < 1e-9) return BboxHacim(salon, h);
 
@@ -47,22 +52,17 @@ public static class SalonHacimServisi
             var fp = SalonSeyirciServisi.Footprint(sek);
             double fpAlan = Math.Abs(ClipperAdaptor.IsaretliAlan(fp));
             if (fpAlan < 1e-9) continue;
-            double oran = IcAlan(kabuk, fp) / fpAlan;
-
             int n = Math.Max(1, sek.KademeSayisi);
-            double basamakAlan = fpAlan / n;
-            double kati = 0;
-            for (int i = 0; i < n; i++)
+            double x0=sek.MerkezX-sek.GenislikM/2, x1=sek.MerkezX+sek.GenislikM/2;
+            double front=sek.MerkezY+(sek.TersYon?1:-1)*sek.DerinlikM/2;
+            double direction=sek.TersYon?-1:1;
+            for(int i=0;i<n;i++)
             {
-                // TabanKotu geometriyi yükseltir; 0 ile taban arasındaki hava katı
-                // değildir (örn. balkon üstündeki seyirci). Yalnız destek düzleminin
-                // üzerindeki kademe yükselmeleri hacimden düşülür. Zemine oturan
-                // sekmede TabanKotu=0 olduğundan mevcut sonuç değişmez.
-                var availableHeight = Math.Max(0, maksKot - Math.Max(0, sek.TabanKotuM));
-                var solidHeight = Math.Clamp(i * sek.KademeYuksekligiM, 0, availableHeight);
-                kati += basamakAlan * solidHeight;
+                double y0=front+direction*i*sek.DerinlikM/n,y1=front+direction*(i+1)*sek.DerinlikM/n;
+                var step=new List<Point2D>{new(x0,Math.Min(y0,y1)),new(x1,Math.Min(y0,y1)),new(x1,Math.Max(y0,y1)),new(x0,Math.Max(y0,y1))};
+                double availableHeight=Math.Max(0,maksKot-Math.Max(0,sek.TabanKotuM));
+                v-=IcAlan(kabuk,step)*Math.Clamp(i*sek.KademeYuksekligiM,0,availableHeight);
             }
-            v -= kati * oran;
         }
 
         // Orkestra çukuru: zemin altına inen hava hacmi eklenir.
@@ -88,7 +88,7 @@ public static class SalonHacimServisi
         foreach (var oge in salon.CizimOgeleri)
         {
             var katman = salon.Katmanlar.FirstOrDefault(k => k.Id == oge.KatmanId);
-            if (katman is { Gorunur: false }) continue;
+
             if (katman is not null && katman.Tip != SalonKatmanTipi.Zemin) continue;
 
             var poly = oge.KapaliPoligon(Salon3DGorunumServisi.Faset(salon));

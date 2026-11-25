@@ -44,10 +44,7 @@ public static class TekHatAktarimServisi
             return new Sonuc { Hata = anaPanoHatasi ?? "Ana pano belirlenemedi." };
 
         // 3) Pano içerik özetleri (eleman Id -> özet); tüm A/P/M linyeler (aktifPafta=null)
-        var ozetById = new Dictionary<string, PanoOzet>();
-        foreach (var kat in kaynak.Katlar)
-            foreach (var ozet in BasitProjeCizPanoServisi.PanoOzetleri(kat, tanimlar))
-                ozetById[ozet.Pano.Id] = ozet;
+        var ozetById = BasitProjeCizPanoServisi.ProjePanoOzetleri(kaynak, tanimlar).ToDictionary(o => o.Pano.Id);
 
         // 4) Bina konfigürasyonu (kat numaralarından)
         var katNolar = panoKayitlari.Select(p => p.Kat.KatNo).Distinct().ToList();
@@ -82,11 +79,21 @@ public static class TekHatAktarimServisi
             };
 
             if (ozetById.TryGetValue(el.Id, out var ozet))
+            {
+                pano.GirisSigortaA = ozet.GirisSigortaA;
+                if (el.AydinlatmaSigortalari?.GetValueOrDefault(AydinlatmaTasarimServisi.Giris) is { Manuel: true } giris)
+                    pano.ManuelGirisSigortaA = giris.Amper;
                 // BK linyeleri M12 pano özetinde görünür, ancak M11'de AltPanolar
                 // hiyerarşisi aynı yükü zaten toplar. Normal linye gibi aktarılırsa
                 // alt pano gücü her seviyede ikinci kez eklenir.
                 foreach (var lo in ozet.Linyeler.Where(l => l.LinyePrefix != "BK"))
-                    pano.Linyeler.Add(LinyeYap(lo));
+                {
+                    var linye = LinyeYap(lo);
+                    if (el.AydinlatmaSigortalari?.GetValueOrDefault(lo.BaglantiId) is { Manuel: true } elle)
+                        linye.ManuelSigortaAmper = elle.Amper;
+                    pano.Linyeler.Add(linye);
+                }
+            }
 
             if (!ana)
             {
@@ -94,6 +101,14 @@ public static class TekHatAktarimServisi
                 // hesaplanır; eski projelerde kalan ikinci (tali→ana) hattı çift
                 // saymaya sokmaz.
                 var parentId = parentIdByPanoId.TryGetValue(el.Id, out var pid) ? pid : anaPanoId;
+                var hat = kaynak.Katlar.SelectMany(k => k.PanoBeslemeHatlari)
+                    .FirstOrDefault(h => h.AnaPanoId == parentId && h.TaliPanoId == el.Id && h.UygulamaTipi == BpcPanoBeslemeUygulamaTipi.Kablo);
+                if (hat != null && ozetById.TryGetValue(parentId, out var ust) &&
+                    ust.Pano.AydinlatmaSigortalari?.GetValueOrDefault(hat.Id) is { } cikis)
+                {
+                    pano.UstPanoCikisSigortaA = cikis.Amper;
+                    if (cikis.Manuel) pano.ManuelUstPanoCikisSigortaA = cikis.Amper;
+                }
                 var boy = BeslemeUzunlugu(kaynak, el.Id, parentId);
                 pano.KabloMesafeM = boy ?? 10.0;
                 if (boy is null)
@@ -188,7 +203,8 @@ public static class TekHatAktarimServisi
             SortiSayisi = sorti,
             BirimGucW = birim,
             TalepFaktoru = 1.0,
-            SigortaCinsi = SigortaCinsiCevir(lo.SigortaCinsi)
+            SigortaCinsi = SigortaCinsiCevir(lo.SigortaCinsi),
+            SigortaAmper = lo.SigortaA
         };
     }
 
@@ -197,6 +213,7 @@ public static class TekHatAktarimServisi
         "A" => "Aydınlatma",
         "P" => "Priz",
         "M" => "Mekanik",
+        "Y" => "Yedek",
         _ => "Özel Yük"
     };
 

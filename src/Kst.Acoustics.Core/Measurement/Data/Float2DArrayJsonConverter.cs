@@ -14,13 +14,16 @@ public sealed class Float2DArrayJsonConverter : JsonConverter<float[,]>
         var rows = JsonSerializer.Deserialize<float[][]>(ref reader, options) ?? [];
         if (rows.Length == 0) return new float[0, 0];
 
+        if (rows[0] is null) throw new JsonException("Ölçüm matrisi null satır içeremez.");
         int cols = rows[0].Length;
+        foreach (var row in rows)
+            if (row is null || row.Length != cols)
+                throw new JsonException("Ölçüm matrisinin tüm satırları aynı uzunlukta olmalıdır.");
         var result = new float[rows.Length, cols];
         for (int r = 0; r < rows.Length; r++)
         {
             var row = rows[r];
-            int c = Math.Min(cols, row.Length);
-            for (int i = 0; i < c; i++)
+            for (int i = 0; i < cols; i++)
                 result[r, i] = row[i];
         }
         return result;

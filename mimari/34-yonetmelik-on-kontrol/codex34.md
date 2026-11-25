@@ -256,3 +256,9 @@ KontrolBaglami
 | 2026-06-12 | M34.5 tamamlandı: kaynak profili modeli, varsayılan resmi yönetmelik profilleri ve ilk veri kontrolleri için kural-kaynak bağı eklendi; Core test runner 21/21 geçti |
 | 2026-06-12 | M34.6 tamamlandı: M31 ön kontrol paneli M34 sonuçlarını gösterecek şekilde bağlandı; kural kodu, kaynak profili ve eksik veri dili UI kartlarına eklendi |
 | 2026-06-12 | M34.7 tamamlandı: dil taraması kesin uygunluk iddiası bulunmadığını doğruladı; Core test runner 21/21, Core test build ve App build 0 uyarı/0 hata geçti; M34 MVP kapandı |
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Temel veri doğrulamasına sonluluk kontrolü eklendi; mevzuat eşikleri değiştirilmedi (A17).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Kst.Acoustics.Core/Bina/Services/KatEtiketServisi.cs" Link="KatEtiketServisi.cs" />
+    <Compile Include="../../src/Kst.Acoustics.Core/Bina/Services/KatKumelemeServisi.cs" Link="KatKumelemeServisi.cs" />
+    <Compile Include="../../src/Kst.Acoustics.Core/Common/Geometry/Point2D.cs" Link="Point2D.cs" />
+  </ItemGroup>
+</Project>

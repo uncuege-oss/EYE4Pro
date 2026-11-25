@@ -452,6 +452,8 @@ public class BinaGeometriViewModel : INotifyPropertyChanged
         Ad = o.Ad,
         AlanM2 = o.AlanM2,
         YukseklikOverrideM = o.YukseklikOverrideM,
+        TabanKotuOverrideM = o.TabanKotuOverrideM,
+        KaynakMahalAdlari = o.KaynakMahalAdlari.ToList(),
         Poligon = o.Poligon.Select(p => new Point2D(p.X, p.Y)).ToList()
     };
 
@@ -463,7 +465,7 @@ public class BinaGeometriViewModel : INotifyPropertyChanged
         Tip = a.Tip,
         GenislikM = a.GenislikM,
         YukseklikM = a.YukseklikM,
-        EsikYuksekligiM = a.EsikYuksekligiM,
+        EsikYuksekligiM = a.EsikYuksekligiM, EsikYuksekligiBelirtildi = a.EsikYuksekligiBelirtildi,
         IptalEdildi = a.IptalEdildi,
         ManuelEklendi = a.ManuelEklendi,
         Kaynak = a.Kaynak
@@ -564,7 +566,15 @@ public class BinaGeometriViewModel : INotifyPropertyChanged
         // ham segment setini oradan yeniden okuruz (codex50 §5: tespit TAM segment setinde
         // koşmalı); yoksa son çare olarak sadeleştirilmiş segmentlere düşülür.
         System.Collections.Generic.IReadOnlyList<(Point2D, Point2D)> duvarlar;
-        if (kat.HamSegmentler.Count > 0)
+        if (kat.KaynakKatmanlari is not null)
+        {
+            // Katman seçimi üretim sınırıdır; kaynak dosyayı filtresiz yeniden
+            // okumak hem kapalı katmanları hem diğer katların çizgilerini getirir.
+            duvarlar = kat.KayitliTespitSegmentleri is { } kayitli
+                ? kayitli.Select(s => (s.A, s.B)).ToList()
+                : kat.HamTespitSegmentler;
+        }
+        else if (kat.HamSegmentler.Count > 0)
         {
             duvarlar = kat.HamSegmentler;
         }
@@ -596,11 +606,13 @@ public class BinaGeometriViewModel : INotifyPropertyChanged
             .ToList();
 
         UndoSnapshotAl();
-        var bulunan = AciklikTespitServisi.Bul(duvarlar, arclar, kat.Acikliklar);
+        var oncekiAcikliklar = kat.Acikliklar.ToList();
+        var bulunan = AciklikTespitServisi.Bul(duvarlar, arclar, oncekiAcikliklar);
         kat.Acikliklar.Clear();
         kat.Acikliklar.AddRange(bulunan);
         AciklikYardimci.DisindaKalanlariSil(kat);
         int yansima = AciklikYardimci.KomsuDuvarlariTamamla(kat);
+        AciklikTespitServisi.DegismeyenAciklikBilgileriniKoru(kat.Acikliklar, oncekiAcikliklar);
         kat.SayilariYenile();
         SeciliAciklikId = null;
 

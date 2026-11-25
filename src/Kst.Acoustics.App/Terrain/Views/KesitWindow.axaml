@@ -6,7 +6,7 @@
         MinWidth="700" MinHeight="420"
         WindowStartupLocation="CenterOwner"
         Background="#EAF1FA"
-        Title="EYE4PRO Terrain — Kotlu Kesit">
+        Title="EYE4PRO Arazi — Kotlu Kesit">
     <Grid RowDefinitions="Auto,*,Auto">
         <Border Grid.Row="0" Background="#0A1610" Padding="14,9">
             <TextBlock x:Name="BaslikText" Foreground="#9FD3B4" FontSize="13" FontWeight="SemiBold"

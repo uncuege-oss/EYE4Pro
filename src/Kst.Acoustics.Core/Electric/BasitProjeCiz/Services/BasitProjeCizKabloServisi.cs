@@ -8,6 +8,7 @@ namespace Kst.Acoustics.Core.Electric.BasitProjeCiz.Services;
 
 public static class BasitProjeCizKabloServisi
 {
+    public const int PrizBuatKapasitesi = 7;
     private const double GecisKoprusuMaxM = 1.20;
 
     // ─── Devre yönetimi ──────────────────────────────────────────────────
@@ -149,14 +150,21 @@ public static class BasitProjeCizKabloServisi
     }
 
     // ── Pano rolleri (BlokAdi ile ayrışır; hepsi BpcElemanTipi.KatPanosu) ──────
-    // E4P_TALI_PANO → tali, E4P_ANA_PANO → ana, diğerleri (E4P_KAT_PANOSU,
+    // E4P_TALI_PANO → tali, E4P_ALT_PANO → alt, E4P_ANA_PANO → ana, diğerleri (E4P_KAT_PANOSU,
     // E4P_OZEL_PANO, boş/eski) → kat panosu.
     public static bool PanoTaliMi(BasitProjeEleman p)
         => string.Equals(p.BlokAdi, "E4P_TALI_PANO", StringComparison.OrdinalIgnoreCase);
     public static bool PanoAnaMi(BasitProjeEleman p)
         => string.Equals(p.BlokAdi, "E4P_ANA_PANO", StringComparison.OrdinalIgnoreCase);
+    public static bool PanoAltMi(BasitProjeEleman p)
+        => string.Equals(p.BlokAdi, "E4P_ALT_PANO", StringComparison.OrdinalIgnoreCase);
     public static bool PanoKatMi(BasitProjeEleman p)
-        => p.Tip == BpcElemanTipi.KatPanosu && !PanoTaliMi(p) && !PanoAnaMi(p);
+        => p.Tip == BpcElemanTipi.KatPanosu && !PanoTaliMi(p) && !PanoAnaMi(p) && !PanoAltMi(p);
+
+    /// Aydınlatma tasarımında kullanıcı tarafından mahal için seçilen pano.
+    public static BasitProjeEleman? MahaleAtananPano(string? odaId, IEnumerable<BasitProjeEleman> panolar)
+        => string.IsNullOrEmpty(odaId) ? null : panolar.FirstOrDefault(p =>
+            p.Tip == BpcElemanTipi.KatPanosu && p.BagliOdaIds.Contains(odaId));
 
     /// Bir buatın bağlanacağı hedef panoyu kullanıcı kuralına göre seçer:
     /// 1) Buatın mahalindeki (odasındaki) TALİ pano varsa → o tali pano,
@@ -205,12 +213,15 @@ public static class BasitProjeCizKabloServisi
     /// Buat→pano rotalarını hesaplar. Rota bulunamayan bağlantılar için BOŞ rotalı
     /// kablo üretilmez; bağlantı korunur ve uyarı listesi döner — çağıran taraf
     /// kullanıcıya gösterir ("bağlantı var ama çizilemedi" sessiz kalmasın).
-    public static List<string> BuatPanoRotalariniHesapla(BasitProjeKat kat)
+    public static List<string> BuatPanoRotalariniHesapla(BasitProjeKat kat, string? linyePrefix = null)
     {
-        kat.Kablolar.RemoveAll(k => k.Tip == BpcKabloTipi.PanoKablosu);
+        var baglantilar = kat.BuatPanoBaglantilari.Where(b => linyePrefix == null || b.LinyePrefix == linyePrefix).ToList();
+        var baglantiIdleri = baglantilar.Select(b => b.Id).ToHashSet();
+        kat.Kablolar.RemoveAll(k => k.Tip == BpcKabloTipi.PanoKablosu &&
+                                   (linyePrefix == null || baglantiIdleri.Contains(k.DevreId)));
         var uyarilar = new List<string>();
 
-        foreach (var baglanti in kat.BuatPanoBaglantilari.ToList())
+        foreach (var baglanti in baglantilar)
         {
             var buat = kat.Elemanlar.FirstOrDefault(e =>
                 e.Id == baglanti.BuatId &&
@@ -240,11 +251,11 @@ public static class BasitProjeCizKabloServisi
             });
         }
 
-        PanoKablolariniNumaralandir(kat);
+        PanoKablolariniNumaralandir(kat, linyePrefix);
         return uyarilar;
     }
 
-    public static void PanoKablolariniNumaralandir(BasitProjeKat kat)
+    public static void PanoKablolariniNumaralandir(BasitProjeKat kat, string? linyePrefix = null)
     {
         // Aydınlatma ("A") ve priz ("P") linyelerini ayrı ayrı numaralandır
         var panoCablolar = kat.Kablolar
@@ -272,6 +283,8 @@ public static class BasitProjeCizKabloServisi
                          .ThenBy(k => k.Rota.Count > 0 ? k.Rota[^1].X : 0)
                          .ThenBy(k => k.DevreId))
             {
+                if (linyePrefix != null && (!baglantiByKabloId.TryGetValue(k.DevreId, out var baglanti) ||
+                                            baglanti.LinyePrefix != linyePrefix)) continue;
                 k.PanoSira = sira++;
             }
         }
@@ -306,7 +319,7 @@ public static class BasitProjeCizKabloServisi
         if (string.IsNullOrEmpty(devre.BuatId)) return;
 
         var buat = ElemanBul(kat, elemanById, devre.BuatId);
-        if (buat == null) return;
+        if (buat == null || ElemanPrizDirektPanoMu(buat)) return;
 
         var prizler = devre.PrizElemanIds
             .Select(id => ElemanBul(kat, elemanById, id))
@@ -320,7 +333,9 @@ public static class BasitProjeCizKabloServisi
         // Devre üyeliği (PrizElemanIds) değişmez; yalnız çizim sırası düzenlenir.
         prizler = GeometrikSirala(new Point2D(buat.X, buat.Y), prizler);
 
-        bool duvarliRota = kat.Odalar.Count > 0;
+        var mahal = kat.Odalar.FirstOrDefault(o => o.Id == buat.OdaId);
+        IReadOnlyList<BasitProjeOda> odalar = mahal != null && prizler.All(p => p.OdaId == mahal.Id)
+            ? [mahal] : kat.Odalar;
 
         // Daisy chain: buat → priz1 → priz2 → ...
         BasitProjeEleman? oncekiEl = buat;
@@ -330,16 +345,17 @@ public static class BasitProjeCizKabloServisi
             bool oncekiDuvarda = ElemanDuvarSnapMi(oncekiEl.Tip);
             bool buDuvarda     = ElemanDuvarSnapMi(priz.Tip);
 
-            if (duvarliRota && (oncekiDuvarda || buDuvarda))
+            if (odalar.Count > 0 && (oncekiDuvarda || buDuvarda))
             {
                 rota = DuvarBoyuncaRota(
                     new Point2D(oncekiEl.X, oncekiEl.Y),
                     new Point2D(priz.X, priz.Y),
-                    kat.Odalar);
+                    odalar);
             }
             else
             {
-                rota = [new(oncekiEl.X, oncekiEl.Y), new(priz.X, priz.Y)];
+                rota = odalar.Count == 0 ? [new(oncekiEl.X, oncekiEl.Y), new(priz.X, priz.Y)] :
+                    OdaFarkindaliSegment(new(oncekiEl.X, oncekiEl.Y), new(priz.X, priz.Y), odalar);
             }
 
             kat.Kablolar.Add(new BpcKablo
@@ -462,7 +478,7 @@ public static class BasitProjeCizKabloServisi
 
     public static bool ElemanAnahtarMi(BpcElemanTipi tip) => tip switch
     {
-        BpcElemanTipi.Anahtar or BpcElemanTipi.Komütatör or BpcElemanTipi.DarbeAnahtari or
+        BpcElemanTipi.Anahtar or BpcElemanTipi.Komütatör or BpcElemanTipi.UcluKomutator or BpcElemanTipi.DarbeAnahtari or
         BpcElemanTipi.Vavien or BpcElemanTipi.KomütatörVavien or BpcElemanTipi.Deviatör or
         BpcElemanTipi.Dimmer or BpcElemanTipi.IkiKutupluAnahtar or BpcElemanTipi.Sensör => true,
         _ => false
@@ -649,13 +665,13 @@ public static class BasitProjeCizKabloServisi
     /// Sensör kontrollü armatürleri kablolar: her armatür, kendine en yakın sensör
     /// kontrollü sensöre bağlanır (sensör = devre anahtarı) ve devrenin buatı oda
     /// buatıdır. Böylece armatür → sensör → buat zinciri kurulur (duvar anahtarı yok).
-    private static void SensorKontrolluArmaturleriKablola(BasitProjeKat kat)
+    private static void SensorKontrolluArmaturleriKablola(BasitProjeKat kat, string? odaId)
     {
         var atananArmaturIds = kat.Devreler
             .SelectMany(d => d.ArmaturElemanIds)
             .ToHashSet();
 
-        foreach (var oda in kat.Odalar)
+        foreach (var oda in kat.Odalar.Where(o => odaId == null || o.Id == odaId))
         {
             var sensorArmaturleri = kat.Elemanlar
                 .Where(e => e.OdaId == oda.Id && ElemanArmaturMi(e.Tip) && e.SensorKontrollu
@@ -698,12 +714,12 @@ public static class BasitProjeCizKabloServisi
         }
     }
 
-    public static void KatAydinlatmasiniOtomatikKablola(BasitProjeKat kat)
+    public static void KatAydinlatmasiniOtomatikKablola(BasitProjeKat kat, string? odaId = null)
     {
         // Önce sensör kontrollü armatürleri kendi sensörleri üzerinden buata bağla.
-        SensorKontrolluArmaturleriKablola(kat);
+        SensorKontrolluArmaturleriKablola(kat, odaId);
 
-        foreach (var oda in kat.Odalar)
+        foreach (var oda in kat.Odalar.Where(o => odaId == null || o.Id == odaId))
         {
             // Sensör kontrollü sensörler genel anahtar havuzuna girmez (ön-kablolandılar).
             var odadakiAnahtarlar = kat.Elemanlar
@@ -835,28 +851,27 @@ public static class BasitProjeCizKabloServisi
             // sınırını aşmasın. Yerleştirme servisi normalde ceil(n/7) buat ürettiği
             // için dengeli dağıtım zaten ≤7 verir; buat manuel eksikse artan prizler
             // bağlanmadan kalır ("Boştakileri Göster"de görünür) — sınır aşılmaz.
-            const int PrizBasinaBuat = 7;
             int buatSayisi = odadakiPrizBuatlari.Count;
+            var kapasite = odadakiPrizBuatlari.Select(b => Math.Max(0, PrizBuatKapasitesi -
+                kat.PrizDevreleri.Where(d => d.BuatId == b.Id).Sum(d => d.PrizElemanIds.Count))).ToArray();
+            int kalanKapasite = kapasite.Sum();
             int prizIdx = 0;
             for (int i = 0; i < buatSayisi && prizIdx < buatGerektirenPrizler.Count; i++)
             {
                 var buat = odadakiPrizBuatlari[i];
-                // Mevcut priz devresi var mı?
+                int kalanPriz = buatGerektirenPrizler.Count - prizIdx;
+                int kalanBuat = buatSayisi - i;
+                int dengeli = (int)Math.Ceiling(kalanPriz / (double)kalanBuat);
+                kalanKapasite -= kapasite[i];
+                // Sonraki buatlar elle doldurulmuşsa kullanılabilir kapasiteyi bu buatta değerlendir.
+                int adet = Math.Min(kapasite[i], Math.Max(dengeli, kalanPriz - kalanKapasite));
+                if (adet == 0) continue;
                 var mevcutDevre = kat.PrizDevreleri.FirstOrDefault(d => d.BuatId == buat.Id);
                 if (mevcutDevre == null)
                 {
                     mevcutDevre = new BpcPrizDevre { BuatId = buat.Id };
                     kat.PrizDevreleri.Add(mevcutDevre);
                 }
-
-                int kalanPriz = buatGerektirenPrizler.Count - prizIdx;
-                int kalanBuat = buatSayisi - i;
-                int dengeli = (int)Math.Ceiling(kalanPriz / (double)kalanBuat);
-                // ≤7 sınırı buatın MEVCUT devre doluluğunu da sayar; korunan eski
-                // atamaların üstüne sınırsız ekleme yapılmaz.
-                int bosKapasite = Math.Max(0, PrizBasinaBuat - mevcutDevre.PrizElemanIds.Count);
-                int adet = Math.Min(dengeli, bosKapasite);
-                if (adet == 0) continue;
 
                 for (int j = 0; j < adet && prizIdx < buatGerektirenPrizler.Count; j++)
                 {
@@ -1082,6 +1097,7 @@ public static class BasitProjeCizKabloServisi
     public static void RotaHesapla(BasitProjeKat kat, BpcDevre devre, BpcRotaTipi rotaTipi,
         int wallSlot = 0)
     {
+        rotaTipi = devre.ManuelRotaTipi ?? rotaTipi;
         kat.Kablolar.RemoveAll(k => k.DevreId == devre.Id);
 
         if (string.IsNullOrEmpty(devre.AnahtarElemanId)) return;

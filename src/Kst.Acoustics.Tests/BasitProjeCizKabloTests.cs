@@ -1350,11 +1350,12 @@ public static class BasitProjeCizKabloTests
         ayar.GenelAyarKullan = false;
         ayar.YerlesimTipi = "Adet";
         ayar.MontajTipi = "Duvar";
-        ayar.Adet = 1;
+        ayar.Adet = 2;
         kat.MahalListesi.Add(satir);
 
         vm.Katlar.Add(kat);
         vm.SeciliKat = kat;
+        vm.AktifPafta = BpcPaftaTipi.Priz;
         vm.SadecaEksikleriEkle = false;
         vm.MahalListesindenOtomatikYerlestirCommand.Execute(null);
 
@@ -1364,12 +1365,12 @@ public static class BasitProjeCizKabloTests
         if (kat.Elemanlar.Any(e => e.Id == "eski-oto"))
             throw new InvalidOperationException("Mahal listesi tam yenilemesi eski otomatik elemanı temizlemeli.");
 
-        // Otomatik elemanlar: 1 Priz + olası priz buatı (her ikisi de MahalListesiKaynak)
+        // İstenen iki prizden biri zaten elle konmuştur. İlk adımda eksik tek priz üretilir.
         var otomatikElemanlar = kat.Elemanlar
             .Where(e => e.OtomatikYerlesimKaynak == BasitProjeCizOtomatikYerlestirServisi.MahalListesiKaynak)
             .ToList();
-        if (!otomatikElemanlar.Any(e => e.Tip == BpcElemanTipi.Priz))
-            throw new InvalidOperationException("Mahal listesi tam yenilemesi Priz tipinde otomatik eleman kaynak işaretiyle üretmeli.");
+        if (otomatikElemanlar.Count != 1 || otomatikElemanlar[0].Tip != BpcElemanTipi.Priz)
+            throw new InvalidOperationException("Tam yenileme elle yerleştirilen prizi saymalı ve yalnızca eksik prizi üretmeli.");
     }
 
     public static void MahalListesiKilitliProjedeOtomatikYerlestirmeYapmaz()
@@ -1825,15 +1826,19 @@ public static class BasitProjeCizKabloTests
     {
         var vm = new BasitProjeCizViewModel();
         var kat = new BasitProjeKat { Ad = "Kat", KatNo = 1 };
-        var priz1 = new BasitProjeEleman { Id = "p1", Tip = BpcElemanTipi.Priz, Ad = "P1", X = 1, Y = 1 };
-        var priz2 = new BasitProjeEleman { Id = "p2", Tip = BpcElemanTipi.Priz, Ad = "P2", X = 2, Y = 1 };
+        kat.Odalar.Add(new() { Id = "oda", Poligon = [new(0, 0), new(4, 0), new(4, 4), new(0, 4)] });
+        kat.Elemanlar.Add(new() { Tip = BpcElemanTipi.Buat, PaftaTipi = BpcPaftaTipi.Priz, OdaId = "oda", X = 0, Y = 1 });
+        var priz1 = new BasitProjeEleman { Id = "p1", OdaId = "oda", Tip = BpcElemanTipi.Priz, Ad = "P1", X = 1, Y = 1 };
+        var priz2 = new BasitProjeEleman { Id = "p2", OdaId = "oda", Tip = BpcElemanTipi.Priz, Ad = "P2", X = 2, Y = 1 };
         kat.Elemanlar.Add(priz1);
         kat.Elemanlar.Add(priz2);
         vm.Katlar.Add(kat);
         vm.SeciliKat = kat;
         vm.AktifPafta = BpcPaftaTipi.Priz;
+        vm.PrizAsamasi = BpcPrizAsamasi.MahalKablosu;
         vm.KabloModuToggle();
 
+        vm.KabloModuTiklama(0, 1); // önce mahal içindeki priz buatını seç
         vm.KabloModuTiklama(1, 1); // priz1 seç → priz devresi oluşur
         vm.KabloModuTiklama(2, 1); // priz2 ekle
 
@@ -2116,6 +2121,7 @@ public static class BasitProjeCizKabloTests
         vm.Katlar.Add(katBos);
         vm.SeciliKat = kat1;
 
+        vm.AydinlatmaAsamasi = BpcAydinlatmaAsamasi.Armatur;
         var rapor = vm.TumKatlaraYerlestir();
 
         if (kat1.Elemanlar.Count == 0 || kat2.Elemanlar.Count == 0)
@@ -2124,6 +2130,12 @@ public static class BasitProjeCizKabloTests
             throw new InvalidOperationException("Mahal listesi olmayan kat rapora girmemeliydi.");
         if (!ReferenceEquals(vm.SeciliKat, kat1))
             throw new InvalidOperationException("İşlem sonunda önceki seçili kata dönülmeliydi.");
+        vm.ElemanGeriAlCommand.Execute(null);
+        if (kat1.Elemanlar.Count != 0 || kat2.Elemanlar.Count != 0)
+            throw new InvalidOperationException("Tüm katlara yerleştirme tek işlem olarak geri alınmalı.");
+        vm.ElemanIleriAlCommand.Execute(null);
+        if (kat1.Elemanlar.Count == 0 || kat2.Elemanlar.Count == 0)
+            throw new InvalidOperationException("İleri alma iki kattaki yerleşimi de geri getirmeli.");
     }
 
     // A1: IsDirty — mutasyon kirletir, başarılı kayıt temizler.

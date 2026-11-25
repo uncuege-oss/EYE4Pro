@@ -213,3 +213,9 @@ Son bilinen genel hedef:
 5. UI değişikliği için `ImpactSurfaceViewModel` ve `ImpactSurfaceWindow` dosyalarını kontrol et.
 6. Fizik/formülasyon değişirse regresyon testi ekle veya mevcut M05 testlerini çalıştır.
 7. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Sonlu olmayan özel malzeme özellikleri geçersiz sonuç olarak bildiriliyor (A06).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

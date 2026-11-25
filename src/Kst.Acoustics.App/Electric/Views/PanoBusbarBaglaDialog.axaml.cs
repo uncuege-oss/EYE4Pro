@@ -12,9 +12,6 @@ public partial class PanoBusbarBaglaDialog : Window
     private readonly TekHatSemasiViewModel _vm;
     private readonly Pano _pano;
     private readonly BusbarHatti? _sabitBusbar;
-    private int _sonMesafeTipi;
-    private bool _programliMesafeTipiDegisimi;
-
     public PanoBusbarBaglaDialog() { InitializeComponent(); _vm = null!; _pano = null!; }
 
     public PanoBusbarBaglaDialog(TekHatSemasiViewModel vm, Pano pano, BusbarHatti? sabitBusbar = null)
@@ -36,9 +33,6 @@ public partial class PanoBusbarBaglaDialog : Window
         BusbarCombo.ItemsSource = _vm.Busbarlar;
         BusbarCombo.DisplayMemberBinding = new Avalonia.Data.Binding("Ad");
         BusbarCombo.SelectionChanged += (_, _) => BusbarSecimiGuncelle();
-        MesafeTipiCombo.ItemsSource = new[] { "Ana/üst panodan itibaren", "Bir önceki kutudan itibaren" };
-        MesafeTipiCombo.SelectedIndex = 0;
-        MesafeTipiCombo.SelectionChanged += (_, _) => MesafeTipiGuncelle();
         if (_vm.Busbarlar.Count > 0)
         {
             var mevcut = _sabitBusbar ?? _vm.Busbarlar.FirstOrDefault(b => b.Id == _pano.BaglandigiBusbarId);
@@ -56,14 +50,18 @@ public partial class PanoBusbarBaglaDialog : Window
         var bb = BusbarCombo.SelectedItem as BusbarHatti;
         if (bb == null) return;
         if (!NumberHelper.TryParse(PozisyonBox.Text, out double girilenMesafe) || girilenMesafe < 0) girilenMesafe = 0;
-        double pozisyon = MesafeTipiCombo.SelectedIndex == 1
-            ? OncekiKutuPozisyonu(bb) + girilenMesafe
-            : girilenMesafe;
         if (!NumberHelper.TryParse(KabloMesafeBox.Text, out double kabloM) || kabloM <= 0) kabloM = 2;
         int sigortaA = SigortaCombo.SelectedItem is int i ? i : 16;
 
-        _vm.PanoyuBusbarBagla(_pano, bb, pozisyon, sigortaA, kabloM);
-        Close();
+        try
+        {
+            _vm.PanoyuBusbarBaglaKatKonumuyla(_pano, bb, girilenMesafe, sigortaA, kabloM);
+            Close();
+        }
+        catch (InvalidOperationException ex)
+        {
+            BaslikText.Text = $"⚠ {ex.Message}";
+        }
     }
 
     private void BusbarSecimiGuncelle()
@@ -73,11 +71,7 @@ public partial class PanoBusbarBaglaDialog : Window
         var mevcutKutu = bb.CikisKutulari.FirstOrDefault(k => k.BagliPanoAd == _pano.Ad);
         if (mevcutKutu != null)
         {
-            PozisyonBox.Text = mevcutKutu.PozisyonM.ToString("0.##");
-            _programliMesafeTipiDegisimi = true;
-            MesafeTipiCombo.SelectedIndex = 0;
-            _programliMesafeTipiDegisimi = false;
-            _sonMesafeTipi = 0;
+            PozisyonBox.Text = (mevcutKutu.KatPozisyonM ?? mevcutKutu.PozisyonM).ToString("0.##");
             KabloMesafeBox.Text = mevcutKutu.KabloMesafeM.ToString("0.##");
             if (mevcutKutu.SigortaA > 0)
                 SigortaCombo.SelectedItem = StandartSigortaSec(mevcutKutu.SigortaA);
@@ -85,13 +79,12 @@ public partial class PanoBusbarBaglaDialog : Window
         else
         {
             PozisyonBox.Text = "0";
-            _programliMesafeTipiDegisimi = true;
-            MesafeTipiCombo.SelectedIndex = 0;
-            _programliMesafeTipiDegisimi = false;
-            _sonMesafeTipi = 0;
             KabloMesafeBox.Text = _pano.KabloMesafeM > 0 ? _pano.KabloMesafeM.ToString("0.##") : "2";
         }
-        MesafeTipiGuncelle();
+        double katUzunlugu = BusbarYerlesimServisi.KatUzunlugu(bb, _pano.Kat);
+        PozisyonYardimText.Text = bb.KatBolumleri.Count == 0
+            ? $"Kat: {_pano.Kat}. Kat yerleşimi henüz tanımlı değil; girilen değer geçici olarak busbar başlangıcından ölçülür."
+            : $"Kat: {_pano.Kat} • Bu kattaki busbar: {katUzunlugu:0.##} m. Konum yalnız bu katın başlangıcından ölçülür.";
     }
 
     private static int StandartSigortaSec(int amper)
@@ -100,51 +93,4 @@ public partial class PanoBusbarBaglaDialog : Window
         return secim > 0 ? secim : PanoHesapServisi.StandartSigortaA[^1];
     }
 
-    private void MesafeTipiGuncelle()
-    {
-        if (BusbarCombo.SelectedItem is not BusbarHatti bb) return;
-        int yeniTip = MesafeTipiCombo.SelectedIndex == 1 ? 1 : 0;
-        double oncekiPozisyon = OncekiKutuPozisyonu(bb);
-
-        if (!_programliMesafeTipiDegisimi && NumberHelper.TryParse(PozisyonBox.Text, out double mevcutDeger))
-        {
-            double mutlakPozisyon = _sonMesafeTipi == 1 ? oncekiPozisyon + mevcutDeger : mevcutDeger;
-            double gosterilecek = yeniTip == 1 ? Math.Max(0, mutlakPozisyon - oncekiPozisyon) : mutlakPozisyon;
-            PozisyonBox.Text = gosterilecek.ToString("0.##");
-        }
-
-        _sonMesafeTipi = yeniTip;
-        if (yeniTip == 1)
-        {
-            var onceki = OncekiKutu(bb);
-            PozisyonLabel.Text = "Bir Önceki Kutuya Uzaklık (m)";
-            PozisyonYardimText.Text = onceki == null
-                ? "Önceki kutu yok; girilen değer ana/üst panodan itibaren kabul edilir."
-                : $"Önceki kutu: {onceki.BagliPanoAd} ({onceki.PozisyonM:0.##} m). Kaydedilen pozisyon = önceki + girilen mesafe.";
-        }
-        else
-        {
-            PozisyonLabel.Text = "Ana/Üst Panodan Uzaklık (m)";
-            PozisyonYardimText.Text = "Bu değer busbar başlangıcından çıkış kutusuna kadar olan mesafedir.";
-        }
-    }
-
-    private double OncekiKutuPozisyonu(BusbarHatti bb) => OncekiKutu(bb)?.PozisyonM ?? 0;
-
-    private BusbarCikisKutusu? OncekiKutu(BusbarHatti bb)
-    {
-        var mevcut = bb.CikisKutulari.FirstOrDefault(k => k.BagliPanoAd == _pano.Ad);
-        var digerleri = bb.CikisKutulari
-            .Where(k => k.BagliPanoAd != _pano.Ad)
-            .OrderBy(k => k.PozisyonM)
-            .ThenBy(k => k.BagliPanoAd)
-            .ToList();
-
-        if (digerleri.Count == 0) return null;
-        if (mevcut == null)
-            return digerleri[^1];
-
-        return digerleri.LastOrDefault(k => k.PozisyonM < mevcut.PozisyonM)
-            ?? digerleri.LastOrDefault();
-    }
 }

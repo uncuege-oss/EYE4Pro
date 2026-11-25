@@ -342,3 +342,9 @@ M50 hazır olduğunda `Architecture -> Bina` adapteri yazılır.
 | 2026-06-13 | Faz 10.3 tamamlandı: format kararı belgelendi (OBJ şimdi uygulandı; GLB/DXF ertelendi; IFC uzun vade — ağır kütüphane). `Architecture/Exporting/MimariObjIhracatServisi` eklendi: bağımlılıksız Wavefront OBJ, mahal+duvar kutu mesh. Core test runner 64/64 geçti, Core build 0 uyarı/0 hata |
 | 2026-06-13 | Faz 10.4 tamamlandı + M39.5 regresyon, **M39 MVP ve Faz 10 kapandı**: `Architecture/Coordination/MutabakatServisi` + `MutabakatRaporu` eklendi — askıda atama (var olmayan 3D eleman) ve kırık tip referansı yakalanıyor. Core test runner 65/65 geçti, tam çözüm build 0 hata. **Mimari başlıkta planlı tüm fazlar (Faz 0-10) tamamlandı**; kalan işler isteğe bağlı (UI bağlama, GLB/DXF/IFC, M38 cephe, M21 köprüsü) |
 | 2026-06-13 | UI bağlama (1): `Architecture/Reports/Views/MimariCiktiWindow` + `MimariCiktiViewModel` eklendi — proje aç/örnek, özet + ön kontrol gösterimi, HTML/XLSX rapor kaydet, OBJ ve `.e4bina` dışa aktarım (kayıt diyaloglarıyla). Mimari modül merkezine M37 "Rapor ve İhracat" kartı eklendi (grid 4 satır). App build 0 hata, yeni koddan uyarı yok. (GUI render bu ortamda elle doğrulanmadı; compiled binding derlemede geçti) |
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Ortak mimari kayıt atomik/yedekli; başarısız kayıtta metaveri geri alınıyor ve gelecek şema sürümleri reddediliyor (A14–A16). M31/M34 sonluluk doğrulaması güçlendirildi (A17). Mevcut faz kapsamı değişmedi.
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

@@ -7,6 +7,9 @@ public class AraziNoktasi : IAraziNokta
     public double Y { get; set; }
     public double Z { get; set; }
     public AraziVeriKaynagi Kaynak { get; set; } = AraziVeriKaynagi.SpotKot;
+    public AraziKotKaynagi KotKaynagi { get; set; } = AraziKotKaynagi.VertexZ;
+    public string? KatmanAdi { get; set; }
+    public string? KaynakEtiketi { get; set; }
 
     public AraziNoktasi() { }
 

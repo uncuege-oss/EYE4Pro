@@ -26,6 +26,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     private KesifPozEsleme? _seciliEsleme;
     private KesifReferansDosyasi? _seciliReferans;
     private KesifPoz? _atanacakPoz;
+    private readonly List<KesifTablosu> _kilitIzlenenTablolar = new();
 
     public KesifHazirlaViewModel() : this(new KesifPozEslemeServisi())
     {
@@ -39,7 +40,8 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         PozEkleCommand = new RelayCommand(PozEkle);
         PozSilCommand = new RelayCommand(PozSil);
         OzelPozEkleCommand = new RelayCommand(OzelPozEkle);
-        OzelPozSilCommand = new RelayCommand(OzelPozSil);
+        OzelPozSilCommand = new RelayCommand(() => OzelPozSil(SeciliPoz));
+        SeciliOzelPozSilCommand = new RelayCommand(() => OzelPozSil(SeciliOzelPoz));
         OzelPozGuncelleCommand = new RelayCommand(OzelPozGuncelle);
         TabloEkleCommand = new RelayCommand(TabloEkle);
         AltTabloEkleCommand = new RelayCommand(AltTabloEkle);
@@ -180,6 +182,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         {
             if (SetProperty(ref _seciliTablo, value))
             {
+                SeciliTabloKilitTakibiniYenile();
                 OnPropertyChanged(nameof(SeciliTabloSatirlari));
                 OnPropertyChanged(nameof(SeciliTabloToplam));
                 OnPropertyChanged(nameof(SeciliTabloYaprakMi));
@@ -189,6 +192,61 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
 
     /// <summary>Seçili tablo satır kabul ediyor mu (alt tablosu yok = yaprak). Başlık tablolarında satır editörü pasif.</summary>
     public bool SeciliTabloYaprakMi => SeciliTablo?.YaprakMi ?? false;
+    public bool SeciliTabloKilitliMi => SeciliTablo is not null && KesifTabloAgaci.KilitliMi(Proje, SeciliTablo);
+    public bool SeciliTabloSaltOkunur => !SeciliTabloYaprakMi || SeciliTabloKilitliMi;
+    public string SeciliTabloKilitMesaji => SeciliTabloKilitliMi
+        ? "Tamamlandı: tablo kilitli. Düzenlemek için bu tablonun veya üst tablonun tamamlandı tikini kaldırın."
+        : "Satır silmek için satırı seçip Del / Backspace tuşuna basın.";
+
+    private void SeciliTabloKilitTakibiniYenile()
+    {
+        foreach (var tablo in _kilitIzlenenTablolar) tablo.PropertyChanged -= TabloKilit_PropertyChanged;
+        _kilitIzlenenTablolar.Clear();
+        for (var t = SeciliTablo; t is not null; t = KesifTabloAgaci.Ebeveyn(Proje, t))
+        {
+            _kilitIzlenenTablolar.Add(t);
+            t.PropertyChanged += TabloKilit_PropertyChanged;
+        }
+        SeciliTabloKilitDurumunuBildir();
+    }
+
+    private void TabloKilit_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(KesifTablosu.TamamlandiMi)) SeciliTabloKilitDurumunuBildir();
+    }
+
+    private void SeciliTabloKilitDurumunuBildir()
+    {
+        OnPropertyChanged(nameof(SeciliTabloKilitliMi));
+        OnPropertyChanged(nameof(SeciliTabloSaltOkunur));
+        OnPropertyChanged(nameof(SeciliTabloKilitMesaji));
+    }
+
+    public bool TabloDuzenlemeyeAcikMi(KesifTablosu? tablo, bool altlariDahil = false)
+    {
+        if (tablo is null) return false;
+        if (!KesifTabloAgaci.KilitliMi(Proje, tablo) &&
+            (!altlariDahil || !KesifTabloAgaci.TumTablolar(tablo).Any(t => t.TamamlandiMi))) return true;
+        DurumMesaji = "Tamamlanmış tablo kilitli. Müdahale etmek için ilgili tamamlandı tikini kaldırın.";
+        return false;
+    }
+
+    public bool TabloTamamlanmaDurumuAyarla(KesifTablosu tablo, bool tamamlandi)
+    {
+        var ebeveyn = KesifTabloAgaci.Ebeveyn(Proje, tablo);
+        if (ebeveyn is not null && !TabloDuzenlemeyeAcikMi(ebeveyn)) return false;
+        tablo.TamamlandiMi = tamamlandi;
+        SeciliTabloKilitDurumunuBildir();
+        DurumMesaji = tamamlandi ? $"{tablo.Ad}: tamamlandı, düzenleme kilitlendi." : $"{tablo.Ad}: düzenleme kilidi kaldırıldı.";
+        return true;
+    }
+
+    public void TabloAdiniDegistir(KesifTablosu tablo, string ad)
+    {
+        if (!TabloDuzenlemeyeAcikMi(tablo) || string.IsNullOrWhiteSpace(ad)) return;
+        tablo.Ad = ad;
+        HesaplariYenile();
+    }
 
     /// <summary>Sağ paneldeki "Proje Bilgileri" künyesi.</summary>
     public KesifProjeBilgileri ProjeBilgileri => Proje.Bilgiler;
@@ -217,6 +275,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     public ICommand PozSilCommand { get; }
     public ICommand OzelPozEkleCommand { get; }
     public ICommand OzelPozSilCommand { get; }
+    public ICommand SeciliOzelPozSilCommand { get; }
     public ICommand OzelPozGuncelleCommand { get; }
     public ICommand TabloEkleCommand { get; }
     public ICommand AltTabloEkleCommand { get; }
@@ -266,6 +325,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         SeciliBirimFiyatListesi = Proje.BirimFiyatListeleri.FirstOrDefault();
         SeciliTablo = Proje.Tablolar.FirstOrDefault();
         SeciliSatir = SeciliTablo?.Satirlar.FirstOrDefault();
+        ReferansHedefleriniTamamla();
         DurumMesaji = "Keşif dosyası açıldı.";
         HesaplariYenile();
         OzelPozlarYenile();
@@ -278,7 +338,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         {
             var liste = KesifBirimFiyatListesiServisi.ListeEkle(Proje, listeAdi, kaynakDosya, pozlar, digerListeleriPasifeAl);
             SeciliBirimFiyatListesi = liste;
-            FiltrelenmisPozKutuphaneYenile();
+            PozKutuphaneYenile();
             SeciliPoz = FiltrelenmisPozKutuphane.FirstOrDefault();
             OnPropertyChanged(nameof(PozKutuphane));
             OnPropertyChanged(nameof(BirimFiyatListeleri));
@@ -328,6 +388,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         FiltrelenmisAtamaPozlariYenile();
         SeciliPoz = FiltrelenmisPozKutuphane.FirstOrDefault();
         OzelPozlarYenile();
+        EslenmemisKalemleriYenile();
         OnPropertyChanged(nameof(PozKutuphane));
         OnPropertyChanged(nameof(BirimFiyatListeleri));
     }
@@ -487,7 +548,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         var poz = new KesifPoz { PozNo = BenzersizPozNo("YENİ"), BirimAdi = "Yeni imalat", Birim = "adet", ListePozuMu = false };
         ManuelPozEkle(poz);
         Proje.PozKutuphane.Add(poz);
-        FiltrelenmisPozKutuphaneYenile();
+        PozKutuphaneYenile();
         SeciliPoz = poz;
         DurumMesaji = "Poz eklendi.";
     }
@@ -522,7 +583,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
             ManuelPozSil(SeciliPoz);
 
         Proje.PozKutuphane.Remove(SeciliPoz);
-        FiltrelenmisPozKutuphaneYenile();
+        PozKutuphaneYenile();
         SeciliPoz = FiltrelenmisPozKutuphane.FirstOrDefault();
         DurumMesaji = "Poz kütüphaneden silindi.";
     }
@@ -540,23 +601,49 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         };
         ManuelPozEkle(poz);
         Proje.PozKutuphane.Add(poz);
-        FiltrelenmisPozKutuphaneYenile();
+        PozKutuphaneYenile();
         SeciliPoz = poz;
         OzelPozlarYenile();
         SeciliOzelPoz = poz;   // HATA-8: yeni eklenen poz seçili kalsın
         DurumMesaji = "Özel poz eklendi.";
     }
 
-    private void OzelPozSil()
+    public bool TopluOzelPozEkle(IEnumerable<KesifTopluPozSatiri> satirlar, out string mesaj)
     {
-        var target = OzelPozModuAktif ? SeciliPoz : SeciliOzelPoz;
-        if (target is null)
+        var mevcutKodlar = Proje.ManuelPozlar.Select(p => p.PozNo)
+            .Concat(Proje.PozKutuphane.Select(p => p.PozNo))
+            .Concat(Proje.BirimFiyatListeleri.SelectMany(l => l.Pozlar).Select(p => p.PozNo));
+        var sonuc = KesifTopluPozServisi.Hazirla(satirlar, mevcutKodlar);
+        if (sonuc.HataliSatirSayisi > 0)
+        {
+            mesaj = $"{sonuc.HataliSatirSayisi} satır hatalı. Hata sütunundaki alanları düzeltin; henüz hiçbir poz eklenmedi.";
+            return false;
+        }
+        if (sonuc.Pozlar.Count == 0)
+        {
+            mesaj = "Eklenecek poz yok. Excel'den dört sütunu kopyalayıp Ctrl+V ile yapıştırın.";
+            return false;
+        }
+        // Eski projelerdeki manuel pozları kalıcı kaynağa al, sonra toplu eklemede yalnız bir kez yenile.
+        var ids = Proje.ManuelPozlar.Select(p => p.Id).ToHashSet();
+        foreach (var poz in Proje.PozKutuphane.Where(p => !p.ListePozuMu).ToList())
+            if (ids.Add(poz.Id)) Proje.ManuelPozlar.Add(poz);
+        foreach (var poz in sonuc.Pozlar) Proje.ManuelPozlar.Add(poz);
+        PozKutuphaneYenile();
+        SeciliOzelPoz = sonuc.Pozlar[0];
+        mesaj = $"{sonuc.Pozlar.Count} özel poz toplu olarak eklendi.";
+        DurumMesaji = mesaj;
+        return true;
+    }
+
+    private void OzelPozSil(KesifPoz? target)
+    {
+        if (target is null || target.ListePozuMu)
             return;
 
         ManuelPozSil(target);
         Proje.PozKutuphane.Remove(target);
-        FiltrelenmisPozKutuphaneYenile();
-        OzelPozlarYenile();
+        PozKutuphaneYenile();
         SeciliPoz = FiltrelenmisPozKutuphane.FirstOrDefault();
         DurumMesaji = "Özel poz silindi.";
     }
@@ -567,6 +654,9 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
             return;
 
         SeciliOzelPoz.SonGuncellemeTarihi = DateTime.Now;
+        FiltrelenmisPozKutuphaneYenile();
+        FiltrelenmisAtamaPozlariYenile();
+        EslenmemisKalemleriYenile();
         HesaplariYenile();
         DurumMesaji = "Özel poz güncellendi.";
     }
@@ -576,6 +666,9 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         if (poz is null)
             return;
         poz.SonGuncellemeTarihi = DateTime.Now;
+        FiltrelenmisPozKutuphaneYenile();
+        FiltrelenmisAtamaPozlariYenile();
+        EslenmemisKalemleriYenile();
         HesaplariYenile();
     }
 
@@ -611,6 +704,8 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
             return;
         }
 
+        if (!TabloDuzenlemeyeAcikMi(SeciliTablo)) return;
+
         if (KesifTabloAgaci.Derinlik(Proje, SeciliTablo) >= KesifTabloAgaci.MaksimumDerinlik)
         {
             DurumMesaji = $"En fazla {KesifTabloAgaci.MaksimumDerinlik} seviye olabilir; bu tabloya alt tablo eklenemez.";
@@ -637,6 +732,8 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         if (SeciliTablo is null)
             return;
 
+        if (!TabloDuzenlemeyeAcikMi(SeciliTablo, altlariDahil: true)) return;
+
         var ebeveyn = KesifTabloAgaci.Ebeveyn(Proje, SeciliTablo);
         if (ebeveyn is null)
         {
@@ -660,6 +757,8 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     {
         if (SeciliPoz is null || SeciliTablo is null)
             return;
+
+        if (!TabloDuzenlemeyeAcikMi(SeciliTablo)) return;
 
         if (SeciliTablo.AltTabloVarMi)
         {
@@ -701,6 +800,8 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         if (SeciliTablo is null || SeciliSatir is null)
             return;
 
+        if (!TabloDuzenlemeyeAcikMi(SeciliTablo)) return;
+
         SeciliTablo.Satirlar.Remove(SeciliSatir);
         SeciliSatir = SeciliTablo.Satirlar.FirstOrDefault();
         HesaplariYenile();
@@ -711,15 +812,23 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     /// <summary>Yeni bir metraj referansını projeye ekler ve eşleşmiş kalemleri keşfe işler.</summary>
     public void ReferansEkle(KesifReferansDosyasi referans)
     {
+        if (!TabloDuzenlemeyeAcikMi(SeciliTablo)) return;
+        if (SeciliTablo is not { YaprakMi: true })
+        {
+            DurumMesaji = "Metraj yüklemek için önce bir yaprak keşif tablosu seçin.";
+            return;
+        }
+        referans.HedefTabloId = SeciliTablo.Id;
+        _otomatikIslemUyarilari.Clear();
         Proje.ReferansDosyalari.Add(referans);
         SeciliReferans = referans;
         var uretilen = OtomatikSatirlariUret(referans);
         EslenmemisKalemleriYenile();
         HesaplariYenile();
-        var eslenmemis = referans.MetrajSatirlari.Count - uretilen;
-        DurumMesaji = eslenmemis > 0
+        var eslenmemis = referans.MetrajSatirlari.Count(k => EslemePozunuBul(k) is null);
+        DurumMesaji = IslemUyarilariniEkle(eslenmemis > 0
             ? $"{referans.DosyaAdi} yüklendi. {uretilen} satır keşfe işlendi, {eslenmemis} kalem Poz Atama bekliyor."
-            : $"{referans.DosyaAdi} yüklendi. {uretilen} satır keşfe işlendi.";
+            : $"{referans.DosyaAdi} yüklendi. {uretilen} satır keşfe işlendi.");
     }
 
     /// <summary>Referansı ve ondan üretilmiş otomatik keşif satırlarını kaldırır.
@@ -728,6 +837,12 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     {
         if (referans is null)
             return;
+
+        if (ReferansKilitliMi(referans))
+        {
+            DurumMesaji = "Referans tamamlanmış bir tabloda kullanılıyor. Silmek için önce tamamlandı tikini kaldırın.";
+            return;
+        }
 
         OtomatikSatirlariTemizle(referans.Id);
         Proje.ReferansDosyalari.Remove(referans);
@@ -742,13 +857,15 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     {
         if (kalem is null || poz is null)
             return;
+        if (!EslemeDuzenlemeyeAcikMi(kalem.EslemeAnahtari)) return;
+        if (!AtamaPozunuDogrula(poz)) return;
 
         _eslemeServisi.EkleVeyaGuncelle(kalem, poz.PozNo, poz.BirimAdi);
         EslemeleriYenile();
         TumReferanslariYenidenIsle();
         EslenmemisKalemleriYenile();
         HesaplariYenile();
-        DurumMesaji = $"'{kalem.TeknikOzellik}' → {poz.PozNo} eşlendi ve öğrenildi.";
+        DurumMesaji = IslemUyarilariniEkle($"'{kalem.TeknikOzellik}' → {poz.PozNo} eşlendi ve öğrenildi.");
     }
 
     /// <summary>Eşlenmemiş bütün metraj kalemleri için kütüphanedeki en uygun pozu bulup öğrenir.</summary>
@@ -761,7 +878,9 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
             return;
         }
 
-        var sonuclar = KesifOtomatikPozEslemeServisi.Esle(kalemler, Proje.PozKutuphane);
+        var acikKalemler = kalemler.Where(k => !EslemeKilitliMi(k.EslemeAnahtari)).ToList();
+        var kilitliKalemSayisi = kalemler.Count - acikKalemler.Count;
+        var sonuclar = KesifOtomatikPozEslemeServisi.Esle(acikKalemler, Proje.PozKutuphane);
         foreach (var sonuc in sonuclar)
         {
             _eslemeServisi.EkleVeyaGuncelle(
@@ -780,9 +899,10 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         HesaplariYenile();
 
         var bulunamayan = kalemler.Count - sonuclar.Count;
-        DurumMesaji = bulunamayan == 0
+        DurumMesaji = IslemUyarilariniEkle(bulunamayan == 0
             ? $"Otomatik atama tamamlandı: {sonuclar.Count} kalem eşlendi. Hatalı seçimleri alttan güncelleyebilirsiniz."
-            : $"Otomatik atama: {sonuclar.Count} kalem eşlendi, {bulunamayan} kalem için uygun poz bulunamadı.";
+            : $"Otomatik atama: {sonuclar.Count} kalem eşlendi, {bulunamayan} kalem için uygun poz bulunamadı.");
+        if (kilitliKalemSayisi > 0) DurumMesaji += $" {kilitliKalemSayisi} kalem tamamlanmış tabloda; atamak için tamamlandı tikini kaldırın.";
     }
 
     /// <summary>Tanımlı bir eşleşmenin pozunu değiştirir (öğrenilmiş kaydı günceller) ve keşfi yeniler.</summary>
@@ -790,15 +910,20 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     {
         if (esleme is null || poz is null)
             return;
+        if (!EslemeDuzenlemeyeAcikMi(esleme.EslemeAnahtari)) return;
+        if (!AtamaPozunuDogrula(poz)) return;
 
+        if (!string.Equals(esleme.PozNo, poz.PozNo, StringComparison.OrdinalIgnoreCase) || esleme.BirimAdi != poz.BirimAdi)
+            esleme.KontrolEdildi = false;
         esleme.PozNo = poz.PozNo;
         esleme.BirimAdi = poz.BirimAdi;
         esleme.SonGuncellemeTarihi = DateTime.Now;
         _eslemeServisi.Kaydet();
         PozAtamaKalemFiltreleriniYenile();
         TumReferanslariYenidenIsle();
+        EslenmemisKalemleriYenile();
         HesaplariYenile();
-        DurumMesaji = $"Eşleşme güncellendi: {esleme.TeknikOzellik} → {poz.PozNo}.";
+        DurumMesaji = IslemUyarilariniEkle($"Eşleşme güncellendi: {esleme.TeknikOzellik} → {poz.PozNo}.");
     }
 
     /// <summary>Tanımlı bir eşleşmeyi global veritabanından siler ve keşfi yeniler.</summary>
@@ -806,73 +931,140 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     {
         if (esleme is null)
             return;
+        if (!EslemeDuzenlemeyeAcikMi(esleme.EslemeAnahtari)) return;
 
         _eslemeServisi.Sil(esleme.Id);
         EslemeleriYenile();
         TumReferanslariYenidenIsle();
         EslenmemisKalemleriYenile();
         HesaplariYenile();
-        DurumMesaji = "Poz eşleşmesi silindi.";
+        DurumMesaji = IslemUyarilariniEkle("Poz eşleşmesi silindi.");
     }
 
-    /// <summary>Bir referansın metraj satırlarından eşleşmesi olanları SEÇİLİ tabloya otomatik satır olarak ekler.
-    /// Önce o referansın eski otomatik satırlarını temizler (idempotent). Üretilen satır sayısını döndürür.</summary>
+    /// <summary>Referans katkılarını ilk aktarımın hedefinde günceller; mevcut satır ve elle düzenlenen fiyat korunur.</summary>
     private int OtomatikSatirlariUret(KesifReferansDosyasi referans)
     {
-        OtomatikSatirlariTemizle(referans.Id);
-
-        var hedef = SeciliTablo;
-        if (hedef is null)
+        var hedef = ReferansHedefiniBul(referans);
+        if (hedef is not { YaprakMi: true })
         {
-            DurumMesaji = "Önce bir keşif tablosu seçin; otomatik satırlar oraya yazılır.";
+            _otomatikIslemUyarilari.Add($"{referans.DosyaAdi}: hedef yaprak tablo bulunamadı; mevcut satırlar korundu.");
+            return 0;
+        }
+        if (KesifTabloAgaci.KilitliMi(Proje, hedef))
+        {
+            _otomatikIslemUyarilari.Add($"{hedef.Ad}: tamamlanmış tablo kilitli; otomatik satırlar değiştirilmedi.");
             return 0;
         }
 
-        if (hedef.AltTabloVarMi)
-        {
-            DurumMesaji = "Seçili tablo başlık tablosudur (alt tabloları var); otomatik satırlar için bir yaprak tablo seçin.";
-            return 0;
-        }
-
+        var istenen = new Dictionary<string, (KesifPoz Poz, string Birim, decimal Miktar, string Aciklama)>();
+        var korunacakPozlar = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var uretilen = 0;
         foreach (var kalem in referans.MetrajSatirlari)
         {
             var esleme = _eslemeServisi.EslemeBul(kalem);
-            if (esleme is null)
-                continue;
-
-            var poz = Proje.PozKutuphane.FirstOrDefault(p =>
-                string.Equals(p.PozNo, esleme.PozNo, StringComparison.OrdinalIgnoreCase));
-
-            var pozNo = esleme.PozNo;
-            var birimAdi = poz?.BirimAdi ?? esleme.BirimAdi;
-            var birim = string.IsNullOrWhiteSpace(kalem.Birim) ? (poz?.Birim ?? "adet") : kalem.Birim;
-            var anahtar = KesifSatirBirlestirmeServisi.AnahtarUret(pozNo, birimAdi, birim);
-            var satir = hedef.Satirlar.FirstOrDefault(s =>
-                KesifSatirBirlestirmeServisi.AnahtarUret(s.PozNo, s.BirimAdi, s.Birim) == anahtar);
-
-            if (satir is null)
+            if (esleme is null) continue;
+            var poz = EslemePozunuBul(kalem);
+            if (poz is null)
             {
-                satir = new KesifSatir
-                {
-                    PozId = poz?.Id ?? Guid.Empty,
-                    PozNo = pozNo,
-                    BirimAdi = birimAdi,
-                    Birim = birim,
-                    BirimFiyat = poz?.BirimFiyat ?? 0,
-                    OrijinalBirimFiyat = poz?.BirimFiyat ?? 0,
-                    Miktar = 0,
-                    Aciklama = kalem.TeknikOzellik
-                };
-                hedef.Satirlar.Add(satir);
+                // Kütüphanede bulunmayan/fiyatsız öğrenilmiş poz eski keşfin bedelini değiştiremez.
+                korunacakPozlar.Add(esleme.PozNo.Trim());
+                continue;
             }
-
-            KesifSatirBirlestirmeServisi.OtomatikKatkiEkle(
-                satir, referans.Id, referans.KaynakModul, kalem.Miktar);
+            var birim = string.IsNullOrWhiteSpace(kalem.Birim) ? poz.Birim : kalem.Birim;
+            var anahtar = KesifSatirBirlestirmeServisi.AnahtarUret(poz.PozNo, poz.BirimAdi, birim);
+            var miktar = istenen.TryGetValue(anahtar, out var eski) ? eski.Miktar + kalem.Miktar : kalem.Miktar;
+            istenen[anahtar] = (poz, birim, miktar, kalem.TeknikOzellik);
             uretilen++;
         }
 
+        // Aynı pozun katkısı değişmemişse nesneyi, fiyatını, açıklamasını ve manuel miktar farkını tut.
+        foreach (var satir in hedef.Satirlar.ToList())
+        {
+            KesifSatirBirlestirmeServisi.LegacyKatkiyiTamamla(satir);
+            var anahtar = KesifSatirBirlestirmeServisi.AnahtarUret(satir.PozNo, satir.BirimAdi, satir.Birim);
+            if (korunacakPozlar.Contains(satir.PozNo.Trim())) continue;
+            if (istenen.Remove(anahtar, out var veri))
+            {
+                var onceki = satir.OtomatikKatkilar.Where(k => k.KaynakReferansId == referans.Id).Sum(k => k.Miktar);
+                KesifSatirBirlestirmeServisi.OtomatikKatkiEkle(satir, referans.Id, referans.KaynakModul, veri.Miktar - onceki);
+            }
+            else if (satir.OtomatikKatkilar.Any(k => k.KaynakReferansId == referans.Id) &&
+                     KesifSatirBirlestirmeServisi.ReferansKatkisiniSil(satir, referans.Id))
+                hedef.Satirlar.Remove(satir);
+        }
+        foreach (var veri in istenen.Values)
+        {
+            var satir = new KesifSatir
+            {
+                PozId = veri.Poz.Id, PozNo = veri.Poz.PozNo, BirimAdi = veri.Poz.BirimAdi,
+                Birim = veri.Birim, BirimFiyat = veri.Poz.BirimFiyat, OrijinalBirimFiyat = veri.Poz.BirimFiyat,
+                Aciklama = veri.Aciklama
+            };
+            hedef.Satirlar.Add(satir);
+            KesifSatirBirlestirmeServisi.OtomatikKatkiEkle(satir, referans.Id, referans.KaynakModul, veri.Miktar);
+        }
         return uretilen;
+    }
+
+    private readonly List<string> _otomatikIslemUyarilari = new();
+
+    private bool ReferansKilitliMi(KesifReferansDosyasi referans)
+        => KesifTabloAgaci.TumTablolar(Proje).Any(t => KesifTabloAgaci.KilitliMi(Proje, t) &&
+            (t.Id == referans.HedefTabloId || t.Satirlar.Any(s => s.KaynakReferansId == referans.Id ||
+                s.OtomatikKatkilar.Any(k => k.KaynakReferansId == referans.Id))));
+
+    private bool EslemeKilitliMi(string anahtar)
+        => Proje.ReferansDosyalari.Any(r => ReferansKilitliMi(r) && r.MetrajSatirlari.Any(k => k.EslemeAnahtari == anahtar));
+
+    private bool EslemeDuzenlemeyeAcikMi(string anahtar)
+    {
+        if (!EslemeKilitliMi(anahtar)) return true;
+        DurumMesaji = "Eşleşme tamamlanmış bir tabloda kullanılıyor. Değiştirmek için önce tamamlandı tikini kaldırın.";
+        return false;
+    }
+
+    private bool AtamaPozunuDogrula(KesifPoz poz)
+    {
+        if (Proje.PozKutuphane.Contains(poz) && poz.AktifMi && poz.BirimFiyat > 0 && !string.IsNullOrWhiteSpace(poz.PozNo))
+            return true;
+        DurumMesaji = "Atanacak poz aktif kütüphanede bulunmalı; poz numarası ve pozitif birim fiyatı olmalı.";
+        return false;
+    }
+
+    private KesifPoz? EslemePozunuBul(KesifMetrajSatiri kalem)
+    {
+        var esleme = _eslemeServisi.EslemeBul(kalem);
+        return esleme is null ? null : Proje.PozKutuphane.FirstOrDefault(p =>
+            p.AktifMi && p.BirimFiyat > 0 && !string.IsNullOrWhiteSpace(p.PozNo) &&
+            string.Equals(p.PozNo.Trim(), esleme.PozNo.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private KesifTablosu? ReferansHedefiniBul(KesifReferansDosyasi referans)
+    {
+        if (referans.HedefTabloId.HasValue)
+            return KesifTabloAgaci.TumTablolar(Proje).FirstOrDefault(t => t.Id == referans.HedefTabloId);
+        var mevcut = KesifTabloAgaci.TumTablolar(Proje).Where(t => t.Satirlar.Any(s =>
+            s.KaynakReferansId == referans.Id || s.OtomatikKatkilar.Any(k => k.KaynakReferansId == referans.Id))).ToList();
+        // Eski dosyalardaki tek hedefi mevcut katkıdan bul; belirsiz dağılımı seçili tabloya taşıma.
+        var hedef = mevcut.Count == 1 ? mevcut[0] : mevcut.Count == 0 && SeciliTablo is { YaprakMi: true } ? SeciliTablo : null;
+        if (hedef is not null) referans.HedefTabloId = hedef.Id;
+        return hedef;
+    }
+
+    private void ReferansHedefleriniTamamla()
+    {
+        foreach (var referans in Proje.ReferansDosyalari) ReferansHedefiniBul(referans);
+    }
+
+    private string IslemUyarilariniEkle(string mesaj)
+    {
+        var kullanilamayan = Proje.ReferansDosyalari.SelectMany(r => r.MetrajSatirlari)
+            .Where(k => _eslemeServisi.EslemeBul(k) is not null && EslemePozunuBul(k) is null)
+            .DistinctBy(k => k.EslemeAnahtari).Count();
+        if (kullanilamayan > 0)
+            mesaj += $" {kullanilamayan} kalemin atandığı aktif/fiyatlı poz bulunamadı; Poz Atama'dan düzeltin. Mevcut satırlar korundu.";
+        if (_otomatikIslemUyarilari.Count > 0) mesaj += " " + string.Join(" ", _otomatikIslemUyarilari.Distinct());
+        return mesaj;
     }
 
     /// <summary>Verilen referanstan üretilmiş tüm otomatik satırları her tablodan kaldırır.</summary>
@@ -880,6 +1072,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     {
         foreach (var tablo in KesifTabloAgaci.TumTablolar(Proje))
         {
+            if (KesifTabloAgaci.KilitliMi(Proje, tablo)) continue;
             foreach (var satir in tablo.Satirlar.ToList())
             {
                 KesifSatirBirlestirmeServisi.LegacyKatkiyiTamamla(satir);
@@ -899,8 +1092,11 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         {
             foreach (var satir in tablo.Satirlar)
             {
-                KesifSatirBirlestirmeServisi.LegacyKatkiyiTamamla(satir);
-                if (satir.OtomatikKatkilar.Count == 0)
+                // Balon oluşturmak, tamamlanmış eski satırın kalıcı katkı listesini değiştirmemeli.
+                var katkilar = satir.OtomatikKatkilar.ToList();
+                if (katkilar.Count == 0 && satir.KaynakTipi == KesifKaynakTipi.Otomatik && satir.KaynakReferansId is Guid referansId)
+                    katkilar.Add(new() { KaynakReferansId = referansId, KaynakModul = satir.KaynakModul, Miktar = satir.Miktar });
+                if (katkilar.Count == 0)
                 {
                     satir.ReferansBilgisi = null;
                     continue;
@@ -908,7 +1104,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
 
                 var birim = string.IsNullOrWhiteSpace(satir.Birim) ? "" : " " + satir.Birim;
                 var satirlar = new List<string>();
-                foreach (var katki in satir.OtomatikKatkilar)
+                foreach (var katki in katkilar)
                 {
                     var ad = Proje.ReferansDosyalari.FirstOrDefault(r => r.Id == katki.KaynakReferansId)?.DosyaAdi;
                     if (string.IsNullOrWhiteSpace(ad))
@@ -916,7 +1112,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
                     satirlar.Add($"• {ad}: {katki.Miktar:0.##}{birim}");
                 }
 
-                var otomatikToplam = satir.OtomatikKatkilar.Sum(k => k.Miktar);
+                var otomatikToplam = katkilar.Sum(k => k.Miktar);
                 var manuel = satir.Miktar - otomatikToplam;
                 if (manuel > 0.0000001m)
                     satirlar.Add($"• Manuel: {manuel:0.##}{birim}");
@@ -929,6 +1125,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
     /// <summary>Tüm referansları yeniden işler (eşleşme eklendi/silindi sonrası senkronizasyon).</summary>
     private void TumReferanslariYenidenIsle()
     {
+        _otomatikIslemUyarilari.Clear();
         foreach (var referans in Proje.ReferansDosyalari)
             OtomatikSatirlariUret(referans);
     }
@@ -961,7 +1158,7 @@ public sealed class KesifHazirlaViewModel : INotifyPropertyChanged
         {
             foreach (var kalem in referans.MetrajSatirlari)
             {
-                if (_eslemeServisi.EslemeBul(kalem) is not null)
+                if (EslemePozunuBul(kalem) is not null)
                     continue;
                 if (gorulen.Add(kalem.EslemeAnahtari))
                     EslenmemisKalemler.Add(kalem);

@@ -115,6 +115,7 @@ public static class AciklikYardimci
             GenislikM = yeniGenis,
             YukseklikM = kaynak.YukseklikM,
             EsikYuksekligiM = kaynak.EsikYuksekligiM,
+            EsikYuksekligiBelirtildi = kaynak.EsikYuksekligiBelirtildi,
             ManuelEklendi = kaynak.ManuelEklendi,
             Kaynak = (kaynak.Kaynak ?? "") + "-yansima"
         };

@@ -7,6 +7,21 @@ yalnızca güncel kararlar, kapsam, sistem davranışları, kritik teknik notlar
 > **Bağlı codex'ler:** [codex50](../../ortak-moduller/50-bina-geometri/codex50.md) (desen referansı),
 > [codex61](../61-bina-temeli-kota-oturtma/codex61.md) (tüketici)
 
+## 5 Kasım 2026 — DWG kot okuma ve mevcut arazi modeli
+
+- M60 artık DWG/DXF açar. `MimariCadDosyasi` üzerinden ODA/AutoCAD ile geçici DXF dönüşümü kullanılır; kaynak DWG değiştirilmez. M01 kapalı yüzey import kuralı değişmedi.
+- İçe aktarma ekranı birim, katman ve kot yazısı seçimini gösterir. Tanımsız birim açık seçim ister. Kontur katmanları bulunan karma çizimlerde yalnız konturlar önerilir; bina/terasman kotları kendiliğinden mevcut zemine eklenmez.
+- `DxfAraziParser`: POINT, 2B/3B polyline, 3DFACE ve blok içeriği; TEXT/MTEXT kotları, nokta-yazı ve kontur-yazı eşleştirmesi. Değişken Z'li 3B polyline düzleştirilmez. Kot yazıları metre kabul edilir. Bağımsız yazı konumları için uyarı gösterilir.
+- `AraziModeli.Kaynak`: özgün CAD yolu, çizim birimi, ölçek, seçilen katmanlar, metin seçeneği kayıt/aç boyunca korunur. Geometrik nokta ve konturlarda kaynak katman tutulur.
+- TIN üretimi sonlu koordinat, aynı XY'de çelişen kot ve örnekleme sınırı kontrolü yapar. `AraziKotIndeksi` hafriyat hücrelerini ve plan imlecini değişmez BVH üzerinden sorgular.
+- Kot Planı: kot etiketleri, renkli yüzey, yakınlaştırma/kaydırma, platform sınırı çiz/tamamla/iptal, tüm ölçüm kapsamı. 3B görünüm ayrı sekmedir. Varsayılan dışbükey sınır parsel sınırı değildir.
+- `AraziTasarimServisi`: alan ağırlıklı ortalama kot önerisi ve geçerli basit poligonla tek platform tasarımı. Hedef kot önerisi, hesapla uygulanana kadar kayıtlı tasarım değildir. Mevcut arazi boş tasarım bölgeleriyle kaydedilebilir. Değişen parametreler eski hacim raporunu geçersiz kılar.
+- `.e4arazi.json` aç/kaydet ve TIN düğümlerini CSV dışa aktarma eklendi. Çok bölgeli/şevli kayıtlar tek platform editöründe sessizce daraltılmaz.
+- Adrenapark doğrulaması: `021026ADRENAPARK (3).DWG`, 7 `EĞRI_*` geometri katmanı, **6.074 kontur, 77.515 düğüm, 155.000 üçgen, 969–1015 m**. Tüm kotlar geometrik Elevation; çözülemeyen kontur yok. `*_MKOT`, bina, tesisat ve terasman katmanları dışarıda.
+- Kullanıcı tercihiyle **yalnız mevcut arazi** üretildi; hedef kot/platform/hafriyat sonucu atanmadı. Kayıt, kontur köşesi CSV'si ve okuma raporu: `ornekler/adrenapark/`. 497.838,681 m², ölçüm noktalarının dışbükey yüzey izdüşümüdür; parsel veya kazı alanı değildir.
+- Doğrulama: Core runner 121/121; TerrainImport.Regression 16/16; TerrainDesign.Regression 19/19. Gerçek DXF kontur koordinatları ve kotları kayıtlı modelle birebir; JSON dönüşümü sonrası aynı TIN ve boş tasarım korunur.
+- Sınırlar: kontur kırık çizgileri kısıtlı üçgenleme kenarları olarak zorlanmıyor; kontur noktalarından Delaunay yüzey üretiliyor. İçbükey sınırlar/boşluklar otomatik algılanmıyor. Şev, çok platform ve TIN-TIN hassas hacim ileri kapsamdır.
+
 ---
 
 ## 1. Kimlik
@@ -157,7 +172,7 @@ ayrı faz dizisiyle başlar — bkz. [codex61](../61-bina-temeli-kota-oturtma/co
 - `Terrain/Services/AraziYuzeyServisi.cs`: kontur yoğunlaştırma (varsayılan 5 m) + Triangle.NET Delaunay.
 - **Bağımlılık:** `Triangle` 0.0.6-Beta3 (TriangleNet) `Core.csproj`'a eklendi. Vertex Z taşımadığından
   Z koordinat-anahtarlı sözlükle geri eşlenir (saf Delaunay Steiner noktası eklemez → köşeler birebir).
-- `KotSorgula` şu an O(N) üçgen taraması; ileride spatial index (F9).
+- `AraziKotIndeksi` BVH ile kot sorgusu ve TIN boyunca kesin parça profili sağlar; tasarım, plan ve hafriyat bu indeksi kullanır.
 
 ### Gerçekleşen kaynak (F4-F5)
 - `Terrain/Models/TasarimYuzeyi.cs`: `TasarimBolgeTipi`, `TasarimBolgesi`, `TasarimYuzeyi` (+ `HedefKot`).
@@ -168,7 +183,7 @@ ayrı faz dizisiyle başlar — bkz. [codex61](../61-bina-temeli-kota-oturtma/co
 
 ### Gerçekleşen kaynak (F7)
 - `Terrain/Services/AraziGeometriServisi.cs`: M50 `BinaGeometriServisi` deseni; `.e4arazi.json`
-  JSON (WriteIndented + JsonStringEnumConverter), `GuncelSemaSurum=1`, Migrate(0→1).
+  JSON (WriteIndented + JsonStringEnumConverter), `GuncelSemaSurum=2`; şev veya kenar istisnası bulunan tasarım sürüm 2 olarak kaydedilir. Mevcut sürüm 1 arazi dosyaları okunur.
 - `AraziModeli.Tasarim` (TasarimYuzeyi) artifact'a gömüldü → dosya kendine-yeter.
 - TIN (`AraziYuzeyi`) ve `HafriyatSonucu` serileştirilmez; yüklemede servislerle yeniden üretilir
   (test M60AraziYuklemeSonrasiHesap bunu kanıtlar).
@@ -186,7 +201,7 @@ ayrı faz dizisiyle başlar — bkz. [codex61](../61-bina-temeli-kota-oturtma/co
 - `App/Terrain/Views/TerrainLauncherWindow.axaml(.cs)`: Terrain modül merkezi (M60 kartı + M61 yakında).
 - `App/Terrain/Views/HafriyatWindow.axaml(.cs)`: DXF yükle (Task.Run) → TIN izometrik önizleme →
   hedef kot + kabarma/sıkışma girişi → Hesapla → `RaporText` özet → `.e4arazi.json` kaydet.
-  MVP: tasarım bölgesi = arazi sınır kutusu tek platform; ızgara ~150×150 ile otomatik.
+  Çok bölgeli tasarım: plan üzerinde poligon veya iki köşeyle dikdörtgen; her bölgeye ayrı hedef kot ve kenar davranışı. Hesap ızgarası kullanıcı tarafından ayarlanabilir.
 - `App/Views/EngineeringHomeWindow`: Terrain disiplin kartı + `OpenTerrain_OnClick` eklendi.
 - Uçtan uca gerçek DXF doğrulaması yapıldı (3 kontur + spot → TIN → yarma/dolgu analitikle ±%0,02).
 
@@ -202,8 +217,31 @@ ayrı faz dizisiyle başlar — bkz. [codex61](../61-bina-temeli-kota-oturtma/co
 - `HafriyatWindow`: Hesapla'da `Onizleme3D.HitIntensityMap` set (mevcut heatmap rendering), DXF yüklemede temizlenir.
 
 ### Kalan adımlar (ileri / opsiyonel)
-- **İnteraktif tasarım** — sınır kutusu yerine kullanıcı poligonu/çok platform/şev çizimi (canvas etkileşimi).
-- **F9** (ileri): TIN-TIN hassas hacim, şev araziye iniş, spatial index, kütle-haul (Bruckner), metraj köprüsü.
+- **F9** (ileri): TIN-TIN hassas hacim, kütle-haul (Bruckner), metraj köprüsü, eğimli platform düzlemleri.
 
 > **Mimari:** App katmanı yalnız Core servislerini çağırır; tüm hesap (TIN, hafriyat, rapor) Core'da
 > ve testlidir. İçe aktar → TIN → tasarım → hafriyat → rapor → `.e4arazi.json` zinciri 30 testle + gerçek DXF ile doğrulandı.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Arazi kaydı atomik/yedekli ve hata durumunda geri alınabilir; gelecek şemalar reddediliyor. Hafriyat gridinde sonlu veri, hassasiyet ve 2 milyon hücre sınırı var; tarama tamsayı indeksli (A14–A16, A18).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.
+
+## 5 Kasım 2026 — çok bölgeli kot ve kenar tasarımı
+
+- Akış: **+ Bölge Çiz / + Dikdörtgen → Tamamla → hedef kot → Dik kesim / Şev → Bölgeyi Uygula ve Önizle**. Yeni bölgenin başlangıç kotu köşelerdeki mevcut kotların ortalamasıdır; kullanıcı değiştirir veya **Araziden Kot Al** ile seçer. Mevcut araziye kendiliğinden tasarım bölgesi eklenmez.
+- Aynı platformun kenarları farklı davranabilir. Plandaki numaralı kenara tıklayın veya **Tek kenara özel ayar** listesini kullanın. Kenar varsayılanı devralabilir, dik kesim ya da ayrı yatay/düşey oranlı şev olabilir. Turuncu düz çizgi dik kesim; yeşil kesikli çizgi şevdir.
+- Köşe sürükleme, bölge seçimi/silme, şev önceliği sıralama, 60 adımlık geri al/ileri al. Bekleyen form değişiklikleri uygulanmadan başka bölgeye geçiş veya kayıt yapılmaz. Poligon kesişmeleri ve ölçülen yüzey dışına taşma kontrol edilir; bitişik sınırlar kabul edilir.
+- `AraziTesviyeServisi`: platform içi hedef kot; kenardan dışa H:1V şev; TIN parça profili üzerinde ilk arazi kesişiminde durma. Azami mesafe, ölçüm kapsamı ve şev çakışması uyarıları. Platform içleri öncelikli; şev çakışmasında listedeki üst bölge öncelikli.
+- `AraziTasarimOnizlemeServisi`: platform altındaki mevcut TIN kırpılır; düz platform ve dik sınır yüzleri oluşturulur. Şev çevresi ekranda belirtilen aralıkla örneklenir (varsayılan 2 m; yoğun tasarımda otomatik büyüyebilir). Önizleme hassas hacim modeli değildir. Mevcut / Tasarım / Yarma-dolgu görünümü hem planda hem 3B görünümde kullanılabilir.
+- `HafriyatHesabiServisi`: platform ve dış şev alanlarını birlikte değerlendirir; bölge bazlı yarma/dolgu, şev hücreleri ve kontrol notları raporlanır. Hacim hesabı seçilen ızgara aralığına bağlı orta nokta yaklaşımıdır.
+- Tasarım kaynak konturlardan ayrı `.e4arazi.json` alanında saklanır; türetilmiş önizleme/hacim yeniden üretilir. Adrenapark mevcut arazi örneği tasarım bölgesi olmadan korunmuştur.
+- Doğrulama: Core 121/121, çok bölgeli tesviye 16/16, 3B önizleme 12/12. Gerçek Adrenapark verisinde iki 40×40 m bölge (farklı kot, karma kenar) için 2 m önizleme: 311.752 yüz, yaklaşık 5,6 saniye. App derlemesi 0 uyarı / 0 hata.
+- Ekran kontrolü: Adrenapark üzerinde iki dikdörtgen, bağımsız kotlar, bir dik/üç şevli kenar, 3B tasarım yüzeyi, iki bölgenin hafriyat raporu ve üç adım geri alma doğrulandı. Deneme bölgeleri kaydedilmeden geri alındı. Ekranı aşan merkezlenmiş pencere açılışta otomatik tam ekrana geçer; modüller arası taşınan pencere yerleşimi korunur.
+
+## 6 Kasım 2026 — 3B gezinme performansı
+
+M60, mevcut TIN'i ve tasarım yüzeylerini ortak köşelerle bellekte tutar. `Arazi3DControl` görünür yüzeyi piksel başına derinlik karşılaştırmasıyla arka planda çizer; arayüze tek görüntü aktarır. Sabit kamera son kareyi kullanır. Sürükleme sırasında ara kamera konumları kuyruğa birikmez; bırakıldığında görüntü normal çözünürlüğe döner. Kot sorguları ve hacim hesabı tam TIN'i kullanır.
+
+`tests/TerrainRender.Regression` kapsama, örtüşme sırası, dik yüzler, yarma/dolgu renkleri, büyük koordinatlar ve ekran dışı kırpmayı kontrol eder. Adrenapark dosya yolu verildiğinde eski ve yeni çiziciyi aynı açılar ve 1140×470 pikselde karşılaştırır. Bu bilgisayarda Release ölçümü: ilk kare 1635,2 → 53,6 ms; yedi dönüş açısının ortancası 656,7 → 16,7 ms (155.000 üçgen). Şev ve dik kenarlı 336.330 üçgenlik deneme tasarımında yeni çizici 24,0 ms ortanca süre verdi. Süreler çizim ve görüntü aktarımı içindir; dosya okuma ve TIN üretimi dahil değildir.

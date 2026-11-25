@@ -34,6 +34,11 @@ public class Ups
     /// <summary>Kütüphaneden seçilen UPS tipi adı.</summary>
     public string UpsTanimAd { get; set; } = "";
 
+    /// <summary>UPS tipi kullanıcı tarafından sabitlendi mi? false ise yük değiştikçe otomatik
+    /// seçim yeniden yapılır. Eski projelerde bulunmayan alan false kabul edilerek güvenli biçimde
+    /// güncel yüke göre yeniden boyutlandırılır.</summary>
+    public bool UpsTanimManuel { get; set; }
+
     /// <summary>Kütüphaneden seçilen akü tipi adı.</summary>
     public string AkuTanimAd { get; set; } = "";
 

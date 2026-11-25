@@ -61,7 +61,7 @@ public partial class UpsEkleDialog : Window
         {
             OtonomiCombo.SelectedIndex = _mevcut.OtonomiDk switch { 5 => 0, 15 => 2, 30 => 3, _ => 1 };
             EmniyetFaktoruBox.Text = _mevcut.EmniyetFaktoru.ToString("0.##");
-            if (!string.IsNullOrEmpty(_mevcut.UpsTanimAd))
+            if (_mevcut.UpsTanimManuel && !string.IsNullOrEmpty(_mevcut.UpsTanimAd))
             {
                 var t = vm.UpsTipleri.FirstOrDefault(u => u.Ad == _mevcut.UpsTanimAd);
                 if (t != null) UpsCombo.SelectedItem = t;
@@ -123,6 +123,7 @@ public partial class UpsEkleDialog : Window
             _mevcut.OtonomiDk = otonomi;
             _mevcut.EmniyetFaktoru = emniyet;
             _mevcut.UpsTanimAd = upsTanim?.Ad ?? "";
+            _mevcut.UpsTanimManuel = upsTanim != null;
             _mevcut.AkuTanimAd = akuTanim?.Ad ?? "";
             _vm.TumunuHesapla();
         }

@@ -260,8 +260,12 @@ public static class KabloHesapServisi
             ? proje.IzinVerilenGerilimDususYuzde
             : 3.0;
 
+        // Standart koruma listesi tavana ulaşsa bile gerçek talebi küçültme. Aksi halde 3200 A
+        // üstü taleplerde kablo sınırlı sigortaya göre seçilip hatalı biçimde yeterli işaretlenir.
+        double gercekTalepA = pano.TalepAkimA > 0 ? pano.TalepAkimA : pano.GirisAkimA;
+        double boyutlandirmaAkimiA = Math.Max(boyutlandirmaSigortaA, gercekTalepA);
         var kablo = ParalelKabloHesapla(
-            (double)boyutlandirmaSigortaA,
+            boyutlandirmaAkimiA,
             pano.KabloMesafeM,
             FazTipi.Trifaze,
             gerilim,
@@ -277,7 +281,7 @@ public static class KabloHesapServisi
 
         // Gerçek gerilim düşümü ve ısı kaybı — besleme talep akımına göre (reaktans dahil).
         // Talep akımı (ks uygulanmış) besleme kablosunda akan akımdır.
-        double akim = pano.TalepAkimA > 0 ? pano.TalepAkimA : pano.GirisAkimA;
+        double akim = gercekTalepA;
         double kolAkimi = akim / kablo.ParalelKolSayisi;
         double dusumV = GerilimDususV(
             kolAkimi, pano.KabloMesafeM, kablo.KesitMm2, FazTipi.Trifaze, proje.CosF);

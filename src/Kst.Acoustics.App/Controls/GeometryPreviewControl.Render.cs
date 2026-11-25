@@ -8,6 +8,7 @@ using Kst.Acoustics.Core.Geometry;
 using Kst.Acoustics.Core.Projects;
 using Kst.Acoustics.Core.Simulation;
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -15,6 +16,15 @@ namespace Kst.Acoustics.App.Controls;
 
 public sealed partial class GeometryPreviewControl
 {
+    private IReadOnlyList<ProjectSurface>? _terrainPaintSource;
+    private readonly Dictionary<ProjectSurface, TerrainPaint> _terrainPaint = new();
+    private int[] _terrainSlots = Array.Empty<int>();
+    private int[] _terrainOrder = Array.Empty<int>();
+    private double _terrainOrderAz = double.NaN, _terrainOrderEl = double.NaN;
+    private GeometryProjectionMode _terrainOrderProjection;
+    private double _terrainMinZ, _terrainMaxZ;
+    private readonly record struct TerrainPaint(Point3D Center, Color Color, double Shade);
+
     public override void Render(DrawingContext context)
     {
         base.Render(context);
@@ -60,15 +70,22 @@ public sealed partial class GeometryPreviewControl
         var mirrorIds   = MirrorSurfaceIds;
         var receiverIds = ReceiverSurfaceIds;
         bool lightMode = hitMap is not null || mirrorIds is not null || receiverIds is not null;
+        EnsureTerrainPaint(scene);
 
-        foreach (var item in scene.Surfaces)
+        int terrainIndex = 0;
+        for (int surfaceIndex = 0; surfaceIndex < scene.Surfaces.Count; surfaceIndex++)
         {
+            var item = scene.Surfaces[surfaceIndex];
+            bool isTerrain = IsTerrainCategory(item.Surface.Category);
+            // Yalnız arazi yüzeylerinin kendi çizim sırası değişir; diğer modüllerin
+            // yüzey sırası ve görünümü aynı kalır. Tüm TIN üçgenleri korunur.
+            if (isTerrain) item = scene.Surfaces[_terrainOrder[terrainIndex++]];
             // View-Frustum Culling: Ekran dışındaki yüzeyleri çizmeyelim
             var itemBounds = GetScreenBounds(item.ScreenPoints);
             if (!bounds.Intersects(itemBounds)) continue;
 
             // LOD (Level of Detail): Çok küçük yüzeyleri (zoom düşükken) atlayalım
-            if (_zoom < 0.5 && itemBounds.Width < 2 && itemBounds.Height < 2) continue;
+            if (!isTerrain && _zoom < 0.5 && itemBounds.Width < 2 && itemBounds.Height < 2) continue;
 
             var geometry = new StreamGeometry();
             using (var geometryContext = geometry.Open())
@@ -100,9 +117,24 @@ public sealed partial class GeometryPreviewControl
             }
 
             IBrush fill;
-            IPen   stroke;
+            IPen?  stroke;
 
-            if (lightMode)
+            if (isTerrain)
+            {
+                var paint = _terrainPaint[item.Surface];
+                var color = paint.Color;
+                if (item.Surface.Category == "AraziYuzey" && hitMap is not null &&
+                    hitMap.TryGetValue(item.Surface.Id, out var intensity) && double.IsFinite(intensity))
+                    color = ShadeTerrain(TerrainCutFillColor(intensity), paint.Shade);
+                fill = new SolidColorBrush(color);
+                // Yoğun TIN'de üçgen çizgileri araziyi örter; yalnız seçili yüzey ve
+                // tasarım platformunun dış sınırı vurgulanır.
+                bool highlighted = HighlightedSurfaceId == item.Surface.Id || SelectedSurfaceIds?.Contains(item.Surface.Id) == true;
+                stroke = highlighted ? new Pen(Brushes.White, 1.6)
+                    : item.Surface.Category == "TasarimPlatform" ? new Pen(new SolidColorBrush(Color.Parse("#E1EAC8")), 1.2)
+                    : null;
+            }
+            else if (lightMode)
             {
                 var sid = item.Surface.Id;
 
@@ -175,7 +207,9 @@ public sealed partial class GeometryPreviewControl
         if (!dondurmedeAtla) DrawAcousticPoints(context, scene);
         DrawRuler(context, bounds, scene);
         DrawModeIndicator(context, bounds);
-        if (lightMode) DrawColorLegend(context, bounds);
+        if (_terrainPaint.Count > 0 && mirrorIds is null && receiverIds is null)
+            DrawTerrainLegend(context, bounds, hitMap is { Count: > 0 });
+        else if (lightMode) DrawColorLegend(context, bounds);
         if (scene is not null) DrawOdaEklePreview(context, scene);
         if (scene is not null) DrawManuelAciklikPreview(context, scene);
         DrawPlacementOverlay(context, bounds);
@@ -198,6 +232,113 @@ public sealed partial class GeometryPreviewControl
                 }, bandRect);
         }
     }
+
+    private static bool IsTerrainCategory(string category) => category is "AraziYuzey" or "TasarimPlatform";
+
+    private void EnsureTerrainPaint(SceneModel scene)
+    {
+        bool sourceChanged = !ReferenceEquals(_terrainPaintSource, Surfaces);
+        if (sourceChanged)
+        {
+            _terrainPaintSource = Surfaces;
+            _terrainPaint.Clear();
+            _terrainSlots = Enumerable.Range(0, scene.Surfaces.Count)
+                .Where(i => IsTerrainCategory(scene.Surfaces[i].Surface.Category)).ToArray();
+            _terrainMinZ = double.PositiveInfinity; _terrainMaxZ = double.NegativeInfinity;
+            foreach (int index in _terrainSlots)
+            {
+                var surface = scene.Surfaces[index].Surface;
+                if (surface.Category != "AraziYuzey") continue;
+                foreach (var p in surface.Vertices)
+                    if (double.IsFinite(p.Z)) { _terrainMinZ = Math.Min(_terrainMinZ, p.Z); _terrainMaxZ = Math.Max(_terrainMaxZ, p.Z); }
+            }
+            if (!double.IsFinite(_terrainMinZ)) _terrainMinZ = _terrainMaxZ = 0;
+            foreach (int index in _terrainSlots)
+            {
+                var surface = scene.Surfaces[index].Surface;
+                var vertices = surface.Vertices;
+                var center = new Point3D(vertices.Average(p => p.X), vertices.Average(p => p.Y), vertices.Average(p => p.Z));
+                double shade = TerrainShade(vertices);
+                double range = _terrainMaxZ - _terrainMinZ;
+                double height = range > 1e-9 ? (center.Z - _terrainMinZ) / range : .35;
+                var color = surface.Category == "TasarimPlatform" ? Color.Parse("#BED4AA") : TerrainElevationColor(height);
+                _terrainPaint[surface] = new TerrainPaint(center, ShadeTerrain(color, shade), shade);
+            }
+        }
+        if (sourceChanged || _terrainOrderAz != _azimuth || _terrainOrderEl != _elevation || _terrainOrderProjection != Projection)
+        {
+            double sinA = Math.Sin(_azimuth), cosA = Math.Cos(_azimuth), sinE = Math.Sin(_elevation), cosE = Math.Cos(_elevation);
+            double Depth(int index)
+            {
+                var p = _terrainPaint[scene.Surfaces[index].Surface].Center;
+                return Projection switch
+                {
+                    GeometryProjectionMode.Top2D => p.Z,
+                    GeometryProjectionMode.Front2D => -p.Y,
+                    // ProjectIsometric3D drops y2; larger y2 is farther from the camera.
+                    _ => p.Z * sinE - (p.X * sinA + p.Y * cosA) * cosE
+                };
+            }
+            _terrainOrder = _terrainSlots.OrderBy(Depth).ToArray();
+            _terrainOrderAz = _azimuth; _terrainOrderEl = _elevation; _terrainOrderProjection = Projection;
+        }
+    }
+
+    private static double TerrainShade(IReadOnlyList<Point3D> vertices)
+    {
+        if (vertices.Count < 3) return 1;
+        var a = vertices[0]; var b = vertices[1]; var c = vertices[2];
+        double ux = b.X - a.X, uy = b.Y - a.Y, uz = b.Z - a.Z;
+        double vx = c.X - a.X, vy = c.Y - a.Y, vz = c.Z - a.Z;
+        double nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        double length = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+        if (!double.IsFinite(length) || length < 1e-12) return 1;
+        if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
+        // Sabit kuzeybatı ışığı ve ortam ışığı; kamera hareketinde renkler titremez.
+        double diffuse = Math.Max(0, (nx * -.35 + ny * -.45 + nz * .82) / length);
+        return Math.Clamp(.64 + .36 * diffuse, .64, 1);
+    }
+
+    private static Color ShadeTerrain(Color color, double shade) => Color.FromRgb(
+        (byte)Math.Clamp(color.R * shade, 0, 255), (byte)Math.Clamp(color.G * shade, 0, 255), (byte)Math.Clamp(color.B * shade, 0, 255));
+
+    private static Color TerrainElevationColor(double height)
+    {
+        double t = Math.Clamp(height, 0, 1);
+        if (t < .4) return LerpColor(Color.FromRgb(55, 119, 90), Color.FromRgb(119, 157, 101), t / .4);
+        if (t < .75) return LerpColor(Color.FromRgb(119, 157, 101), Color.FromRgb(184, 168, 115), (t - .4) / .35);
+        return LerpColor(Color.FromRgb(184, 168, 115), Color.FromRgb(225, 214, 181), (t - .75) / .25);
+    }
+
+    private static Color TerrainCutFillColor(double value)
+    {
+        double t = Math.Clamp(value, 0, 1);
+        var neutral = Color.FromRgb(220, 231, 223);
+        return t <= .5 ? LerpColor(Color.FromRgb(43, 119, 188), neutral, t * 2)
+            : LerpColor(neutral, Color.FromRgb(197, 79, 66), (t - .5) * 2);
+    }
+
+    private void DrawTerrainLegend(DrawingContext context, Rect bounds, bool cutFill)
+    {
+        const double width = 180, height = 10;
+        double x = bounds.Right - width - 18, y = bounds.Bottom - 48;
+        if (x < 150) return;
+        var gradient = new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative)
+        };
+        foreach (double t in new[] { 0d, .25, .5, .75, 1d })
+            gradient.GradientStops.Add(new GradientStop(cutFill ? TerrainCutFillColor(t) : TerrainElevationColor(t), t));
+        context.FillRectangle(new SolidColorBrush(Color.FromArgb(235, 10, 21, 32)), new Rect(x - 9, y - 20, width + 18, 50));
+        context.FillRectangle(gradient, new Rect(x, y, width, height));
+        var title = new FormattedText(cutFill ? "Dolgu                     Yarma" : "Mevcut arazi kotu",
+            CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface(FontFamily.Default), 11, Brushes.White);
+        context.DrawText(title, new Point(x, y - 17));
+        var range = new FormattedText(cutFill ? "Mavi: dolgu  ·  Kırmızı: yarma" : $"{_terrainMinZ:N1} – {_terrainMaxZ:N1} m",
+            CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily.Default), 10, Brushes.White);
+        context.DrawText(range, new Point(x, y + 13));
+    }
+
     private void DrawEmptyState(DrawingContext context, Rect bounds)
     {
         var text = new FormattedText(

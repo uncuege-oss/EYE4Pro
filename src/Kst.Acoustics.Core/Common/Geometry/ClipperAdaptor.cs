@@ -26,6 +26,14 @@ public static class ClipperAdaptor
         return FromPaths(sonuc);
     }
 
+    /// Açık yol ekseninden, iki yana yarım genişlik ve düz uçlarla yol ayak izi üretir.
+    public static List<List<Point2D>> YolTamponu(IReadOnlyList<Point2D> eksen, double genislikM)
+    {
+        if (eksen.Count < 2 || !double.IsFinite(genislikM) || genislikM <= 0) return new();
+        return FromPaths(Clipper.InflatePaths(new Paths64 { ToPath(eksen) },
+            genislikM * Olcek / 2, JoinType.Miter, EndType.Butt));
+    }
+
     /// Poligonları birleştirir (union) — örtüşen bina+setback tamponları için.
     public static List<List<Point2D>> Birlestir(IEnumerable<IReadOnlyList<Point2D>> poligonlar)
     {

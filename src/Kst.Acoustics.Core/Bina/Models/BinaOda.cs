@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using Kst.Acoustics.Core.Common.Geometry;
 
 namespace Kst.Acoustics.Core.Bina.Models;
@@ -31,6 +32,15 @@ public class BinaOda : IBinaOda, INotifyPropertyChanged
     /// Oda bazlı yükseklik override (m). null = kat yüksekliği kullanılır.
     /// M08 asma kat / düşey birleşim senaryoları için gerekli.
     public double? YukseklikOverrideM { get; set; }
+
+    /// Kat içindeki kot farkları için mutlak proje kotu (m). null = kat tabanı.
+    public double? TabanKotuOverrideM { get; set; }
+
+    /// Aynı bağlı hacimde kalan kaynak mahal adları. Ayrı etiket, ayrı duvar kanıtı değildir.
+    public List<string> KaynakMahalAdlari { get; set; } = new();
+    [JsonIgnore]
+    public string KaynakMahalOzeti => string.Join(" · ", KaynakMahalAdlari);
+    IReadOnlyList<string> IBinaOda.KaynakMahalAdlari => KaynakMahalAdlari;
 
     public List<Point2D> Poligon { get; set; } = new();
 

@@ -9,7 +9,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0A1015"
-        Title="Eye4Pro Architecture - 3D BIM Model">
+        Title="Eye4Pro Mimarlık - 3D BIM Model">
 
     <Window.Styles>
         <Style Selector="TextBlock.label">
@@ -189,7 +189,7 @@
         </Grid>
 
         <Border Grid.Row="2" BorderBrush="#1B2A36" BorderThickness="0,1,0,0" Background="#070C11" Padding="0,10">
-            <TextBlock Text="Eye4Pro Architecture"
+            <TextBlock Text="Eye4Pro Mimarlık"
                        FontSize="11"
                        Foreground="#5E7282"
                        HorizontalAlignment="Center"/>

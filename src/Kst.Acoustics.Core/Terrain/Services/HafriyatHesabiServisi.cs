@@ -22,37 +22,53 @@ public class HafriyatHesabiServisi
 
     public HafriyatSonucu Hesapla(AraziYuzeyi mevcut, TasarimYuzeyi tasarim)
     {
-        if (GridAraligiM <= 0) throw new ArgumentException("GridAraligiM pozitif olmalı.");
+        if (!double.IsFinite(GridAraligiM) || GridAraligiM <= 0 ||
+            !double.IsFinite(GridAraligiM * GridAraligiM) || GridAraligiM * GridAraligiM == 0)
+            throw new ArgumentException("GridAraligiM pozitif, sonlu ve temsil edilebilir olmalı.");
+        foreach (var bolge in tasarim.Bolgeler)
+        {
+            if (!double.IsFinite(bolge.HedefKotM) ||
+                bolge.Poligon.Any(p => !double.IsFinite(p.X) || !double.IsFinite(p.Y)))
+                throw new ArgumentException("Tasarım bölgesi koordinatları ve hedef kotu sonlu olmalıdır.");
+        }
 
         var sonuc = new HafriyatSonucu { HucreAlaniM2 = GridAraligiM * GridAraligiM };
 
-        if (!SinirBul(tasarim, out double minX, out double minY, out double maxX, out double maxY))
-            return sonuc; // tasarım bölgesi yok
+        if (tasarim.Bolgeler.Count == 0) return sonuc;
+        var kotIndeksi = new AraziKotIndeksi(mevcut);
+        var tesviye = new AraziTesviyeServisi(kotIndeksi, tasarim);
+        double minX=tesviye.Sinir.MinX, minY=tesviye.Sinir.MinY, maxX=tesviye.Sinir.MaxX, maxY=tesviye.Sinir.MaxY;
 
         double hucreAlani = sonuc.HucreAlaniM2;
+        double cols = Math.Max(0, Math.Ceiling((maxX - minX) / GridAraligiM - 0.5));
+        double rows = Math.Max(0, Math.Ceiling((maxY - minY) / GridAraligiM - 0.5));
+        if (!double.IsFinite(cols) || !double.IsFinite(rows) || cols > 2_000_000 || rows > 2_000_000 ||
+            cols * rows > 2_000_000 || minX + GridAraligiM == minX || minY + GridAraligiM == minY)
+            throw new ArgumentException("Hafriyat ızgarası çok büyük veya adımı koordinat hassasiyetinin altında; grid aralığını artırın.");
 
         // Bölge bazlı dökümü referansla eşle (aynı TasarimBolgesi örneği → aynı döküm).
         var bolgeDokum = new Dictionary<TasarimBolgesi, HafriyatBolgeSonucu>();
 
         // Izgara hücre merkezlerini tara.
-        for (double x = minX + GridAraligiM / 2.0; x < maxX; x += GridAraligiM)
+        for (int col = 0; col < (int)cols; col++)
         {
-            for (double y = minY + GridAraligiM / 2.0; y < maxY; y += GridAraligiM)
+            double x = minX + (col + 0.5) * GridAraligiM;
+            for (int row = 0; row < (int)rows; row++)
             {
-                var bolge = tasarim.HedefBolge(x, y);
-                if (bolge is null) continue; // tasarım bölgesi dışı → hafriyat yok
-
-                double? mevcutKot = mevcut.KotSorgula(x, y);
-                if (mevcutKot is null)
+                double y = minY + (row + 0.5) * GridAraligiM;
+                var ornek = tesviye.Sorgula(x, y);
+                if (ornek is null)
                 {
-                    sonuc.KapsamDisiHucreSayisi++;
-                    continue; // tasarım var ama mevcut yüzey kapsamıyor
+                    if (tesviye.PlatformSorgula(x,y) is not null && kotIndeksi.KotSorgula(x,y) is null)
+                        sonuc.KapsamDisiHucreSayisi++;
+                    continue;
                 }
 
                 sonuc.DegerlendirilenHucreSayisi++;
-                double fark = mevcutKot.Value - bolge.HedefKotM;
+                if(ornek.Tur==TesviyeTur.Sev) sonuc.SevHucreSayisi++;
+                double fark = ornek.MevcutKotM - ornek.HedefKotM;
 
-                var dokum = BolgeDokumu(bolgeDokum, sonuc, bolge);
+                var dokum = BolgeDokumu(bolgeDokum, sonuc, ornek.Bolge);
                 dokum.HucreSayisi++;
 
                 if (fark > 0)
@@ -72,6 +88,9 @@ public class HafriyatHesabiServisi
             }
         }
 
+        if(!double.IsFinite(sonuc.YarmaHacmiM3)||!double.IsFinite(sonuc.DolguHacmiM3))
+            throw new ArgumentException("Hafriyat hacmi sayı sınırını aşıyor; kot ve koordinatları kontrol edin.");
+        sonuc.Uyarilar = tesviye.Uyarilar.ToList();
         return sonuc;
     }
 
@@ -81,32 +100,11 @@ public class HafriyatHesabiServisi
     {
         if (!harita.TryGetValue(bolge, out var dokum))
         {
-            dokum = new HafriyatBolgeSonucu { BolgeAdi = bolge.Ad, HedefKotM = bolge.HedefKotM };
+            dokum = new HafriyatBolgeSonucu { BolgeId = bolge.Id, BolgeAdi = bolge.Ad, HedefKotM = bolge.HedefKotM };
             harita[bolge] = dokum;
             sonuc.BolgeSonuclari.Add(dokum);
         }
         return dokum;
     }
 
-    private static bool SinirBul(
-        TasarimYuzeyi tasarim, out double minX, out double minY, out double maxX, out double maxY)
-    {
-        minX = minY = double.MaxValue;
-        maxX = maxY = double.MinValue;
-        bool var = false;
-
-        foreach (var b in tasarim.Bolgeler)
-        {
-            foreach (var p in b.Poligon)
-            {
-                var = true;
-                if (p.X < minX) minX = p.X;
-                if (p.Y < minY) minY = p.Y;
-                if (p.X > maxX) maxX = p.X;
-                if (p.Y > maxY) maxY = p.Y;
-            }
-        }
-
-        return var;
-    }
 }

@@ -271,11 +271,20 @@ public static class BinaGeometriTests
             if (!ac2.ManuelEklendi) throw new InvalidOperationException("ManuelEklendi korunmadı.");
             if (ac2.Kaynak != "manuel") throw new InvalidOperationException("Kaynak korunmadı.");
 
-            // 3D yüzey üretimi: patlatılan tavan/döşeme atlanmalı
-            // 2 oda × (2 yatay + 4 duvar) = 12 yüzey; patlatma 2 yatay yüzeyi düşürür → 10
+            // 3D yüzey üretimi: patlatılan tavan/döşeme atlanmalı. Açıklıklar artık
+            // duvarı böldüğünden parça sayısı yerine yatay yüzey ve alanı doğrula.
             var yuzeyler = Bina3DGorunumServisi.YuzeyleriOlustur(geo2);
-            if (yuzeyler.Count != 10)
-                throw new InvalidOperationException($"10 yüzey beklenir (patlatma 2 yüzey düşürür); {yuzeyler.Count} bulundu.");
+            if (yuzeyler.Count(s => s.Category is "Tavan" or "Doseme") != 2)
+                throw new InvalidOperationException("Patlatma sonrası yalnız en alt döşeme ve en üst tavan kalmalı.");
+            double DuseyAlan(Kst.Acoustics.Core.Projects.ProjectSurface s)
+            {
+                var a = s.Vertices[0]; var b = s.Vertices[1]; var d = s.Vertices[3];
+                return Math.Sqrt(Math.Pow(b.X - a.X, 2) + Math.Pow(b.Y - a.Y, 2)) * Math.Abs(d.Z - a.Z);
+            }
+            if (Math.Abs(yuzeyler.Where(s => s.Category == "Duvar").Sum(DuseyAlan) - 106.5) > 1e-9)
+                throw new InvalidOperationException("İki odanın 108 m² duvarından 1.5 m² pencere çıkarılmalı.");
+            if (Math.Abs(yuzeyler.Where(s => s.Category == "Pencere" && s.OwnerId == altOda.Id).Sum(DuseyAlan) - 1.5) > 1e-9)
+                throw new InvalidOperationException("Kaydedilen pencere doğru odada 1.5 m² yüzey üretmeli.");
             if (yuzeyler.Any(s => s.Category == "Tavan" && s.OwnerId == altOda.Id))
                 throw new InvalidOperationException("Alt odanın tavanı 3D'de üretilmemeli (patlatıldı).");
             if (yuzeyler.Any(s => s.Category == "Doseme" && s.OwnerId == ustOda.Id))

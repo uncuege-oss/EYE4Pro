@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kst.Acoustics.Core.Bina.Models;
+using Kst.Acoustics.Core.Common;
 
 namespace Kst.Acoustics.Core.Bina.Services;
 
@@ -11,7 +12,9 @@ public static class BinaGeometriServisi
 {
     /// Geçerli şema sürümü — migrasyon tetikleyicisi.
     /// 2: düşey birleşim üyelerine kararlı KatId eklendi (kat sıralama dayanıklılığı).
-    public const int GuncelSemaSurum = 2;
+    /// 3: mutlak kat kotu, açıkça belirtilmiş sıfır eşik ve içe aktarma notları.
+    /// 4: oda bazlı mutlak taban kotu ve kaynak mahal adları.
+    public const int GuncelSemaSurum = 4;
 
     private static readonly JsonSerializerOptions JsonAyar = new()
     {
@@ -25,20 +28,23 @@ public static class BinaGeometriServisi
     /// üzerine taşınır — yarıda kalan yazım mevcut `.e4bina`'yı bozmaz.
     public static void Kaydet(BinaGeometri geo, string dosyaYolu)
     {
-        int yeniRevizyon = geo.GeometriRevizyon + 1;
-        string eskiDosyaYolu = geo.DosyaYolu ?? "";
+        if (geo.SemaSurum > GuncelSemaSurum)
+            throw new InvalidDataException("Bina geometrisi sürümü bu uygulamadan daha yeni.");
+        int yeniRevizyon = checked(geo.GeometriRevizyon + 1);
+        int eskiSemaSurum = geo.SemaSurum;
+        string? eskiDosyaYolu = geo.DosyaYolu;
         geo.DosyaYolu = dosyaYolu;
         geo.GeometriRevizyon = yeniRevizyon;
         try
         {
+            Migrate(geo);
             var json = JsonSerializer.Serialize(geo, JsonAyar);
-            var tmp = dosyaYolu + ".tmp";
-            File.WriteAllText(tmp, json);
-            File.Move(tmp, dosyaYolu, overwrite: true);
+            GuvenliDosyaYazmaServisi.Yaz(dosyaYolu, json);
         }
         catch
         {
             geo.GeometriRevizyon = yeniRevizyon - 1;
+            geo.SemaSurum = eskiSemaSurum;
             geo.DosyaYolu = eskiDosyaYolu;
             throw;
         }
@@ -73,6 +79,8 @@ public static class BinaGeometriServisi
 
     private static void Migrate(BinaGeometri geo)
     {
+        if (geo.SemaSurum > GuncelSemaSurum)
+            throw new InvalidDataException("Bina geometrisi sürümü bu uygulamadan daha yeni.");
         if (geo.SemaSurum >= GuncelSemaSurum) return;
 
         // Sürüm 0 → 1: ilk resmi şema; özel dönüşüm gerekmez.

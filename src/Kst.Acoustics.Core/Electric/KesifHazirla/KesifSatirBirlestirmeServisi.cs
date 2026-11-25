@@ -6,10 +6,11 @@ public static class KesifSatirBirlestirmeServisi
     private const decimal Epsilon = 0.0000001m;
 
     public static int ProjeyiBirlestir(KesifProje proje)
-        => KesifTabloAgaci.TumTablolar(proje).Sum(TabloyuBirlestir);
+        => KesifTabloAgaci.TumTablolar(proje).Where(t => !KesifTabloAgaci.KilitliMi(proje, t)).Sum(TabloyuBirlestir);
 
     public static int TabloyuBirlestir(KesifTablosu tablo)
     {
+        if (tablo.TamamlandiMi) return 0;
         var kaldirilan = 0;
         var hedefler = new Dictionary<string, KesifSatir>(StringComparer.OrdinalIgnoreCase);
 

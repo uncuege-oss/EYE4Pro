@@ -58,6 +58,15 @@ namespace Kst.Acoustics.Core.ImpactSurface
                 foreach (var layer in activeLayers)
                 {
                     var material = layer.Material ?? ImpactMaterialDatabase.GetByCode(layer.MaterialCode);
+                    if (material is not null &&
+                        (!double.IsFinite(material.ElasticModulus) || !double.IsFinite(material.ImpactAbsorption) ||
+                         !double.IsFinite(material.Density) || !double.IsFinite(material.AlphaW)))
+                    {
+                        result.IsValid = false;
+                        result.Errors.Add("Malzeme özellikleri sonlu değerler olmalıdır.");
+                        result.StatusMessage = "HATA: Geçersiz malzeme verisi.";
+                        return result;
+                    }
                     double thicknessRatio = layer.ThicknessMm / result.TotalThickness;
                     
                     if (material != null && IsPositiveFinite(material.ElasticModulus))

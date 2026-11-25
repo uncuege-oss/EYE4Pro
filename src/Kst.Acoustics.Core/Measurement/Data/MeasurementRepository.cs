@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Kst.Acoustics.Core.Common;
 
 namespace Kst.Acoustics.Core.Measurement.Data;
 
@@ -22,7 +23,7 @@ public static class MeasurementRepository
     public static async Task SaveSessionAsync(MeasurementSession session, string filePath)
     {
         string json = JsonSerializer.Serialize(session, _options);
-        await File.WriteAllTextAsync(filePath, json);
+        await GuvenliDosyaYazmaServisi.YazAsync(filePath, json);
     }
 
     public static async Task<MeasurementSession?> LoadSessionAsync(string filePath)

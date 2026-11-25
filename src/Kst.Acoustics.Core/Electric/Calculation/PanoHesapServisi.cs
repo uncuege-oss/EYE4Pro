@@ -54,7 +54,7 @@ public static class PanoHesapServisi
         //    Yangın panosu ana şalter ÖNCESİNDEN beslenir → üst panonun yük toplamına KATILMAZ.
         double altPanoGuc = pano.AltPanolar
             .Where(p => p.PanoTipi != PanoTipi.YanginPanosu)
-            .Sum(p => p.ToplamGucW * Clamp01(p.EszamanlilikFaktoru));
+            .Sum(p => AltPanoBeslemeGucuW(p, proje, cosF, hatV));
 
         // 3. Toplam güçler
         pano.ToplamGucW = pano.Linyeler.Sum(l => l.ToplamGucW) + altPanoGuc;
@@ -64,15 +64,19 @@ public static class PanoHesapServisi
         // 4. Faz dağılımı
         pano.FazDagilimi = FazDagilimServisi.OtomatikFazAta(pano.Linyeler, fazV, cosF);
 
-        // 5. Giriş akımı (3 faz olarak) — bağlı (connected) akım
-        pano.GirisAkimA = pano.ToplamGorunurVA / (Math.Sqrt(3) * hatV);
+        // 5. Giriş akımı: dengeli üç-faz eşdeğeri ile en yüklü gerçek fazın büyüğüdür.
+        // Tek/az sayıda monofaze linyede yalnız toplam gücü üçe bölmek beslemeyi ciddi küçültür.
+        double dengeliUcFazA = pano.ToplamGorunurVA / (Math.Sqrt(3) * hatV);
+        double enYukluFazA = Math.Max(pano.FazDagilimi.R_A,
+            Math.Max(pano.FazDagilimi.S_A, pano.FazDagilimi.T_A));
+        pano.GirisAkimA = Math.Max(dengeliUcFazA, enYukluFazA);
 
         // 5b. Talep (demand) akımı = bağlı akım × eşzamanlılık faktörü (ks). Besleme tarafı
         //     boyutlandırması (giriş/çıkış sigortası, kablo, KAR) bu akıma göre yapılır.
         pano.TalepAkimA = pano.GirisAkimA * Clamp01(pano.EszamanlilikFaktoru);
 
         // 6. Giriş sigortası — talep akımına göre
-        pano.GirisSigortaA = GirisSigortaHesapla(pano.TalepAkimA);
+        pano.GirisSigortaA = pano.ManuelGirisSigortaA ?? GirisSigortaHesapla(pano.TalepAkimA);
 
         // 6b. Ana pano giriş şalteri (trafo–ana pano arası). Trafo yoksa otomatik: ana pano bağlı
         //     akımına göre. OG/trafo varsa OrtaGerilimHesapServisi bunu trafo AG çıkış akımına göre ezer.
@@ -152,9 +156,9 @@ public static class PanoHesapServisi
         // 11. Tali pano için üst panoda eklenecek çıkış sigortası (selektivite)
         if (pano.UstPano != null)
         {
-            int cikisSigortaA = proje.SelektiviteAktif
+            int cikisSigortaA = pano.ManuelUstPanoCikisSigortaA ?? (proje.SelektiviteAktif
                 ? BirUstStandartSigorta(pano.GirisSigortaA)
-                : pano.GirisSigortaA;
+                : pano.GirisSigortaA);
 
             pano.UstPanoCikisSigortaA = cikisSigortaA;
             if (pano.BaglantiTipi == BaglantiTipi.Busbar)
@@ -203,6 +207,20 @@ public static class PanoHesapServisi
 
         if (kutu != null)
             kutu.SigortaA = sigortaA;
+    }
+
+    private static double AltPanoBeslemeGucuW(Pano altPano, ElektrikProje proje, double cosF, double hatV)
+    {
+        var ups = proje.Upsler.FirstOrDefault(u =>
+            string.Equals(u.KritikPanoAd, altPano.Ad, StringComparison.OrdinalIgnoreCase));
+        if (ups != null && ups.GirisAkimA > 0 && hatV > 0)
+        {
+            // Üst pano mevcut aktif-güç toplama modeliyle çalışır. UPS giriş akımını aynı proje
+            // cosφ'sinde eşdeğer aktif güce çevirerek verim ve akü şarj yükünü üst zincire taşırız.
+            return ups.GirisAkimA * Math.Sqrt(3) * hatV * cosF;
+        }
+
+        return altPano.ToplamGucW * Clamp01(altPano.EszamanlilikFaktoru);
     }
 
     /// <summary>0–1 aralığına kıstırır; geçersiz/sıfır değerleri 1.0 (tam talep) sayar.</summary>
@@ -367,13 +385,13 @@ public static class PanoHesapServisi
         double bankAkim = qVA / (Math.Sqrt(3) * hatV);
         pano.GirisAkimA = bankAkim * KondansatorAkimFaktoru;
         pano.TalepAkimA = pano.GirisAkimA * Clamp01(pano.EszamanlilikFaktoru);
-        pano.GirisSigortaA = GirisSigortaHesapla(pano.TalepAkimA);
+        pano.GirisSigortaA = pano.ManuelGirisSigortaA ?? GirisSigortaHesapla(pano.TalepAkimA);
 
         if (pano.UstPano != null)
         {
-            int cikisSigortaA = proje.SelektiviteAktif
+            int cikisSigortaA = pano.ManuelUstPanoCikisSigortaA ?? (proje.SelektiviteAktif
                 ? BirUstStandartSigorta(pano.GirisSigortaA)
-                : pano.GirisSigortaA;
+                : pano.GirisSigortaA);
             pano.UstPanoCikisSigortaA = cikisSigortaA;
             if (pano.BaglantiTipi == BaglantiTipi.Busbar)
                 BusbarCikisSigortasiniGuncelle(pano, proje, cikisSigortaA);

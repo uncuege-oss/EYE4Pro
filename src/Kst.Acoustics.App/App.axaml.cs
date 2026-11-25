@@ -25,7 +25,7 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new EngineeringHomeWindow();
+            desktop.MainWindow = new SplashWindow();
         }
 
         base.OnFrameworkInitializationCompleted();

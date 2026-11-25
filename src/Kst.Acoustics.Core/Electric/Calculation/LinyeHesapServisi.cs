@@ -11,9 +11,12 @@ namespace Kst.Acoustics.Core.Electric.Calculation;
 public static class LinyeHesapServisi
 {
     // IEC 60898/60947 standart sigorta-şalter değerleri. ≤63A MCB; üstü TMŞ/kompakt şalter.
-    // Büyük trifaze linyeler (ör. büyük motor) 250A'da kalmasın diye üst standartlar (315–630A) eklendi.
+    // Büyük trifaze linyeler de uygulamanın büyük akım cihaz aralığını kullanır.
     private static readonly int[] StandartSigortaA =
-        { 6, 10, 13, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630 };
+        { 6, 10, 13, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
+          800, 1000, 1250, 1600, 2000, 2500, 3200, 4000, 5000, 6300 };
+
+    public static IReadOnlyList<int> StandartSigortaDegerleri { get; } = Array.AsReadOnly(StandartSigortaA);
 
     /// <summary>
     /// Linye akımını hesaplar.
@@ -79,7 +82,7 @@ public static class LinyeHesapServisi
     {
         var gerilim = linye.FazTipi == FazTipi.Monofaze ? fazGerilimV : hatGerilimV;
         linye.AkimA = AkimHesapla(linye.ToplamGucW, gerilim, cosF, linye.FazTipi);
-        linye.SigortaAmper = SigortaBoyutlandir(linye.AkimA, MinimumSigortaA(linye.YukTipiAd));
+        linye.SigortaAmper = linye.ManuelSigortaAmper ?? SigortaBoyutlandir(linye.AkimA, MinimumSigortaA(linye.YukTipiAd));
         // SigortaCinsi linye oluşturulurken yük tipinden atanır ve kullanıcı düzenleyebilir;
         // hesap sırasında korunur. KesmeKapasitesi anma akımına göre (≤63A sigorta / >63A TMŞ; kullanıcı
         // ≤63A'i TMŞ'ye zorlamış olabilir) taban değere ayarlanır; kısa devre hesabı çalışınca

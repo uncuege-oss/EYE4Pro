@@ -252,3 +252,9 @@ Son bilinen genel hedef:
 5. TMM değişikliği yapılıyorsa `TransferMatrixCalculator` ve ilgili TMM testlerini özellikle incele.
 6. Formülasyon riski varsa regresyon testi ekle veya mevcut M03 testlerini çalıştır.
 7. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Çok satırlı CSV malzeme adları korunuyor; duvar dosyaları atomik ve yedekli yazılıyor (A03–A04).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

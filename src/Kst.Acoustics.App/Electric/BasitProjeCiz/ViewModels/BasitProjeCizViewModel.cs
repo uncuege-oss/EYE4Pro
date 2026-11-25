@@ -28,7 +28,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     [ObservableProperty] private BasitProjeEleman? _seciliEleman;
     [ObservableProperty] private BpcArmatürTanim? _seciliArmatür;
     [ObservableProperty] private string? _projeDosyaYolu;
-    [ObservableProperty] private string _durumMesaji = "DXF yükleyerek başlayın.";
+    [ObservableProperty] private string _durumMesaji = "M50 bina geometrisini (.e4bina) yükleyerek başlayın.";
 
     // Sensör modu
     [ObservableProperty] private bool _sensörluMod;
@@ -41,10 +41,12 @@ public partial class BasitProjeCizViewModel : ObservableObject
     [ObservableProperty] private int    _komutatorDevreNo = 1;
     public bool KomutatorDevre1Mi => KomutatorDevreNo == 1;
     public bool KomutatorDevre2Mi => KomutatorDevreNo == 2;
+    public bool KomutatorDevre3Mi => KomutatorDevreNo == 3;
     partial void OnKomutatorDevreNoChanged(int value)
     {
         OnPropertyChanged(nameof(KomutatorDevre1Mi));
         OnPropertyChanged(nameof(KomutatorDevre2Mi));
+        OnPropertyChanged(nameof(KomutatorDevre3Mi));
     }
     [ObservableProperty] private bool   _bostakileriGosterAktif;
     [ObservableProperty] private bool   _kabloTavasiCizimAktif;
@@ -287,6 +289,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         OnPropertyChanged(nameof(ProjeKilitButonYazisi));
         OnPropertyChanged(nameof(ProjeKilitDurumu));
         OnPropertyChanged(nameof(ProjeDuzenlenebilir));
+        OnPropertyChanged(nameof(AsamaAraclariEtkin));
         if (value)
         {
             EditablePolygon = null;
@@ -504,7 +507,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     private static readonly Dictionary<string, int> AnahtarSira = Sira(
         "E4P_ANAHTAR", "E4P_KOMUTAT", "E4P_VAVIEN", "E4P_3LU_KOMUTAT", "E4P_DARBE", "E4P_SENSOR");
     private static readonly Dictionary<string, int> PanoSira = Sira(
-        "E4P_KAT_PANOSU", "E4P_TALI_PANO", "E4P_ANA_PANO", "E4P_OZEL_PANO", "E4P_BUAT", "E4P_YER_BUATI");
+        "E4P_ANA_PANO", "E4P_TALI_PANO", "E4P_ALT_PANO", "E4P_KAT_PANOSU", "E4P_OZEL_PANO", "E4P_BUAT", "E4P_YER_BUATI");
     private static readonly Dictionary<string, int> KlimaSira = Sira("E4P_KLIMA_IC", "E4P_KLIMA_DIS");
     private static readonly Dictionary<string, int> DataSira = Sira("E4P_DATA_PRIZ", "E4P_DATA_PRIZ_2", "E4P_DATA_RACK", "E4P_DATA_MERKEZ");
     private static readonly Dictionary<string, int> TvSira = Sira("E4P_TV_PRIZ", "E4P_FIBER_PRIZ", "E4P_TV_KDP", "E4P_TV_MERKEZ");
@@ -651,6 +654,8 @@ public partial class BasitProjeCizViewModel : ObservableObject
 
     partial void OnSeciliKatChanged(BasitProjeKat? value)
     {
+        if (AsamaliPaftaAktif) AsamaAraclariniSifirla();
+        OnPropertyChanged(nameof(AsamaAraclariEtkin));
         SeciliAciklikTemizle();
         OnPropertyChanged(nameof(Odalar));
         OnPropertyChanged(nameof(Elemanlar));
@@ -730,7 +735,6 @@ public partial class BasitProjeCizViewModel : ObservableObject
         OnPropertyChanged(nameof(GosterSeciliElemanTaliPanoBaglanti));
         OnPropertyChanged(nameof(TaliPanoOdaAdi));
         OnPropertyChanged(nameof(TaliPanoOtomatikCozumMetni));
-        OnPropertyChanged(nameof(SeciliTaliPanoHedefPano));
         PanoOdaSecenekleriDoldur();
         TaliPanoSecenekleriDoldur();
         GuncelleOdaVurgu(); // pano seçilince/bırakılınca bağlı oda vurgusunu güncelle
@@ -749,38 +753,33 @@ public partial class BasitProjeCizViewModel : ObservableObject
         var kat = Proje.Katlar.FirstOrDefault(k => k.Elemanlar.Contains(eleman));
         if (kat == null) return false;
         ElemanSnapshotAl(kat);
+        if (AsamaliPaftaAktif &&
+            eleman.OtomatikYerlesimKaynak == BasitProjeCizOtomatikYerlestirServisi.MahalListesiKaynak)
+        {
+            eleman.OtomatikYerlesimKaynak = "";
+            eleman.OtomatikYerlesimGrupIds?.Clear();
+        }
         return true;
     }
 
     // ── Kat panosu → bağlı oda seçimi (sağ panel) ─────────────────────────
-    // Tali pano kendi odasına örtük olarak hizmet eder; BagliOdaIds listesi gösterilmez.
     public bool GosterSeciliElemanPanoOdalari =>
-        SeciliEleman?.Tip == BpcElemanTipi.KatPanosu &&
-        !BasitProjeCizKabloServisi.PanoTaliMi(SeciliEleman);
+        SeciliEleman?.Tip == BpcElemanTipi.KatPanosu;
 
     // ── Tali pano → kat panosu bağlantısı (sağ panel) ──────────────────────
     public bool GosterSeciliElemanTaliPanoBaglanti =>
         SeciliEleman is { Tip: BpcElemanTipi.KatPanosu } el &&
-        BasitProjeCizKabloServisi.PanoTaliMi(el);
+        (BasitProjeCizKabloServisi.PanoTaliMi(el) || BasitProjeCizKabloServisi.PanoAltMi(el));
 
     public string TaliPanoOdaAdi
     {
         get
         {
             if (SeciliEleman is not { Tip: BpcElemanTipi.KatPanosu } tali) return "";
-            if (!BasitProjeCizKabloServisi.PanoTaliMi(tali)) return "";
             if (string.IsNullOrEmpty(tali.OdaId)) return "Oda belirlenmemiş";
             var oda = SeciliKat?.Odalar.FirstOrDefault(o => o.Id == tali.OdaId);
             return string.IsNullOrWhiteSpace(oda?.Ad) ? "Oda" : oda.Ad;
         }
-    }
-
-    private BasitProjeEleman? TaliPanoOtomatikHedefBul(BasitProjeEleman tali)
-    {
-        if (SeciliKat == null || string.IsNullOrEmpty(tali.OdaId)) return null;
-        return SeciliKat.Elemanlar.FirstOrDefault(e =>
-            BasitProjeCizKabloServisi.PanoKatMi(e) &&
-            e.BagliOdaIds.Contains(tali.OdaId));
     }
 
     public string TaliPanoOtomatikCozumMetni
@@ -788,12 +787,11 @@ public partial class BasitProjeCizViewModel : ObservableObject
         get
         {
             if (SeciliEleman is not { Tip: BpcElemanTipi.KatPanosu } tali) return "";
-            if (!BasitProjeCizKabloServisi.PanoTaliMi(tali)) return "";
             if (!string.IsNullOrEmpty(tali.TaliPanoHedefPanoId)) return "";
-            var otomatik = TaliPanoOtomatikHedefBul(tali);
+            var otomatik = SeciliKat == null ? null : UstPanoSecenekleri(tali, SeciliKat.Elemanlar).FirstOrDefault();
             return otomatik != null
-                ? $"Oda ataması üzerinden: {(string.IsNullOrWhiteSpace(otomatik.Ad) ? "Kat Panosu" : otomatik.Ad)}"
-                : "Oda henüz bir kat panosuna atanmamış.";
+                ? $"Otomatik üst pano: {otomatik.Ad}"
+                : "Bu katta uygun üst pano bulunmuyor.";
         }
     }
 
@@ -801,13 +799,19 @@ public partial class BasitProjeCizViewModel : ObservableObject
 
     private void TaliPanoSecenekleriDoldur()
     {
-        TaliPanoKatPanoSecenekleri.Clear();
-        if (SeciliKat == null) return;
-        foreach (var p in SeciliKat.Elemanlar
-                     .Where(e => e.Tip == BpcElemanTipi.KatPanosu &&
-                                  BasitProjeCizKabloServisi.PanoKatMi(e)))
-            TaliPanoKatPanoSecenekleri.Add(p);
+        _ustPanoSecenekleriGuncelleniyor = true;
+        try
+        {
+            TaliPanoKatPanoSecenekleri.Clear();
+            if (SeciliKat != null && GosterSeciliElemanTaliPanoBaglanti)
+                foreach (var p in UstPanoSecenekleri(SeciliEleman!, SeciliKat.Elemanlar))
+                    TaliPanoKatPanoSecenekleri.Add(p);
+            OnPropertyChanged(nameof(SeciliTaliPanoHedefPano));
+        }
+        finally { _ustPanoSecenekleriGuncelleniyor = false; }
     }
+
+    private bool _ustPanoSecenekleriGuncelleniyor;
 
     public BasitProjeEleman? SeciliTaliPanoHedefPano
     {
@@ -819,10 +823,18 @@ public partial class BasitProjeCizViewModel : ObservableObject
         }
         set
         {
-            if (SeciliEleman is not { Tip: BpcElemanTipi.KatPanosu } tali) return;
+            if (_ustPanoSecenekleriGuncelleniyor || SeciliEleman is not { Tip: BpcElemanTipi.KatPanosu } tali) return;
             var yeniId = value?.Id;
+            if (value != null && !TaliPanoKatPanoSecenekleri.Contains(value)) return;
             if (!ElemanDegisikligineBasla(tali, tali.TaliPanoHedefPanoId, yeniId, "tali pano hedefini değiştirmek")) return;
             tali.TaliPanoHedefPanoId = yeniId;
+            // Kullanıcı eski bir kat içi beslemenin üst panosunu açıkça değiştiriyor.
+            // 5. adımda rota yeniden kurulabilir; katlar arası tava hatları kendi işleminde düzenlenir.
+            if (SeciliKat is { } kat)
+                foreach (var hat in kat.PanoBeslemeHatlari.Where(h => h.TaliPanoId == tali.Id &&
+                    h.UygulamaTipi == BpcPanoBeslemeUygulamaTipi.Kablo &&
+                    h.AnaKatNo == kat.KatNo && h.TaliKatNo == kat.KatNo))
+                    hat.OtomatikKatIciBesleme = true;
             if (Proje.Katlar.Any(k => k.PanoBeslemeHatlari.Any(h => h.TaliPanoId == tali.Id)))
                 RotalarBayat = true;
             SeciliElemanDegisti();
@@ -855,13 +867,13 @@ public partial class BasitProjeCizViewModel : ObservableObject
         if (pano is { Tip: BpcElemanTipi.KatPanosu })
         {
             var panoKat = Proje.Katlar.FirstOrDefault(k => k.Elemanlar.Contains(pano));
-            var katlar = pano.KatArasiSecim
+            var katlar = pano.KatArasiSecim && !AydinlatmaAkisiAktif
                 ? Proje.Katlar.ToList()
                 : (panoKat != null ? new List<BasitProjeKat> { panoKat } : new());
 
             // Diğer panoların sahiplendiği odalar: odaId → pano adı
             var alinanOdalar = new Dictionary<string, string>();
-            foreach (var k in katlar)
+            foreach (var k in Katlar)
             {
                 foreach (var dp in k.Elemanlar.Where(e => e.Tip == BpcElemanTipi.KatPanosu && e.Id != pano.Id))
                 {
@@ -901,15 +913,8 @@ public partial class BasitProjeCizViewModel : ObservableObject
     private void PanoOdaSecimDegisti(BasitProjeEleman pano, string odaId, bool secili)
     {
         if (_panoOdaDolduruluyor) return;
-        bool eski = pano.BagliOdaIds.Contains(odaId);
-        if (!ElemanDegisikligineBasla(pano, eski, secili, "pano oda atamasını değiştirmek"))
-        {
-            PanoOdaSecenekleriDoldur();
-            return;
-        }
-        if (secili) { if (!pano.BagliOdaIds.Contains(odaId)) pano.BagliOdaIds.Add(odaId); }
-        else pano.BagliOdaIds.Remove(odaId);
-        SeciliElemanDegisti();
+        if (secili != pano.BagliOdaIds.Contains(odaId))
+            MahalePanoAta(odaId, secili ? pano.Id : null);
     }
 
     private void PanoIcinOdaSec(string odaId)
@@ -1053,7 +1058,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     public bool GosterSeciliElemanPanoAdi => SeciliEleman?.Tip == BpcElemanTipi.KatPanosu;
     public bool GosterSeciliElemanSaltOkunurAd => !GosterSeciliElemanOzelArmatur && !GosterSeciliElemanPanoAdi;
     
-    public bool GosterSeciliElemanBuatTuru => SeciliEleman?.Tip == BpcElemanTipi.Buat;
+    public bool GosterSeciliElemanBuatTuru => !AsamaliPaftaAktif && SeciliEleman?.Tip == BpcElemanTipi.Buat;
     public string[] BuatTurleri { get; } = [ "Aydınlatma Buatı", "Priz Buatı" ];
 
     public string? SeciliElemanBuatTuru
@@ -1065,7 +1070,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         }
         set
         {
-            if (SeciliEleman?.Tip == BpcElemanTipi.Buat && value != null)
+            if (!AsamaliPaftaAktif && SeciliEleman?.Tip == BpcElemanTipi.Buat && value != null)
             {
                 var yeniPafta = value == "Priz Buatı" ? BpcPaftaTipi.Priz : BpcPaftaTipi.Aydinlatma;
                 if (!ElemanDegisikligineBasla(SeciliEleman, SeciliEleman.PaftaTipi, yeniPafta)) return;
@@ -1103,7 +1108,14 @@ public partial class BasitProjeCizViewModel : ObservableObject
                 }
             }
 
-            if (BostakileriGosterAktif && SeciliKat != null)
+            if (BostakileriGosterAktif && PrizMahalKablosuAdimi && SeciliKat is { } prizKati)
+            {
+                var bagli = prizKati.PrizDevreleri.Where(d => d.BuatId != null).SelectMany(d => d.PrizElemanIds).ToHashSet();
+                foreach (var priz in prizKati.Elemanlar.Where(PrizTasarimServisi.MahaldeBaglananPriz))
+                    if (!bagli.Contains(priz.Id))
+                        result.Add(new Point3D(priz.X + prizKati.OriginOffset.X, priz.Y + prizKati.OriginOffset.Y, 0));
+            }
+            else if (BostakileriGosterAktif && !PrizAkisiAktif && SeciliKat != null)
             {
                 var kat = SeciliKat;
                 double ox = kat.OriginOffset.X, oy = kat.OriginOffset.Y;
@@ -1116,7 +1128,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
                     .Concat(kat.PrizDevreleri.Select(d => d.BuatId).Where(id => !string.IsNullOrEmpty(id)))
                     .ToHashSet();
 
-                foreach (var el in kat.Elemanlar)
+                foreach (var el in kat.Elemanlar.Where(ElemanAktifPaftadaMi))
                 {
                     bool isBos = false;
                     if (BasitProjeCizKabloServisi.ElemanArmaturMi(el.Tip) && !atananArmaturIds.Contains(el.Id))
@@ -1215,7 +1227,10 @@ public partial class BasitProjeCizViewModel : ObservableObject
     public void YeniProje()
     {
         UndoRedoYiginlariniTemizle();
+        CozKatlarAbonelikleri();
         Proje = new BasitProjeCizProje { ModulDisiplini = ModulModu };
+        BaglaKatlarAbonelikleri();
+        ProjeAsamasiniAc();
         OnPropertyChanged(nameof(Katlar));
         OnPropertyChanged(nameof(KatlarTersSira));
         SeciliKat = null;
@@ -1223,7 +1238,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         SeciliEleman = null;
         ProjeDosyaYolu = null;
         TemizIsaretle();
-        DurumMesaji = "Yeni proje oluşturuldu. DXF yükleyin.";
+        DurumMesaji = "Yeni proje oluşturuldu. M50 bina geometrisini (.e4bina) yükleyin.";
         Guncelle3DGorunum();
     }
 
@@ -1529,6 +1544,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         CozKatlarAbonelikleri();
         Proje = proje;
         BaglaKatlarAbonelikleri();
+        ProjeAsamasiniAc();
 
         // M12/M16 kabuk ayrımı: yüklenen proje bu modülün disiplininden farklı
         // elektrik içeriği taşıyorsa ayıklanır (geometri korunur). M16'nın eski
@@ -1631,12 +1647,21 @@ public partial class BasitProjeCizViewModel : ObservableObject
 
     public void BinaGeometrisiUygula(Kst.Acoustics.Core.Bina.Models.BinaGeometri geo, string? yol)
     {
+        bool ilkYukleme = Proje.Katlar.Count == 0;
         UndoRedoYiginlariniTemizle();
         CozKatlarAbonelikleri();
         var sonuc = Kst.Acoustics.Core.Electric.BasitProjeCiz.Services
             .BinaGeometriImportServisi.Uygula(Proje, geo, yol);
         BaglaKatlarAbonelikleri();
 
+        if (ilkYukleme && ModulKuvvetliMi)
+        {
+            Proje.AydinlatmaAsamasi = BpcAydinlatmaAsamasi.Pano;
+            Proje.PrizAsamasi = BpcPrizAsamasi.Priz;
+            Proje.SonTasarimPaftasi = BpcPaftaTipi.Aydinlatma;
+            ProjeAsamasiniAc();
+        }
+        Kirlet();
         OnPropertyChanged(nameof(Katlar));
         OnPropertyChanged(nameof(KatlarTersSira));
         SeciliKat = Proje.Katlar.FirstOrDefault();
@@ -1743,8 +1768,22 @@ public partial class BasitProjeCizViewModel : ObservableObject
     }
 
     public string KabloModuButonYazisi => KabloModuAktif ? "Kablo Modunu Kapat" : "Kablo Modu";
-    public bool   GosterKomutatorSecim => KabloModuDurumu == 1 &&
-                                          _seciliKabloAnahtari?.Tip == BpcElemanTipi.Komütatör;
+    public bool GosterKomutatorSecim => KabloModuDurumu == 1 && _seciliKabloAnahtari is { } anahtar &&
+                                       BasitProjeCizKabloServisi.MaxDevreNo(anahtar.Tip) > 1;
+    public bool GosterUcuncuDevre => _seciliKabloAnahtari?.Tip == BpcElemanTipi.UcluKomutator;
+
+    public void KumandaDevresiniSec(int numara)
+    {
+        if (!GosterKomutatorSecim || SeciliKat is not { } kat || _seciliKabloAnahtari is not { } anahtar ||
+            numara < 1 || numara > BasitProjeCizKabloServisi.MaxDevreNo(anahtar.Tip) || KilitliyseDur("devre seçmek")) return;
+        if (!kat.Devreler.Any(d => d.AnahtarElemanId == anahtar.Id && d.DevreNo == numara))
+            ElemanSnapshotAl(kat);
+        KomutatorDevreNo = numara;
+        _aktifDevre = BasitProjeCizKabloServisi.EnsureDevre(kat, anahtar.Id, numara);
+        SeciliDevreId = _aktifDevre.Id;
+        GuncelleKabloGorunum();
+        AdayArmaturleriVurgula(kat, anahtar);
+    }
 
     partial void OnKabloModuAktifChanged(bool value)   => OnPropertyChanged(nameof(KabloModuButonYazisi));
     partial void OnKabloModuDurumuChanged(int value)
@@ -2074,7 +2113,8 @@ public partial class BasitProjeCizViewModel : ObservableObject
         foreach (var hedefKat in Katlar)
         foreach (var tali in hedefKat.Elemanlar.Where(e => e.Tip == BpcElemanTipi.KatPanosu
                      && e.Id != anaPano.Id
-                     && !BasitProjeCizKabloServisi.PanoTaliMi(e)))
+                     && !BasitProjeCizKabloServisi.PanoTaliMi(e)
+                     && !BasitProjeCizKabloServisi.PanoAltMi(e)))
         {
             var parcalar = BeslemeKabloRotaParcalari(anaKat, anaPano, hedefKat, tali);
             if (parcalar.Count == 0) continue;
@@ -2376,6 +2416,11 @@ public partial class BasitProjeCizViewModel : ObservableObject
 
         if (KabloModuDurumu is 3 or 4)
         {
+            if (PrizPanoKablosuAdimi)
+            {
+                KabloAdimGosterge = KabloModuDurumu == 3 ? "Buat veya doğrudan priz → Atanmış pano" : "Kaynak seçildi → Atanmış pano";
+                return;
+            }
             KabloAdimGosterge = KabloModuDurumu == 3
                 ? "① Buat → ② Pano"
                 : "① Buat ✓ → ② Pano";
@@ -2383,6 +2428,11 @@ public partial class BasitProjeCizViewModel : ObservableObject
         }
         if (AktifPafta == BpcPaftaTipi.Priz)
         {
+            if (PrizMahalKablosuAdimi)
+            {
+                KabloAdimGosterge = _aktifPrizDevre == null ? "Priz buatı → Prizler" : $"Buat seçildi · {_aktifPrizDevre.PrizElemanIds.Count} priz";
+                return;
+            }
             KabloAdimGosterge = _aktifPrizDevre == null
                 ? "① Priz → ② Buat"
                 : $"① Priz ({_aktifPrizDevre.PrizElemanIds.Count}) → ② Buat {(string.IsNullOrEmpty(_aktifPrizDevre.BuatId) ? "" : "✓")}";
@@ -2418,6 +2468,10 @@ public partial class BasitProjeCizViewModel : ObservableObject
         var wallSlots = BasitProjeCizKabloServisi.HesaplaWallSlotlari(kat);
         int slot = wallSlots.TryGetValue(_aktifDevre.Id, out var s) ? s : 0;
         BasitProjeCizKabloServisi.RotaHesapla(kat, _aktifDevre, KabloRotaTipi, slot);
+        // Bir kumandanın ortak buat beslemesi yalnız birinci devrede çizilir.
+        if (_aktifDevre.DevreNo > 1 && kat.Devreler.FirstOrDefault(d =>
+                d.AnahtarElemanId == _aktifDevre.AnahtarElemanId && d.DevreNo == 1) is { } ortak)
+            BasitProjeCizKabloServisi.RotaHesapla(kat, ortak, KabloRotaTipi, wallSlots.GetValueOrDefault(ortak.Id));
         SeciliDevreId = _aktifDevre.Id;
         GuncelleKabloGorunum();
     }
@@ -2446,6 +2500,8 @@ public partial class BasitProjeCizViewModel : ObservableObject
         KabloModuMesaji = KabloAltMod == "BuatPano"
             ? "Panoya bağlanacak buata tıklayın."
             : KabloModuBaslangicMesaji(AktifPafta);
+        if (PrizMahalKablosuAdimi) KabloModuMesaji = "Mahaldeki priz buatını seçin.";
+        if (PrizPanoKablosuAdimi) KabloModuMesaji = "Priz buatını veya doğrudan beslenecek prizi seçin.";
         SeciliDevreId = null;
         AdimGostergeGuncelle();
         GuncelleKabloGorunum();
@@ -2457,6 +2513,18 @@ public partial class BasitProjeCizViewModel : ObservableObject
     public void KabloModuHattiBitir()
     {
         if (!KabloAktifHatVarMi) return;
+        if (MahalKabloAsamasinda || PanoKabloAsamasinda || PrizMahalKablosuAdimi || PrizPanoKablosuAdimi)
+        {
+            if (KabloModuDurumu == 4) { KabloModuMesaji = "Hattı tamamlamak için mahale atanan panoyu seçin."; return; }
+            if (KabloModuDurumu == 2) { KabloModuMesaji = "Vavien grubunu tamamlamak için ikinci anahtarı seçin."; return; }
+            // Her tıklama rotayı zaten çizdi. Enter yalnız geçerli düzenlemeyi bitirir.
+            var devreId = _aktifDevre?.Id ?? _aktifPrizDevre?.Id;
+            KabloModuHattiIptal();
+            SeciliDevreId = devreId;
+            GuncelleKabloGorunum();
+            DurumMesaji = "Hat tamamlandı.";
+            return;
+        }
         KabloRotaHesapla();
         AdayElemanPosList = null;
         AdimGostergeGuncelle();
@@ -2480,12 +2548,20 @@ public partial class BasitProjeCizViewModel : ObservableObject
         bool Icinde(BasitProjeEleman e) =>
             e.X >= minX && e.X <= maxX && e.Y >= minY && e.Y <= maxY;
 
+        if (PrizMahalKablosuAdimi)
+        {
+            PrizleriAktifBuataBagla(kat, kat.Elemanlar.Where(Icinde));
+            AdimGostergeGuncelle();
+            return;
+        }
+
         int eklenen = 0;
         if (_aktifDevre != null)
         {
             var atanan = kat.Devreler.SelectMany(d => d.ArmaturElemanIds).ToHashSet();
             var hedefler = kat.Elemanlar
                 .Where(e => BasitProjeCizKabloServisi.ElemanArmaturMi(e.Tip) &&
+                            (!MahalKabloAsamasinda || e.OdaId == _seciliKabloAnahtari?.OdaId) &&
                             !e.SensorKontrollu && !atanan.Contains(e.Id) && Icinde(e))
                 .ToList();
             if (hedefler.Count == 0) { KabloModuMesaji = "Bant içinde boş armatür yok."; return; }
@@ -2533,7 +2609,8 @@ public partial class BasitProjeCizViewModel : ObservableObject
         }
         double ox = kat.OriginOffset.X, oy = kat.OriginOffset.Y;
         bool anahtarBekle = KabloModuDurumu == 0 || KabloModuDurumu == 2;
-        var el = BulEnYakinEleman(kat, worldX - ox, worldY - oy, tolerans: 1.5, tercihAnahtar: anahtarBekle);
+        var el = PrizAkisiAktif ? PrizKabloHedefi(kat, worldX - ox, worldY - oy)
+            : BulEnYakinEleman(kat, worldX - ox, worldY - oy, tolerans: 1.5, tercihAnahtar: anahtarBekle);
         HoverElemanPos = el == null ? null : new Point3D(el.X + ox, el.Y + oy, 0);
     }
 
@@ -2549,6 +2626,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     public void KabloModuToggle()
     {
         if (KabloModuAktif) { KabloModuKapat(); return; }
+        if (PrizAkisiAktif && !PrizMahalKablosuAdimi && !PrizPanoKablosuAdimi) return;
         KabloModuAktif    = true;
         KabloModuDurumu   = 0;
         KabloModuMesaji   = KabloModuBaslangicMesaji(AktifPafta);
@@ -2563,6 +2641,13 @@ public partial class BasitProjeCizViewModel : ObservableObject
         _aktifSistemDevre    = null;
         EditablePolygon      = null; // Duvara yapışık elemanlar kablo modunda seçilebilsin
         KabloAltMod = VarsayilanAltMod(AktifPafta);
+        if (PrizMahalKablosuAdimi) KabloModuMesaji = "Önce priz buatını, sonra aynı mahaldeki prizleri seçin.";
+        if (PrizPanoKablosuAdimi)
+        {
+            KabloAltMod = "BuatPano";
+            KabloModuDurumu = 3;
+            KabloModuMesaji = "Priz buatını veya doğrudan beslenecek prizi, ardından atanmış panoyu seçin.";
+        }
         AdimGostergeGuncelle();
     }
 
@@ -2731,12 +2816,19 @@ public partial class BasitProjeCizViewModel : ObservableObject
         OnPropertyChanged(nameof(DedektorOtomatikMumkun));
     }
 
-    partial void OnAktifPaftaChanged(BpcPaftaTipi value)
+    partial void OnAktifPaftaChanged(BpcPaftaTipi oldValue, BpcPaftaTipi newValue)
     {
-        var tanim = BpcSistemKatalogu.Get(value);
+        if (ElemanEkleModu) ElemanEkleModIptal();
+        if (AsamaliPaftaAktif)
+        {
+            Proje.SonTasarimPaftasi = newValue;
+            AsamaAraclariniSifirla();
+        }
+        AsamaGorunumunuBildir();
+        var tanim = BpcSistemKatalogu.Get(newValue);
         // Disiplin ve seçili sistem tanımını senkron tut
         if (AktifDisiplin != tanim.Disiplin) AktifDisiplin = tanim.Disiplin;
-        if (AktifSistemTanim?.Sistem != value) AktifSistemTanim = tanim;
+        if (AktifSistemTanim?.Sistem != newValue) AktifSistemTanim = tanim;
 
         OnPropertyChanged(nameof(AydinlatmaAktif));
         OnPropertyChanged(nameof(PrizAktif));
@@ -2757,20 +2849,24 @@ public partial class BasitProjeCizViewModel : ObservableObject
         _aktifSistemDevre   = null;
         _buatPanoSeciliBuat = null;
         SeciliDevreId       = null;
-        if (value != BpcPaftaTipi.KabloTavasi && KabloTavasiCizimAktif)
+        if (newValue != BpcPaftaTipi.KabloTavasi && KabloTavasiCizimAktif)
             KabloTavasiCizIptal();
-        if (value != BpcPaftaTipi.Topraklama)
+        if (newValue != BpcPaftaTipi.Topraklama)
             TopraklamaModlariniKapat();
-        if ((value == BpcPaftaTipi.KabloTavasi || value == BpcPaftaTipi.Topraklama || value == BpcPaftaTipi.BusbarKablo) && KabloModuAktif)
+        if ((newValue == BpcPaftaTipi.KabloTavasi || newValue == BpcPaftaTipi.Topraklama || newValue == BpcPaftaTipi.BusbarKablo) && KabloModuAktif)
             KabloModuKapat();
         if (KabloModuAktif)
         {
             KabloModuDurumu = 0;
-            KabloModuMesaji = KabloModuBaslangicMesaji(value);
-            KabloAltMod = VarsayilanAltMod(value);
+            KabloModuMesaji = KabloModuBaslangicMesaji(newValue);
+            KabloAltMod = VarsayilanAltMod(newValue);
             AdayElemanPosList = null;
             AdimGostergeGuncelle();
         }
+        if (AsamaSigortaMi ||
+            (oldValue == BpcPaftaTipi.Priz && PrizAsamasi == BpcPrizAsamasi.Sigortalar) ||
+            (oldValue == BpcPaftaTipi.Aydinlatma && AydinlatmaAsamasi == BpcAydinlatmaAsamasi.Sigortalar))
+            GuncellePanoIcerik();
         Guncelle3DGorunum();
     }
 
@@ -2870,6 +2966,12 @@ public partial class BasitProjeCizViewModel : ObservableObject
                 foreach (var o in BasitProjeCizPanoServisi.MerkezOzetleri(kat, AktifPafta))
                     PanoOzetleri.Add(o);
             }
+            else if (AsamaSigortaMi)
+            {
+                var ozetler = BasitProjeCizPanoServisi.TasarimPanoOzetleri(Proje, Armatürler.Concat(Prizler), kayitliSigortalariKullan: true);
+                foreach (var o in ozetler.Where(o => kat.Elemanlar.Contains(o.Pano)))
+                    PanoOzetleri.Add(o);
+            }
             else
             {
                 // Kuvvetli akım: kat panosu içerikleri.
@@ -2877,7 +2979,10 @@ public partial class BasitProjeCizViewModel : ObservableObject
                 // priz P, mekanik M) birlikte taşır. Aktif pafta geçilirse diğer linyelerin
                 // sigortaları görünmez/kaybolur (ör. aydınlatma kablo modunda priz sigortaları).
                 var gucTanimlari = Armatürler.Concat(Prizler).Concat(Klimalar).ToList();
-                foreach (var o in BasitProjeCizPanoServisi.PanoOzetleri(kat, gucTanimlari, aktifPafta: null))
+                var ozetler = Katlar.Any(k => k.PanoBeslemeHatlari.Any(h => h.AnaKatNo != h.TaliKatNo))
+                    ? BasitProjeCizPanoServisi.ProjePanoOzetleri(Proje, gucTanimlari).Where(o => kat.Elemanlar.Contains(o.Pano))
+                    : BasitProjeCizPanoServisi.PanoOzetleri(kat, gucTanimlari);
+                foreach (var o in ozetler)
                     PanoOzetleri.Add(o);
             }
         }
@@ -2901,6 +3006,17 @@ public partial class BasitProjeCizViewModel : ObservableObject
         if (ProjeKilitli) { DurumMesaji = "Proje kilitli — kabloları yenilemek için önce kilidi açın."; return; }
 
         ElemanSnapshotAl(kat);
+
+        if (PrizAkisiAktif)
+        {
+            // Yenile yalnız mevcut priz rotalarını çizer. Mahale yeni bir devre veya pano atamaz.
+            BasitProjeCizKabloServisi.TumPrizRotalariniHesapla(kat);
+            var uyarilar = BasitProjeCizKabloServisi.BuatPanoRotalariniHesapla(kat, "P");
+            RotaUyarilariniGoster(uyarilar);
+            GuncelleKabloGorunum();
+            DurumMesaji = uyarilar.FirstOrDefault() ?? "Mevcut priz güzergâhları yenilendi.";
+            return;
+        }
 
         // Aydınlatma devreleri (duvar slotuyla daisy chain)
         var wallSlots = BasitProjeCizKabloServisi.HesaplaWallSlotlari(kat);
@@ -2933,6 +3049,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         var kat = SeciliKat;
         if (kat == null) return;
         if (KilitliyseDur("kablo rotası hesaplamak")) return;
+        if (PrizAkisiAktif) { TumKablolariYenidenHesapla(); return; }
         RotalarBayat = false;
 
         // Zayıf akım paftaları: tüm sistem rotalarını yeniden hesapla
@@ -3023,6 +3140,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     /// Mahal Modu'nda tıklanan oda içindeki boş armatürleri odanın anahtarlarına bağlar.
     public void MahalModuOdayaBagla(BasitProjeKat kat, string odaId)
     {
+        if (MahalKabloAsamasinda) { MahalAydinlatmaKablolariniCekIc(odaId); return; }
         if (KilitliyseDur("aydınlatma kablolamak")) return;
         var oda = kat.Odalar.FirstOrDefault(o => o.Id == odaId);
         if (oda == null) return;
@@ -3094,6 +3212,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     [RelayCommand]
     public void KatAydinlatmasiniOtomatikKablola()
     {
+        if (MahalKabloAsamasinda) { MahalAydinlatmaKablolariniCek(); return; }
         var kat = SeciliKat;
         if (kat == null) return;
         if (KilitliyseDur("aydınlatma kablolamak")) return;
@@ -3144,6 +3263,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     [RelayCommand]
     public void KatPrizleriniOtomatikKablola()
     {
+        if (PrizAkisiAktif) { PrizMahalKablolariniCek(); return; }
         var kat = SeciliKat;
         if (kat == null) return;
         if (KilitliyseDur("priz kablolamak")) return;
@@ -3166,7 +3286,6 @@ public partial class BasitProjeCizViewModel : ObservableObject
         if (oda == null) return;
         ElemanSnapshotAl(kat);
         BasitProjeCizKabloServisi.KatPrizleriniOtomatikKablola(kat, odaId);
-        OtomatikBuatPanoBaglantisiYap(kat);
         BasitProjeCizKabloServisi.TumPrizRotalariniHesapla(kat);
         GuncelleKabloGorunum();
         KabloModuMesaji = $"\"{oda.Ad}\" priz bağlantısı tamamlandı. Başka odaya tıklayın.";
@@ -3206,7 +3325,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         var gecisOdalari = kat.Odalar.Where(o => o.GecisSecili).Select(o => o.Id).ToList();
         var prefix = AktifPafta == BpcPaftaTipi.Priz ? "P" : "A";
         var baglanti = BasitProjeCizKabloServisi.BuatPanoBagla(kat, buat.Id, pano.Id, gecisOdalari, prefix);
-        RotaUyarilariniGoster(BasitProjeCizKabloServisi.BuatPanoRotalariniHesapla(kat));
+        RotaUyarilariniGoster(BasitProjeCizKabloServisi.BuatPanoRotalariniHesapla(kat, prefix));
         bool kabloCizildi = kat.Kablolar.Any(k =>
             k.Tip == BpcKabloTipi.PanoKablosu && k.DevreId == baglanti.Id && k.Rota.Count >= 2);
         SeciliDevreId = null;
@@ -3219,101 +3338,45 @@ public partial class BasitProjeCizViewModel : ObservableObject
             : "Bağlantı kaydedildi; kablo çizilemedi. Geçiş odalarını kontrol edin.";
     }
 
-    /// Kat içi pano besleme hiyerarşisi (kullanıcı kuralı):
-    ///   • Tali panolar (E4P_TALI_PANO) → en yakın kat panosu (E4P_KAT_PANOSU),
-    ///   • Kat panoları → aynı kattaki ana pano (E4P_ANA_PANO) varsa ona.
-    /// Katlar arası kat→ana besleme ayrıca BeslemeHatlariniHesapla ile (kablo tavası
-    /// üzerinden) kurulur; bu metot kat içi otomatik bağlamayı tamamlar.
+    /// Alt → tali → (varsa kat) → ana beslemelerini kurar. Kablo tavası
+    /// üzerinden veya önceki projede belirlenmiş üst pano bağlantısını korur.
     private void TaliPanolariAnaPanoyaBagla(BasitProjeKat kat, List<BasitProjeEleman> katPanolari)
     {
-        if (katPanolari.Count < 2) return;
-
-        var taliPanolar = katPanolari.Where(BasitProjeCizKabloServisi.PanoTaliMi).ToList();
-        var katPanolar  = katPanolari.Where(BasitProjeCizKabloServisi.PanoKatMi).ToList();
-        var anaPanolar  = katPanolari.Where(BasitProjeCizKabloServisi.PanoAnaMi).ToList();
-
-        // Kat panosu rolü hiç işaretlenmemişse (eski projeler: tüm panolar aynı blok),
-        // seçili ana besleme panosu veya oda dışı panoyu kat panosu kabul et.
-        if (katPanolar.Count == 0)
-        {
-            if (SeciliAnaBeslemePanosu is { } sec && katPanolari.FirstOrDefault(p => p.Id == sec.Id) is { } secP)
-                katPanolar.Add(secP);
-            else
-                katPanolar.AddRange(katPanolari.Where(p => string.IsNullOrEmpty(p.OdaId)));
-            if (katPanolar.Count == 0) katPanolar.Add(katPanolari[0]);
-        }
-
-        // Bu metodun ürettiği kat-içi besleme hatlarını (her iki uç bu kattaki panolar)
-        // temizle ki hedef değişiklikleri (TaliPanoHedefPanoId / oda ataması) yansısın
-        // ve tekrar çalıştırınca çift hat oluşmasın. Katlar arası kablo tavası
-        // beslemeleri (TaliKatNo != AnaKatNo) korunur.
-        var katPanoIdSet = new HashSet<string>(katPanolari.Select(p => p.Id));
-        kat.PanoBeslemeHatlari.RemoveAll(h =>
-            h.UygulamaTipi == BpcPanoBeslemeUygulamaTipi.Kablo &&
-            h.AnaKatNo == kat.KatNo && h.TaliKatNo == kat.KatNo &&
-            katPanoIdSet.Contains(h.TaliPanoId) && katPanoIdSet.Contains(h.AnaPanoId));
-
         var gecisOdalari = kat.Odalar.Where(o => o.GecisSecili).Select(o => o.Id).ToList();
-        int sira = kat.PanoBeslemeHatlari.Count(h => h.UygulamaTipi == BpcPanoBeslemeUygulamaTipi.Kablo);
-
-        BasitProjeEleman? EnYakin(IEnumerable<BasitProjeEleman> adaylar, BasitProjeEleman kaynak)
-            => adaylar.Where(a => a.Id != kaynak.Id)
-                      .OrderBy(a => { double dx = a.X - kaynak.X, dy = a.Y - kaynak.Y; return dx * dx + dy * dy; })
-                      .FirstOrDefault();
-
-        // Tali panonun bağlanacağı kat panosu: 1) kullanıcının açık seçimi
-        // (TaliPanoHedefPanoId), 2) tali odasının atandığı kat panosu (BagliOdaIds),
-        // 3) en yakın kat panosu (yoksa ana pano). "Tali pano → kat panosu" kuralı.
-        BasitProjeEleman? TaliHedef(BasitProjeEleman tali)
+        var mevcutBeslemeler = Katlar.SelectMany(k => k.PanoBeslemeHatlari).Where(h => !h.OtomatikKatIciBesleme)
+            .Select(h => h.TaliPanoId).ToHashSet();
+        var gecerliHatIds = new HashSet<string>();
+        var etiketler = kat.PanoBeslemeHatlari.Select(h => h.Etiket).ToHashSet();
+        int sira = 0;
+        foreach (var alt in katPanolari)
         {
-            if (!string.IsNullOrEmpty(tali.TaliPanoHedefPanoId))
-            {
-                var sec = katPanolar.FirstOrDefault(p => p.Id == tali.TaliPanoHedefPanoId);
-                if (sec != null) return sec;
-            }
-            if (!string.IsNullOrEmpty(tali.OdaId))
-            {
-                var atanmis = katPanolar.FirstOrDefault(p => p.BagliOdaIds.Contains(tali.OdaId!));
-                if (atanmis != null) return atanmis;
-            }
-            return EnYakin(katPanolar, tali) ?? EnYakin(anaPanolar, tali);
-        }
-
-        void HatEkle(BasitProjeEleman alt, BasitProjeEleman ust)
-        {
-            if (alt.Id == ust.Id) return;
-            if (kat.PanoBeslemeHatlari.Any(h => h.TaliPanoId == alt.Id && h.AnaPanoId == ust.Id)) return;
+            if (BasitProjeCizKabloServisi.PanoAnaMi(alt) || mevcutBeslemeler.Contains(alt.Id)) continue;
+            var adaylar = UstPanoSecenekleri(alt, katPanolari).ToList();
+            var ust = string.IsNullOrEmpty(alt.TaliPanoHedefPanoId)
+                ? adaylar.FirstOrDefault()
+                : adaylar.FirstOrDefault(p => p.Id == alt.TaliPanoHedefPanoId);
+            if (ust == null) continue;
             var rota = BasitProjeCizKabloServisi.PanoBeslemeRota(kat, alt, ust, gecisOdalari);
-            if (rota.Count < 2)
-                return;
-            kat.PanoBeslemeHatlari.Add(new BpcPanoBeslemeHatti
-            {
-                AnaPanoId = ust.Id,
-                TaliPanoId = alt.Id,
-                AnaKatNo = kat.KatNo,
-                TaliKatNo = kat.KatNo,
-                UygulamaTipi = BpcPanoBeslemeUygulamaTipi.Kablo,
-                Rota = rota,
-                Etiket = $"BK{++sira}"
-            });
-        }
+            if (rota.Count < 2) continue;
 
-        // Tali pano → hedef kat panosu (kural: tali pano kat panosuna gider)
-        foreach (var tali in taliPanolar)
-        {
-            var ust = TaliHedef(tali);
-            if (ust != null) HatEkle(tali, ust);
-        }
-
-        // Kat panosu → aynı kattaki ana pano (varsa)
-        if (anaPanolar.Count > 0)
-        {
-            foreach (var kp in katPanolar)
+            var hat = kat.PanoBeslemeHatlari.FirstOrDefault(h =>
+                h.OtomatikKatIciBesleme && h.TaliPanoId == alt.Id && h.AnaPanoId == ust.Id);
+            if (hat == null)
             {
-                var ana = EnYakin(anaPanolar, kp);
-                if (ana != null) HatEkle(kp, ana);
+                string etiket;
+                do { etiket = $"BK{++sira}"; } while (!etiketler.Add(etiket));
+                hat = new BpcPanoBeslemeHatti
+                {
+                    AnaPanoId = ust.Id, TaliPanoId = alt.Id,
+                    AnaKatNo = kat.KatNo, TaliKatNo = kat.KatNo,
+                    OtomatikKatIciBesleme = true, Etiket = etiket
+                };
+                kat.PanoBeslemeHatlari.Add(hat);
             }
+            hat.Rota = rota;
+            gecerliHatIds.Add(hat.Id);
         }
+        kat.PanoBeslemeHatlari.RemoveAll(h => h.OtomatikKatIciBesleme && !gecerliHatIds.Contains(h.Id));
     }
 
     /// Mevcut devrelerin ve priz devrelerinin buatlarını en yakın kat panosuna bağlar;
@@ -3363,6 +3426,9 @@ public partial class BasitProjeCizViewModel : ObservableObject
     [RelayCommand]
     public void BosUclariEnYakinPanoyaBagla()
     {
+        if (PrizAkisiAktif) { PrizPanoKablolariniCek(); return; }
+        if (PanoKabloAsamasinda) { AtanmisPanolaraKabloCek(); return; }
+        if (MahalKabloAsamasinda) { MahalAydinlatmaKablolariniCek(); return; }
         var kat = SeciliKat;
         if (kat == null) return;
         if (KilitliyseDur("boş uçları bağlamak")) return;
@@ -3558,6 +3624,13 @@ public partial class BasitProjeCizViewModel : ObservableObject
         var kat = SeciliKat;
         if (kat == null) return;
         if (KilitliyseDur("kablo silmek")) return;
+        if (MahalKabloAsamasinda || PanoKabloAsamasinda || PrizAkisiAktif)
+        {
+            if (SeciliDevreId == null && MahalKabloAsamasinda) SeciliDevreId = _aktifDevre?.Id;
+            if (SeciliDevreId == null) { DurumMesaji = "Önce bu adımdaki bir hattı seçin."; return; }
+            KabloSeciliDevreyiSil();
+            return;
+        }
 
         // Priz paftası: aktif priz devresini temizle
         if (AktifPafta == BpcPaftaTipi.Priz && _aktifPrizDevre != null)
@@ -3719,6 +3792,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
     {
         var kat = SeciliKat;
         if (kat == null || SeciliDevreId == null) return;
+        if (!DevreAsamadaDuzenlenebilir(kat, SeciliDevreId)) return;
         if (KilitliyseDur("kablo silmek")) return;
         ElemanSnapshotAl(kat);
         var sid = SeciliDevreId;
@@ -3761,7 +3835,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
             if (_aktifDevre?.Id == sid) { _aktifDevre = null; KabloModuDurumu = 0; KabloModuMesaji = KabloModuAktif ? "Anahtara tıklayın" : ""; }
         }
 
-        BasitProjeCizKabloServisi.PanoKablolariniNumaralandir(kat);
+        BasitProjeCizKabloServisi.PanoKablolariniNumaralandir(kat, PrizAkisiAktif ? "P" : null);
         SeciliDevreId = null;
         GuncelleKabloGorunum();
         DurumMesaji = "Seçili hat silindi.";
@@ -3778,7 +3852,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         // İnce çizgiyi yakalamak zordu (0.5 m); tolerans 0.8 m'ye çıkarıldı —
         // en yakın hat seçildiği için komşu hatlar arasında yanlış seçim üretmez.
         double  minD      = 0.8;
-        foreach (var kablo in kat.Kablolar.Where(k => KabloAktifPaftadaMi(kat, k)))
+        foreach (var kablo in kat.Kablolar.Where(k => KabloAktifPaftadaMi(kat, k) && DevreAsamadaDuzenlenebilir(kat, k.DevreId)))
         {
             for (int i = 0; i < kablo.Rota.Count - 1; i++)
             {
@@ -3879,6 +3953,12 @@ public partial class BasitProjeCizViewModel : ObservableObject
         double ox = kat.OriginOffset.X, oy = kat.OriginOffset.Y;
         double lx = worldX - ox, ly = worldY - oy;
 
+        if (PrizAkisiAktif)
+        {
+            if (PrizMahalKablosuAdimi || PrizPanoKablosuAdimi) PrizAsamasiNoktaSec(kat, lx, ly);
+            return true;
+        }
+
         // Mekanik paftası: direkt Klima -> Pano
         if (AktifPafta == BpcPaftaTipi.Mekanik)
             return MekanikKabloModuTiklama(kat, lx, ly, worldX, worldY);
@@ -3927,9 +4007,28 @@ public partial class BasitProjeCizViewModel : ObservableObject
         bool snapAlindi = false;
         void Snap() { if (!snapAlindi) { ElemanSnapshotAl(kat); snapAlindi = true; } }
 
+        if (MahalKabloAsamasinda && (eleman.Tip == BpcElemanTipi.KatPanosu ||
+            (KabloModuDurumu == 0 && eleman.Tip == BpcElemanTipi.Buat)))
+        {
+            KabloModuMesaji = "Mahal içi hat için önce anahtarı, ardından armatürleri ve buatı seçin.";
+            return true;
+        }
+        if (PanoKabloAsamasinda && KabloModuDurumu < 3)
+        {
+            KabloModuDurumu = 3;
+            _buatPanoSeciliBuat = null;
+        }
+        if (MahalKabloAsamasinda && KabloModuDurumu == 1 && _seciliKabloAnahtari != null &&
+            (BasitProjeCizKabloServisi.ElemanArmaturMi(eleman.Tip) || eleman.Tip == BpcElemanTipi.Buat) &&
+            eleman.OdaId != _seciliKabloAnahtari.OdaId)
+        {
+            KabloModuMesaji = "Aynı mahaldeki armatürü veya buatı seçin.";
+            return true;
+        }
+
         if (KabloModuDurumu == 3) // Buat bekleniyor
         {
-            if (eleman.Tip != BpcElemanTipi.Buat)
+            if (eleman.Tip != BpcElemanTipi.Buat || (PanoKabloAsamasinda && eleman.PaftaTipi != BpcPaftaTipi.Aydinlatma))
             {
                 KabloModuMesaji = "Lütfen panoya bağlanacak buata tıklayın.";
                 return true;
@@ -3950,6 +4049,12 @@ public partial class BasitProjeCizViewModel : ObservableObject
                 return true;
             }
             if (_buatPanoSeciliBuat == null) { KabloModuDurumu = 3; KabloModuMesaji = "Önce buata tıklayın."; return true; }
+            if (PanoKabloAsamasinda &&
+                BasitProjeCizKabloServisi.MahaleAtananPano(_buatPanoSeciliBuat.OdaId, kat.Elemanlar)?.Id != eleman.Id)
+            {
+                KabloModuMesaji = "Mahal için atanmış panoyu seçin. Atamayı değiştirmek için pano adımında mahale sağ tıklayın.";
+                return true;
+            }
             Snap();
             BuatPanosuBagla(kat, _buatPanoSeciliBuat, eleman);
             _buatPanoSeciliBuat = null;
@@ -3991,6 +4096,8 @@ public partial class BasitProjeCizViewModel : ObservableObject
             if (!BasitProjeCizKabloServisi.ElemanAnahtarMi(eleman.Tip)) { KabloModuMesaji = "Anahtara veya sensöre tıklayın."; return true; }
 
             _seciliKabloAnahtari = eleman;
+            KomutatorDevreNo = 1;
+            OnPropertyChanged(nameof(GosterUcuncuDevre));
             OnPropertyChanged(nameof(GosterKomutatorSecim));
 
             if (eleman.Tip == BpcElemanTipi.Vavien)
@@ -4003,11 +4110,13 @@ public partial class BasitProjeCizViewModel : ObservableObject
                     return true;
                 }
                 // Grup zaten var, devre hazır
+                if (!kat.Devreler.Any(d => d.Id == grup.DevreId)) Snap();
                 _aktifDevre = kat.Devreler.FirstOrDefault(d => d.Id == grup.DevreId)
                               ?? BasitProjeCizKabloServisi.EnsureDevre(kat, eleman.Id);
             }
             else
             {
+                if (!kat.Devreler.Any(d => d.AnahtarElemanId == eleman.Id && d.DevreNo == KomutatorDevreNo)) Snap();
                 _aktifDevre = BasitProjeCizKabloServisi.EnsureDevre(kat, eleman.Id, KomutatorDevreNo);
             }
 
@@ -4063,13 +4172,16 @@ public partial class BasitProjeCizViewModel : ObservableObject
                 return true;
             }
 
-            if (eleman.Tip != BpcElemanTipi.Armatür)
+            if (!BasitProjeCizKabloServisi.ElemanArmaturMi(eleman.Tip))
             {
                 // Başka bir anahtar seçildi → o anahtara geçiş
                 if (BasitProjeCizKabloServisi.ElemanAnahtarMi(eleman.Tip))
                 {
                     _seciliKabloAnahtari = eleman;
+                    KomutatorDevreNo = 1;
+                    OnPropertyChanged(nameof(GosterUcuncuDevre));
                     OnPropertyChanged(nameof(GosterKomutatorSecim));
+                    if (!kat.Devreler.Any(d => d.AnahtarElemanId == eleman.Id && d.DevreNo == KomutatorDevreNo)) Snap();
                     _aktifDevre = BasitProjeCizKabloServisi.EnsureDevre(kat, eleman.Id, KomutatorDevreNo);
                     AdayArmaturleriVurgula(kat, eleman);
                     if (_aktifDevre.ArmaturElemanIds.Count > 0) AktifDevreRotasiniCiz(kat);
@@ -4475,6 +4587,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
 
     public void GuncelleKabloGorunum()
     {
+        if (BostakileriGosterAktif) GuncelleElemanVurgu();
         var kat = SeciliKat;
         if (kat != null)
         {
@@ -4529,6 +4642,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         foreach (var d in kat.Devreler)
         {
             string buat = string.IsNullOrEmpty(d.BuatId) ? "buat yok" : $"buat: {Ad(d.BuatId)}";
+            if (!DevreAsamadaDuzenlenebilir(kat, d.Id)) continue;
             DevreOzetleri.Add(new DevreOzetSatiri(
                 d.Id, "💡",
                 $"{Ad(d.AnahtarElemanId)}{(d.DevreNo > 1 ? $" · D{d.DevreNo}" : "")}",
@@ -4538,6 +4652,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         foreach (var d in kat.PrizDevreleri)
         {
             string buat = string.IsNullOrEmpty(d.BuatId) ? "buat yok" : $"buat: {Ad(d.BuatId)}";
+            if (!DevreAsamadaDuzenlenebilir(kat, d.Id)) continue;
             DevreOzetleri.Add(new DevreOzetSatiri(
                 d.Id, "🔌", "Priz hattı",
                 $"{d.PrizElemanIds.Count} priz · {buat} · {DevreUzunluk(d.Id):0.#} m",
@@ -4545,6 +4660,7 @@ public partial class BasitProjeCizViewModel : ObservableObject
         }
         foreach (var b in kat.BuatPanoBaglantilari)
         {
+            if (!DevreAsamadaDuzenlenebilir(kat, b.Id)) continue;
             DevreOzetleri.Add(new DevreOzetSatiri(
                 b.Id, "▦", $"{b.LinyePrefix} linyesi → {Ad(b.PanoId)}",
                 $"{Ad(b.BuatId)} → {Ad(b.PanoId)} · {DevreUzunluk(b.Id):0.#} m",

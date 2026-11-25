@@ -202,3 +202,9 @@ Son bilinen durum (2026-08-07):
 4. Değişiklikleri mümkün olduğunca dar kapsamlı tut.
 5. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
 6. Uygunsa build ve ilgili testleri çalıştır.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Alıcı ızgarası sınır dışına taşmayacak şekilde hesaplanıyor; eski kayıtlı haritaların okunması korunuyor (A01).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

@@ -12,6 +12,7 @@ public partial class PanoDuzenleDialog : Window
     private readonly TekHatSemasiViewModel _vm;
     private readonly Pano _pano;
     private bool _govdeUiYukleniyor;
+    private readonly bool _panoTipiDegistirilebilir = true;
 
     public PanoDuzenleDialog() { InitializeComponent(); _vm = null!; _pano = null!; }
 
@@ -38,8 +39,22 @@ public partial class PanoDuzenleDialog : Window
             PanoTipi.Kompanzasyon => 3,
             PanoTipi.KontrolPanosu => 4,
             PanoTipi.YanginPanosu => 5,
+            PanoTipi.UpsPanosu => 6,
+            PanoTipi.TransferPanosu => 7,
             _ => 0
         };
+        if (pano.PanoTipi is PanoTipi.UpsPanosu or PanoTipi.TransferPanosu)
+        {
+            _panoTipiDegistirilebilir = false;
+            TipCombo.IsEnabled = false;
+        }
+        if (pano.PanoTipi == PanoTipi.AnaPano)
+        {
+            AdBox.Text = "Ana Pano";
+            AdBox.IsEnabled = false;
+            TipCombo.IsEnabled = false;
+            _panoTipiDegistirilebilir = false;
+        }
         SayacliCheck.IsChecked = pano.AydinlatmaSayacli;
         SayacliCheck.IsVisible = pano.PanoTipi == PanoTipi.AydinlatmaPanosu;
 
@@ -143,19 +158,40 @@ public partial class PanoDuzenleDialog : Window
 
     private void Kaydet_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        // Ad değişikliği: çocuk/busbar/jeneratör/UPS referanslarını da güncelle (kopmayı önler)
-        if (!string.IsNullOrWhiteSpace(AdBox.Text))
-            _vm.PanoyuYenidenAdlandir(_pano, AdBox.Text.Trim());
-        if (KatCombo.SelectedItem is string k) _pano.Kat = k;
-        _pano.PanoTipi = TipCombo.SelectedIndex switch
+        var secilenTip = TipCombo.SelectedIndex switch
         {
             1 => PanoTipi.AnaPano,
             2 => PanoTipi.AydinlatmaPanosu,
             3 => PanoTipi.Kompanzasyon,
             4 => PanoTipi.KontrolPanosu,
             5 => PanoTipi.YanginPanosu,
+            6 => PanoTipi.UpsPanosu,
+            7 => PanoTipi.TransferPanosu,
             _ => PanoTipi.TaliPano
         };
+        if (!_panoTipiDegistirilebilir)
+            secilenTip = _pano.PanoTipi;
+
+        if (secilenTip == PanoTipi.AnaPano && _pano.PanoTipi != PanoTipi.AnaPano &&
+            _vm.Proje.TumPanolar.Any(p => p != _pano && p.PanoTipi == PanoTipi.AnaPano))
+        {
+            BaslikText.Text = "⚠ Projede yalnızca 1 adet Ana Pano olabilir.";
+            return;
+        }
+
+        var yeniAd = secilenTip == PanoTipi.AnaPano ? "Ana Pano" : AdBox.Text?.Trim() ?? "";
+        if (!_vm.PanoAdiKullanilabilir(yeniAd, _pano))
+        {
+            BaslikText.Text = string.IsNullOrWhiteSpace(yeniAd)
+                ? "⚠ Pano adı boş olamaz."
+                : $"⚠ '{yeniAd}' adlı pano zaten var.";
+            return;
+        }
+
+        // Ad değişikliği: çocuk/busbar/jeneratör/UPS referanslarını da güncelle (kopmayı önler)
+        _vm.PanoyuYenidenAdlandir(_pano, yeniAd);
+        if (KatCombo.SelectedItem is string k) _pano.Kat = k;
+        _vm.PanoTipiniDegistir(_pano, secilenTip);
         if (_pano.PanoTipi == PanoTipi.KontrolPanosu)
         {
             _pano.UstPano?.AltPanolar.Remove(_pano);

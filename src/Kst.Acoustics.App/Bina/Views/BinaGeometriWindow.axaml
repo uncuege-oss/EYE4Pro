@@ -137,7 +137,7 @@
                                Foreground="#D8EEFA"
                                FontSize="20"
                                FontWeight="SemiBold"/>
-                    <TextBlock Text="DXF kat planı içe aktarma, oda tespiti, açıklık yönetimi ve geometri kaydetme"
+                    <TextBlock Text="DWG/DXF mimari projeden kat, oda ve açıklık oluşturma"
                                Foreground="#5A8CA8"
                                FontSize="12"/>
                 </StackPanel>
@@ -213,8 +213,13 @@
                          listenin sonuna (taban tarafına) eklenir; "↑ Katı yukarı taşı" ile
                          yukarı konumlandırılabilir. -->
                     <Grid Grid.Row="1" RowDefinitions="Auto,*,Auto">
+                        <StackPanel Grid.Row="0" Margin="8,0,8,16" Spacing="4">
+                            <Button Classes="accent" HorizontalAlignment="Stretch" Click="DxfYukle_OnClick" Content="Mimari Proje Yükle…"/>
+                            <Button Classes="headerAction" HorizontalAlignment="Stretch" Click="IceriAktarimRaporu_OnClick" Content="İçe Aktarma Raporu"/>
+                        </StackPanel>
                         <TextBlock Grid.Row="0"
                                    Text="▲ Üst"
+                                   VerticalAlignment="Bottom"
                                    Foreground="#4A7898"
                                    FontSize="10"
                                    Padding="10,4,10,2"/>
@@ -308,6 +313,13 @@
                                                    Margin="0,0,2,0"/>
                                     </Grid>
 
+                                    <Grid ColumnDefinitions="60,*" ColumnSpacing="6">
+                                        <TextBlock Classes="fieldLabel" Text="Taban kotu"/>
+                                        <TextBox Grid.Column="1" Classes="fieldInput" x:Name="KatTabanKotuText"
+                                                 PlaceholderText="Otomatik istifle"
+                                                 LostFocus="KatTabanKotu_LostFocus"
+                                                 ToolTip.Tip="Metre. Boş bırakılırsa alt katın üzerine istiflenir."/>
+                                    </Grid>
                                     <!-- DXF dosyası -->
                                     <Grid ColumnDefinitions="60,*" ColumnSpacing="6">
                                         <TextBlock Classes="fieldLabel" Text="DXF"/>
@@ -319,7 +331,7 @@
                                                 FontSize="11"
                                                 Padding="6,4"
                                                 HorizontalAlignment="Stretch"
-                                                Content="DXF Kat Planı Yükle…"/>
+                                                 Content="DWG/DXF Planı Yükle…"/>
                                     </Grid>
 
                                     <!-- DXF dosya adı (kısa) -->
@@ -707,9 +719,36 @@
                             BorderBrush="#132A3C"
                             BorderThickness="0,1,0,0"
                             Padding="12,8">
-                        <TextBlock Foreground="#6C9CB8" FontSize="11"
-                                   TextWrapping="Wrap"
-                                   Text="Listeden bir odaya tıklayın → planda seçilir. Oda adını üstteki araç çubuğundan değiştirebilirsiniz."/>
+                        <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="8">
+                                <TextBlock Foreground="#6C9CB8" FontSize="11" TextWrapping="Wrap"
+                                           Text="Listeden bir odaya tıklayın. Oda adını üstteki araç çubuğundan değiştirebilirsiniz."/>
+                                <StackPanel IsVisible="{Binding OdaSecili}" Spacing="7">
+                                    <TextBlock Classes="panelTitle" Text="SEÇİLİ ODA"/>
+                                    <Grid ColumnDefinitions="*,82" ColumnSpacing="6">
+                                        <TextBlock Classes="fieldLabel" Text="Taban kotu (m)"/>
+                                        <TextBox Grid.Column="1" Classes="fieldInput" x:Name="OdaTabanKotuText"
+                                                 PlaceholderText="Kat kotu" GotFocus="OdaOlcu_GotFocus"
+                                                 LostFocus="OdaTabanKotu_LostFocus" KeyDown="OdaTabanKotu_KeyDown"
+                                                 ToolTip.Tip="Mutlak proje kotu. Boş bırakılırsa kat taban kotu kullanılır."/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,82" ColumnSpacing="6">
+                                        <TextBlock Classes="fieldLabel" Text="Yükseklik (m)"/>
+                                        <TextBox Grid.Column="1" Classes="fieldInput" x:Name="OdaYukseklikText"
+                                                 PlaceholderText="Kat yüksekliği" GotFocus="OdaOlcu_GotFocus"
+                                                 LostFocus="OdaYukseklik_LostFocus" KeyDown="OdaYukseklik_KeyDown"
+                                                 ToolTip.Tip="Odanın net yüksekliği. Boş bırakılırsa kat yüksekliği kullanılır."/>
+                                    </Grid>
+                                    <TextBlock Foreground="#6C9CB8" FontSize="10" TextWrapping="Wrap"
+                                               Text="Boş alanlar kat değerini kullanır."/>
+                                    <TextBlock Text="Çizimdeki mahal adları" Foreground="#8FB8D0" FontSize="11"/>
+                                    <TextBlock x:Name="OdaKaynakAdlariText" Foreground="#C8E4F4" FontSize="11"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="OdaCokluAdIpucu" Foreground="#9CA890" FontSize="10" TextWrapping="Wrap"
+                                               Text="Birden fazla ad, aynı açık alanın farklı kullanımları olabilir; ayrı duvar anlamına gelmez."/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Border>
 
                 </Grid>

@@ -6,7 +6,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0D1117"
-        Title="Eye4Pro Terrain - Modül Merkezi">
+        Title="Eye4Pro Arazi - Modül Merkezi">
 
     <Window.Styles>
         <Style Selector="Button.moduleAction">
@@ -46,7 +46,7 @@
                 </LinearGradientBrush>
             </Border.Background>
             <StackPanel Spacing="3">
-                <TextBlock Text="EYE4PRO TERRAIN" Foreground="#7BD3A0" FontSize="20" FontWeight="Bold"/>
+                <TextBlock Text="EYE4PRO ARAZİ" Foreground="#7BD3A0" FontSize="20" FontWeight="Bold"/>
                 <TextBlock Text="Arazi, topografya ve hafriyat modülleri" Foreground="#6FB78E" FontSize="12"/>
             </StackPanel>
         </Border>

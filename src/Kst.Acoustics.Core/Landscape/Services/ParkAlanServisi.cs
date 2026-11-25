@@ -44,9 +44,11 @@ public static class ParkAlanServisi
         // Dışlama yoksa tüm park kullanılabilir.
         if (dislamaPoligonlari.Count == 0)
         {
+            var disSinir = parkPoligon.ToList();
+            if (ClipperAdaptor.IsaretliAlan(disSinir) < 0) disSinir.Reverse();
             return new KullanilabilirAlanSonucu
             {
-                Halkalar = new() { parkPoligon.ToList() },
+                Halkalar = new() { disSinir },
                 ToplamParkM2 = toplamPark,
                 DislananM2 = 0,
                 KullanilabilirM2 = toplamPark

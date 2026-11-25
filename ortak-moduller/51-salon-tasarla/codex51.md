@@ -1,12 +1,10 @@
 # CODEX 51 — Salon Tasarla (Ortak Modül)
 
-> **Durum:** MVP + P0 + P1 + P2 + açıklıklar + profesyonel çizim paketi tamamlandı — Faz 0-17
-> bitti (serbest çizim + 2D→3D + sahne + kademeli seyirci + balkon/loca + hazır şablonlar + katman
-> yönetimi + M01 native köprü "Salon Yükle" + DXF + gerçek hacim/kabuk kuralı/kırpma/doğrulama +
-> undo/redo + IsDirty + atomik kaydet + eğik/parçalı tavan profili + koltuk kapasitesi + tam
-> ISalonGeometri sözleşmesi + kabuğa kırpılan seyirci/balkon + orkestra çukuru + faset ayarı +
-> kapı/pencere açıklıkları + CAD araç seti: çoklu seçim/taşı/aynala/döndür/yay/offset/uzat/ölçüm
-> + polar/grid/dik-merkez snap + kısayollar). 533 test geçer.
+> **Güncel durum — 5 Kasım 2026:** Şema 2 ve ortak nesne modeline geçildi. Sade, seçime bağlı özellik paneli; düz/yay birleşik sınırlar; serbest sahne/seyirci/balkon/çukur; iç boşluklar ve alan işlemleri; gerçek koltuk yerleşimi/koridorlar; bağlı açıklıklar ve balkon seyircisi; serbest kesitte tavan düzenleme; canlı 3D. Kayıt/geri alma ve geometri hataları düzeltildi.
+> **Güncel ayrıntı ve kullanım:** [M51 inceleme ve uygulama sonucu](m51-inceleme-ve-yeniden-tasarim.md).
+> **Örnek:** [Serbest L salon](ornekler/serbest-L-salon.e4salon.json).
+> **Test çalıştırıcısı:** `tests/SalonEditor.Regression/SalonEditor.Regression.csproj` (modüle özel; tüm uygulama test paketi değildir).
+> Aşağıdaki Faz 0–17 notları önceki mimarinin tarihçesidir; çelişki halinde güncel uygulama belgesi esas alınır.
 > **Bağlı codex'ler:** [codex.md](../../akustik/01-proje-geometri/codex.md) (M01 — tüketici), [codex50](../50-bina-geometri/codex50.md) (desen kaynağı)
 > **Çekirdek:** `src/Kst.Acoustics.Core/Salon/` · **UI:** `src/Kst.Acoustics.App/Salon/`
 
@@ -241,3 +239,9 @@ nesnesi, hatch, blok/grup, spline, fillet, array, katman kilidi):
 | 2026-07-02 | **P2 akustik özellik paketi (Faz 11, §3.7):** tavan kesit profili (Y→kot kırılımları; bantlı düzlemsel eğik paneller, duvar üstleri profili izler, hacim ∫z(y)dA momentle); koltuk kapasitesi (0,5 m²/koltuk, Kontrol'de m³/koltuk); `ISalonGeometri` tam sözleşme; seyirci/balkon Güncelle akışı + taban kotu alanları; canvas kırılım çizgileri. 521 test geçer |
 | 2026-07-02 | **P1 editör güvenilirliği (Faz 10):** undo/redo (değişiklik-öncesi JSON snapshot deseni — canvas `OnDegisecek` callback'i + pencere yığınları; Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y/Ctrl+S); `IsDirty` + başlıkta `*` + temizken sormadan kapanma (maincodex §4.2 uyumu); atomik kaydet (tmp+move, başarısız yazımda revizyon geri alınır); vertex sürüklemede öğenin kendi noktaları snap adayı olmaktan çıkarıldı (self-snap kilidi çözüldü); trim kapalı şekli bozarken açık uyarı; `DxfExportService` naif fan → `RayTracingService.TriangulatePolygon` (kulak-kesme, public yapıldı — P0 keyhole zeminleri konkav olabildiği için kritikleşmişti); Sığdır sahne/seyirci/balkon footprint'lerini kapsar. 514 test geçer |
 | 2026-07-02 | **P0 güvenilirlik paketi (Faz 9, §3.6):** (1) RoomVolume bbox→gerçek plan hacmi (`SalonHacimServisi`; bbox M01'in daha iyi tahmincisini de bastırıyordu); (2) kabuk kuralı katman tipine bağlandı — çift tavan/hayalet iç duvar kapandı; (3) zemine oturan sahne/seyirci/bölge footprint'leri Clipper2 ile zeminden kırpılır (keyhole ±2 mm; 1 mm ızgara altı şerit sıfıra yuvarlanıyor — öğrenildi); (4) kabuk duvar/tavan kategorileri katman adından türetilir, varsayılan katman 6→8 (Korniş+Balkon); (5) şablon seyircisi plan hattına sığdırılır (yelpaze/at nalı taşması düzeltildi), "salon önü" sahneye dış hatta **sahne cebi** açılır; (6) `SalonDogrulamaServisi` + M51 "✔ Kontrol" (geometri uyarıları + LeakTest sızıntı raporu + hacim); (7) `AcousticsProject.KaynakGeometriRevizyon` + M01 proje açılışında salon revizyon uyarısı. 511 test geçer |
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Kayıtta benzersiz geçici dosya ve son sağlam .bak yedeği; hata durumunda şema/revizyon/yol geri alma eklendi. Mevcut hedef klasör sözleşmesi korundu (A16).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kst.Acoustics.Core.Salon.Models;
+using Kst.Acoustics.Core.Common;
 
 namespace Kst.Acoustics.Core.Salon.Services;
 
@@ -11,7 +12,7 @@ namespace Kst.Acoustics.Core.Salon.Services;
 public static class SalonGeometriServisi
 {
     /// Geçerli şema sürümü — migrasyon tetikleyicisi.
-    public const int GuncelSemaSurum = 1;
+    public const int GuncelSemaSurum = 2;
 
     private static readonly JsonSerializerOptions JsonAyar = new()
     {
@@ -27,28 +28,24 @@ public static class SalonGeometriServisi
     {
         ArgumentNullException.ThrowIfNull(salon);
         ArgumentException.ThrowIfNullOrWhiteSpace(dosyaYolu);
+        if (!Directory.Exists(Path.GetDirectoryName(Path.GetFullPath(dosyaYolu))))
+            throw new DirectoryNotFoundException("Salon dosyasının hedef klasörü bulunamadı.");
+        if (salon.SemaSurum > GuncelSemaSurum)
+            throw new InvalidDataException("Salon dosyası sürümü bu uygulamadan daha yeni.");
         Normalize(salon);
 
-        salon.GeometriRevizyon++;
-        var tmp = dosyaYolu + ".tmp";
+        var onceki = (salon.SemaSurum, salon.GeometriRevizyon, salon.DosyaYolu);
         try
         {
-            var json = JsonSerializer.Serialize(salon, JsonAyar);
-            File.WriteAllText(tmp, json);
-            File.Move(tmp, dosyaYolu, overwrite: true);
+            salon.SemaSurum = GuncelSemaSurum;
+            salon.GeometriRevizyon = checked(salon.GeometriRevizyon + 1);
             salon.DosyaYolu = dosyaYolu;
+            var json = JsonSerializer.Serialize(salon, JsonAyar);
+            GuvenliDosyaYazmaServisi.Yaz(dosyaYolu, json);
         }
         catch
         {
-            salon.GeometriRevizyon--;
-            try
-            {
-                if (File.Exists(tmp)) File.Delete(tmp);
-            }
-            catch
-            {
-                // Asıl kayıt hatasını gölgelememek için geçici dosya temizleme hatası yutulur.
-            }
+            (salon.SemaSurum, salon.GeometriRevizyon, salon.DosyaYolu) = onceki;
             throw;
         }
     }
@@ -150,18 +147,24 @@ public static class SalonGeometriServisi
         ArgumentNullException.ThrowIfNull(salon);
 
         salon.SalonAdi ??= string.Empty;
-        salon.Katmanlar = new ObservableCollection<SalonKatman>(
-            (salon.Katmanlar ?? []).Where(item => item is not null));
-        salon.CizimOgeleri = new ObservableCollection<SalonCizimOgesi>(
-            (salon.CizimOgeleri ?? []).Where(item => item is not null));
-        salon.SeyirciSekciyonlari = new ObservableCollection<SeyirciSekciyonu>(
-            (salon.SeyirciSekciyonlari ?? []).Where(item => item is not null));
-        salon.Balkonlar = new ObservableCollection<BalkonGeometri>(
-            (salon.Balkonlar ?? []).Where(item => item is not null));
-        salon.Acikliklar = new ObservableCollection<DuvarAcikligi>(
-            (salon.Acikliklar ?? []).Where(item => item is not null));
-        salon.TavanProfili = new ObservableCollection<TavanKirilimNoktasi>(
-            (salon.TavanProfili ?? []).Where(item => item is not null));
+        salon.Katmanlar ??= new ObservableCollection<SalonKatman>();
+        for (int i = salon.Katmanlar.Count - 1; i >= 0; i--)
+            if (salon.Katmanlar[i] is null) salon.Katmanlar.RemoveAt(i);
+        salon.CizimOgeleri ??= new ObservableCollection<SalonCizimOgesi>();
+        for (int i = salon.CizimOgeleri.Count - 1; i >= 0; i--)
+            if (salon.CizimOgeleri[i] is null) salon.CizimOgeleri.RemoveAt(i);
+        salon.SeyirciSekciyonlari ??= new ObservableCollection<SeyirciSekciyonu>();
+        for (int i = salon.SeyirciSekciyonlari.Count - 1; i >= 0; i--)
+            if (salon.SeyirciSekciyonlari[i] is null) salon.SeyirciSekciyonlari.RemoveAt(i);
+        salon.Balkonlar ??= new ObservableCollection<BalkonGeometri>();
+        for (int i = salon.Balkonlar.Count - 1; i >= 0; i--)
+            if (salon.Balkonlar[i] is null) salon.Balkonlar.RemoveAt(i);
+        salon.Acikliklar ??= new ObservableCollection<DuvarAcikligi>();
+        for (int i = salon.Acikliklar.Count - 1; i >= 0; i--)
+            if (salon.Acikliklar[i] is null) salon.Acikliklar.RemoveAt(i);
+        salon.TavanProfili ??= new ObservableCollection<TavanKirilimNoktasi>();
+        for (int i = salon.TavanProfili.Count - 1; i >= 0; i--)
+            if (salon.TavanProfili[i] is null) salon.TavanProfili.RemoveAt(i);
 
         foreach (var item in salon.Katmanlar)
         {
@@ -175,6 +178,10 @@ public static class SalonGeometriServisi
             if (string.IsNullOrWhiteSpace(item.Id)) item.Id = Guid.NewGuid().ToString("N");
             item.KatmanId ??= string.Empty;
             item.Noktalar ??= [];
+            item.Ad ??= string.Empty;
+            item.KenarKavisleri ??= [];
+            item.KenarKimlikleri ??= [];
+            item.IcBosluklar ??= [];
         }
 
         foreach (var item in salon.SeyirciSekciyonlari)

@@ -102,6 +102,7 @@ public partial class BasitProjeCizWindow : Window
 
     private void OnWindowOpened(object? sender, EventArgs e)
     {
+        AsamaSembolBarGuncelle();
         AktifPaftaSembolBarGuncelle();
         AnahtarSembolBarGuncelle();
         PanoSembolBarGuncelle();
@@ -119,9 +120,9 @@ public partial class BasitProjeCizWindow : Window
             preview.IsElemanAtPoint = (worldX, worldY) =>
             {
                 var kat = _vm.SeciliKat;
-                if (kat is null || _vm.ElemanEkleModu) return false;
+                if (kat is null || _vm.ElemanEkleModu || _vm.KabloModuAktif) return false;
                 double ox = kat.OriginOffset.X, oy = kat.OriginOffset.Y;
-                return kat.Elemanlar.Any(e =>
+                return kat.Elemanlar.Where(_vm.AsamadaDuzenlenebilir).Any(e =>
                 {
                     double dx = e.X + ox - worldX, dy = e.Y + oy - worldY;
                     return dx * dx + dy * dy < 0.09; // 0.3m yarıçap
@@ -131,11 +132,13 @@ public partial class BasitProjeCizWindow : Window
             // Kablo modunda imleç altındaki hedef elemanı ön-vurgula (turkuaz halka).
             preview.OnHoverWorldPoint = (worldX, worldY) => _vm.KabloModuHover(worldX, worldY);
 
-            // Sağ tık = aktif hattı bitir (CAD alışkanlığı). Kablo modu dışında dokunma.
-            preview.OnViewportRightClicked = (worldX, worldY, _) =>
+            // Sağ tık aktif kabloyu bitirir; pano hazırlığında mahale pano atar.
+            preview.OnViewportRightClicked = (worldX, worldY, canvasNoktasi) =>
             {
                 if (_vm.KabloModuAktif && _vm.KabloAktifHatVarMi)
                     _vm.KabloModuHattiBitir();
+                else
+                    MahalPanoMenusunuAc(preview, worldX, worldY, canvasNoktasi);
             };
 
             // Bant seçim (Shift+sol sürükleme): hat açıkken armatür/prizleri topluca ata.
@@ -148,6 +151,7 @@ public partial class BasitProjeCizWindow : Window
                 if (kat is null) return;
                 double ox = kat.OriginOffset.X, oy = kat.OriginOffset.Y;
                 var el = kat.Elemanlar
+                    .Where(_vm.AsamadaDuzenlenebilir)
                     .Where(e => { double dx = e.X + ox - worldX, dy = e.Y + oy - worldY; return dx * dx + dy * dy < 0.09; })
                     .OrderBy(e => { double dx = e.X + ox - worldX, dy = e.Y + oy - worldY; return dx * dx + dy * dy; })
                     .FirstOrDefault();
@@ -339,7 +343,8 @@ public partial class BasitProjeCizWindow : Window
                 // Kablo seçimi (kablo mod kapalıyken kabloya tıklama)
                 if (_vm.KabloTavasiAktif && _vm.KabloTavasiTiklamaDetect(worldX, worldY))
                     return;
-                _vm.KabloTiklamaDetect(worldX, worldY);
+                if (!_vm.AsamaliPaftaAktif || _vm.AsamaKabloMu)
+                    _vm.KabloTiklamaDetect(worldX, worldY);
 
                 // Açıklık seçimi: kabloya/elemana değilse en yakın açıklığı seç
                 // (salt görsel vurgu — açıklığa müdahale M50'ye taşındı)
@@ -350,6 +355,7 @@ public partial class BasitProjeCizWindow : Window
                 {
                     double ox = seciliKat.OriginOffset.X, oy = seciliKat.OriginOffset.Y;
                     var hitEl = seciliKat.Elemanlar
+                        .Where(_vm.AsamadaDuzenlenebilir)
                         .Where(e => { double dx = e.X + ox - worldX, dy = e.Y + oy - worldY; return dx * dx + dy * dy < 0.09; })
                         .OrderBy(e => { double dx = e.X + ox - worldX, dy = e.Y + oy - worldY; return dx * dx + dy * dy; })
                         .FirstOrDefault();
@@ -372,6 +378,7 @@ public partial class BasitProjeCizWindow : Window
                     else if (!multiSelect)
                     {
                         _vm.SeciliElemanlar.Clear();
+                        _vm.SeciliEleman = null;
                         _vm.GuncelleElemanVurgu();
                     }
                 }
@@ -382,11 +389,13 @@ public partial class BasitProjeCizWindow : Window
 
             preview.OnViewportDoubleClicked = (worldX, worldY) =>
             {
+                if (_vm.AsamaliPaftaAktif && !_vm.AsamaMahalListesiVar) return;
                 var kat = _vm.SeciliKat;
                 if (kat is not null)
                 {
                     var hitEl = kat.Elemanlar
-                        .Where(e => e.PaftaTipi == _vm.AktifPafta || _vm.AktifPafta == BpcPaftaTipi.Aydinlatma)
+                        .Where(_vm.AsamadaDuzenlenebilir)
+                        .Where(e => _vm.AsamaliPaftaAktif || e.PaftaTipi == _vm.AktifPafta)
                         .OrderBy(e =>
                         {
                             var dx = e.X + kat.OriginOffset.X - worldX;
@@ -433,6 +442,9 @@ public partial class BasitProjeCizWindow : Window
                         AktifPaftaSembolBarGuncelle();
                         AnahtarSembolBarGuncelle();
                         PanoSembolBarGuncelle();
+                        break;
+                    case nameof(_vm.SeciliAsamaSecenegi):
+                        AsamaSembolBarGuncelle();
                         break;
                 }
             };
@@ -514,9 +526,10 @@ public partial class BasitProjeCizWindow : Window
                 e.Source is not TextBox and not NumericUpDown)
             {
                 // Eleman seçimi varsa önce elemanlar silinir (çoklu veya tekli)
-                if (_vm.SeciliElemanlar.Count > 0)
+                if ((!_vm.AsamaliPaftaAktif || _vm.AsamaYerlesimMi) &&
+                    (_vm.SeciliElemanlar.Count > 0 || _vm.SeciliEleman is not null))
                 {
-                    _vm.SeciliElemanlariSil();
+                    AsamaElemanSil_OnClick(this, e);
                     e.Handled = true;
                 }
                 else if (_vm.SeciliDevreId != null)
@@ -972,6 +985,18 @@ public partial class BasitProjeCizWindow : Window
     private void ElemanSil_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         => _vm.SeciliElemanSilCommand.Execute(null);
 
+    private void ElemanGrid_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not DataGrid { SelectedItem: BasitProjeEleman eleman } || _vm.SeciliEleman == eleman) return;
+        var kat = _vm.Katlar.FirstOrDefault(k => k.Elemanlar.Contains(eleman));
+        if (kat is null) return;
+        _vm.SeciliKat = kat;
+        _vm.SeciliElemanlar.Clear();
+        _vm.SeciliElemanlar.Add(eleman);
+        _vm.SeciliEleman = eleman;
+        _vm.GuncelleElemanVurgu();
+    }
+
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
@@ -1000,25 +1025,6 @@ public partial class BasitProjeCizWindow : Window
         _ => BpcElemanTipi.Anahtar
     };
 
-    private static BpcElemanTipi ManualTypePriz(int index) => index switch
-    {
-        1 => BpcElemanTipi.Priz,
-        2 => BpcElemanTipi.KapakliPriz,
-        3 => BpcElemanTipi.SivaUstuPriz,
-        4 => BpcElemanTipi.TrifazePriz,
-        5 => BpcElemanTipi.KombinePrizKutusu,
-        6 => BpcElemanTipi.TavanPrizi,
-        7 => BpcElemanTipi.UsbliMasaPrizi,
-        8 => BpcElemanTipi.UpsPrizi,
-        9 => BpcElemanTipi.KapakliUpsPrizi,
-        10 => BpcElemanTipi.SivaUstuUpsPrizi,
-        11 => BpcElemanTipi.IkiliPriz,
-        12 => BpcElemanTipi.UcluPriz,
-        13 => BpcElemanTipi.Buat,
-        14 => BpcElemanTipi.KatPanosu,
-        _ => BpcElemanTipi.Priz
-    };
-
     private static BpcElemanTipi ManualTypeMekanik(int index) => index switch
     {
         1 => BpcElemanTipi.KlimaIcUnite,
@@ -1045,10 +1051,13 @@ public partial class BasitProjeCizWindow : Window
         => _vm.AraclarPaneliGenisligi = System.Math.Clamp(_vm.AraclarPaneliGenisligi - e.Vector.X, 180, 480);
 
     private void KomutatorDevre1_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-        => _vm.KomutatorDevreNo = 1;
+        => _vm.KumandaDevresiniSec(1);
 
     private void KomutatorDevre2_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-        => _vm.KomutatorDevreNo = 2;
+        => _vm.KumandaDevresiniSec(2);
+
+    private void KomutatorDevre3_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        => _vm.KumandaDevresiniSec(3);
 
     private void RotaTipi_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {

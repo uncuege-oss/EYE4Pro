@@ -366,3 +366,9 @@ Son bilinen hedef:
 6. DXF veya yüzey değişikliği yapılıyorsa unitless metre varsayımını ve kapalı poligon davranışını koru.
 7. Fotometri değişikliği yapılıyorsa LDT/IES testlerini genişlet.
 8. Son olarak M15 testlerini ve ilgili App build'i çalıştır.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Geçersiz/aşırı yoğun direk aralığı reddediliyor; negatif/sonsuz direnç uygunluk veremiyor (A12–A13).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

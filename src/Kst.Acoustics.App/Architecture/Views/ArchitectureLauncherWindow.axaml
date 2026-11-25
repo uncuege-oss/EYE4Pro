@@ -6,7 +6,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0A1015"
-        Title="Eye4Pro Architecture - Modül Merkezi">
+        Title="Eye4Pro Mimarlık - Modül Merkezi">
 
     <Window.Styles>
         <Style Selector="Button.moduleAction">
@@ -54,7 +54,7 @@
                         </Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
                             <TextBlock Text="EYE4PRO" Foreground="#244650" FontSize="18" FontWeight="Bold"/>
-                            <TextBlock Text="ARCHITECTURE" Foreground="#4B918D" FontSize="10" FontWeight="SemiBold"/>
+                            <TextBlock Text="MİMARLIK" Foreground="#4B918D" FontSize="10" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -250,7 +250,7 @@
         </ScrollViewer>
 
         <Border Grid.Row="2" BorderBrush="#1B2A36" BorderThickness="0,1,0,0" Background="#070C11" Padding="0,10">
-            <TextBlock Text="Eye4Pro Architecture"
+            <TextBlock Text="Eye4Pro Mimarlık"
                        FontSize="11"
                        Foreground="#5E7282"
                        HorizontalAlignment="Center"/>

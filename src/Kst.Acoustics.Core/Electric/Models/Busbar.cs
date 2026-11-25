@@ -31,6 +31,9 @@ public class BusbarCikisKutusu
     public string Ad { get; set; } = "";
     /// <summary>Busbar üzerindeki konum (m, ana panodan itibaren).</summary>
     public double PozisyonM { get; set; }
+    /// <summary>Çıkış kutusunun bağlı panonun bulunduğu kattaki busbar başlangıcından konumu (m).
+    /// Kat yerleşimi tanımlıysa <see cref="PozisyonM"/> bu değerden otomatik türetilir.</summary>
+    public double? KatPozisyonM { get; set; }
     /// <summary>Çıkış kutusu sigortası (A).</summary>
     public int SigortaA { get; set; }
     /// <summary>Çıkış kutusundan tali panoya kablo uzunluğu (m).</summary>
@@ -41,6 +44,13 @@ public class BusbarCikisKutusu
     /// <summary>Busbar başlangıcından (üst pano çıkışı) bu çıkış kutusunun pozisyonuna kadar
     /// birikimli gerilim düşümü (%). Kümülatif ΔU zincirinde busbar segmenti olarak kullanılır.</summary>
     public double GerilimDususYuzde { get; set; }
+}
+
+/// <summary>Busbar hattının bir kattaki fiziksel uzunluğu.</summary>
+public class BusbarKatBolumu
+{
+    public string Kat { get; set; } = "Z";
+    public double UzunlukM { get; set; }
 }
 
 /// <summary>
@@ -62,6 +72,8 @@ public class BusbarHatti
     public string UstPanoAd { get; set; } = "";
     /// <summary>Çıkış kutuları.</summary>
     public List<BusbarCikisKutusu> CikisKutulari { get; set; } = new();
+    /// <summary>Kat bazında busbar uzunlukları. Boşsa eski toplam uzunluk/pozisyon modeli kullanılır.</summary>
+    public List<BusbarKatBolumu> KatBolumleri { get; set; } = new();
 
     // === Hesaplanan değerler ===
     /// <summary>Busbar üzerinden geçen toplam akım (A).</summary>

@@ -178,6 +178,9 @@ public static class TmmCalculator
 
     public static AlphaWResult CalculateAlphaWResultFromThirdOctaves(IReadOnlyDictionary<int, double> thirdOctaves)
     {
+        ArgumentNullException.ThrowIfNull(thirdOctaves);
+        if (thirdOctaves.Values.Any(value => !double.IsFinite(value) || value < 0))
+            throw new ArgumentException("Emilim katsayıları sonlu ve negatif olmayan değerler olmalıdır.", nameof(thirdOctaves));
         var octaveValues = IsoReferenceFrequencies
             .Select(f => CalculatePracticalCoefficient(thirdOctaves, f))
             .ToArray();

@@ -34,7 +34,8 @@ public class BasitProjeCizKutuphaneServisi
     // v15 — Priz ailesi geometri düzeltmesi: toprak T/pim dome tepesine indirildi
     //       (PrizSembol/Trifaze/İkili/Üçlü/Kombine). OlusturBlok merkezleme eklendi.
     //       Yükleme sırası: gömülü DXF önce, sonra programatik — programatik her zaman kazanır.
-    private const int GuncelSembolSetVersion = 15;
+    // v16 yalnız alt pano tanımını ekler; kullanıcıların DXF sembolleri korunur.
+    private const int GuncelSembolSetVersion = 16;
 
     /// Uygulamayla gelen gömülü DXF sembol şablonunun (Sablonlar/EYE4PRO_Sembol_Sablonu.dxf)
     /// güncel sürümü. Kullanıcının kayıtlı `GomuluSablonSurum` değeri bundan küçükse açılışta
@@ -193,8 +194,10 @@ public class BasitProjeCizKutuphaneServisi
         // Programatik sembol seti SONRA uygulanır → her zaman gömülü DXF'i ezer.
         // Böylece kod değişikliği (versiyon yükseltme) gömülü şablondaki eski
         // geometrinin üzerine yazar; yükleme bozulması önlenir.
-        if (sembolSetVersion < GuncelSembolSetVersion)
+        if (sembolSetVersion < 15)
             GuncelSembolSetiniUygula();
+        else if (sembolSetVersion < 16)
+            VarsayilanEksikleriEkle(Panolar, [AltPanoTanimi()]);
 
         AydinlatmaKatalogunuKisitla();
         ArmatürYerlesimleriniGridYap();
@@ -659,6 +662,7 @@ public class BasitProjeCizKutuphaneServisi
                 MontajTipi = "Duvar",       GucW = 0, SembolCizgiler = KatPanosuSembol() },
         new() { Ad = "Tali Pano",          BlokAdi = "E4P_TALI_PANO",    SembolAdi = "TP",
                 MontajTipi = "Duvar",       GucW = 0, SembolCizgiler = KatPanosuSembol() },
+        AltPanoTanimi(),
         new() { Ad = "Ana Pano",           BlokAdi = "E4P_ANA_PANO",     SembolAdi = "AP",
                 MontajTipi = "Duvar",       GucW = 0, SembolCizgiler = KatPanosuSembol() },
         new() { Ad = "Özel Pano",          BlokAdi = "E4P_OZEL_PANO",    SembolAdi = "OP",
@@ -668,6 +672,12 @@ public class BasitProjeCizKutuphaneServisi
         new() { Ad = "Yer Buatı",          BlokAdi = "E4P_YER_BUATI",    SembolAdi = "YB",
                 MontajTipi = "Duvar",       GucW = 0, SembolCizgiler = BuatSembol() }
     ];
+
+    private static BpcArmatürTanim AltPanoTanimi() => new()
+    {
+        Ad = "Alt Pano", BlokAdi = "E4P_ALT_PANO", SembolAdi = "ALP",
+        MontajTipi = "Duvar", SembolCizgiler = KatPanosuSembol()
+    };
 
     private static List<BpcArmatürTanim> VarsayilanPrizler() =>
     [
@@ -1664,6 +1674,9 @@ public class BasitProjeCizKutuphaneServisi
         return kaynak.Find(a => a.BlokAdi == blok) ?? kaynak.FirstOrDefault();
     }
 
+    public static BpcElemanTipi TanimTipi(BpcArmatürTanim tanim) =>
+        TipBlokAdindan(tanim.BlokAdi) ?? tanim.ElemanTipi ?? BpcElemanTipi.Armatür;
+
     /// <summary>
     /// Blok adından eleman tipini kurtarır. Eski projelerde enum'lar tamsayı olarak
     /// saklandığından, enum'a ortadan değer eklenince <c>Tip</c> kayabilir; ancak
@@ -1684,6 +1697,7 @@ public class BasitProjeCizKutuphaneServisi
         "E4P_SENSOR"         => BpcElemanTipi.Sensör,
         "E4P_KAT_PANOSU"     => BpcElemanTipi.KatPanosu,
         "E4P_TALI_PANO"      => BpcElemanTipi.KatPanosu,
+        "E4P_ALT_PANO"       => BpcElemanTipi.KatPanosu,
         "E4P_ANA_PANO"       => BpcElemanTipi.KatPanosu,
         "E4P_OZEL_PANO"      => BpcElemanTipi.KatPanosu,
         "E4P_BUAT"           => BpcElemanTipi.Buat,

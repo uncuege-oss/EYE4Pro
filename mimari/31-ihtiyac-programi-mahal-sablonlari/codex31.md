@@ -255,3 +255,9 @@ Faz 1'deki `MahalSablonu` kullanılacak. M31, varsayılan şablon kütüphanesin
 | 2026-06-12 | M31.7.3-31.7.4 tamamlandı: `.e4mimari.json` aç/kaydet/farklı kaydet UI akışı ve `MimariProjeDogrulamaServisi` tabanlı ön kontrol paneli eklendi |
 | 2026-06-12 | M31.8 tamamlandı: `IhtiyacProgramiRaporServisi` ile HTML ihtiyaç programı raporu ve CSV mahal listesi üretildi; M31 penceresine rapor/dışa aktarım düğmeleri eklendi |
 | 2026-06-12 | M31.9 tamamlandı: Core test/build, App build, Türkçe UI komut metni ve takip dosyası tutarlılığı kontrol edildi; M31 MVP kapandı |
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+İhtiyaç programı, mahal ve şablon alan/yükseklik/oranlarında sonlu olmayan değerler geçerli sayılmıyor (A17).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

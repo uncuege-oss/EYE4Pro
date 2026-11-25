@@ -15,6 +15,35 @@ public class YukTipiTanim
     public double TalepFaktoru { get; set; } = 1.0;
     public string Aciklama { get; set; } = "";
 
+    /// <summary>
+    /// Bu yük tipiyle eklenen linyenin varsayılan fazı (linye formunda değiştirilebilir).
+    /// Alanı olmayan eski kütüphanelerde null gelir; servis yüklerken addan tamamlar.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<FazTipi>))]
+    public FazTipi? VarsayilanFazTipi { get; set; }
+
+    [JsonIgnore]
+    public FazTipi VarsayilanFaz => VarsayilanFazTipi ?? AddanFazTahmini(Ad);
+
+    /// <summary>Kütüphane tablosundaki Monofaze(0)/Trifaze(1) seçimi.</summary>
+    [JsonIgnore]
+    public int FazSecimIndex
+    {
+        get => VarsayilanFaz == FazTipi.Trifaze ? 1 : 0;
+        set => VarsayilanFazTipi = value == 1 ? FazTipi.Trifaze : FazTipi.Monofaze;
+    }
+
+    /// <summary>Faz bilgisi olmayan eski kayıtlar için addan tahmin: 3 faz/trifaze/asansör → trifaze.</summary>
+    public static FazTipi AddanFazTahmini(string? ad)
+    {
+        var s = ad ?? "";
+        return s.Contains("3 Faz", System.StringComparison.OrdinalIgnoreCase)
+            || s.Contains("Trifaze", System.StringComparison.OrdinalIgnoreCase)
+            || s.Contains("Asansör", System.StringComparison.OrdinalIgnoreCase)
+            ? FazTipi.Trifaze
+            : FazTipi.Monofaze;
+    }
+
     public override string ToString() => $"{Ad} ({BirimGucW}W)";
 }
 

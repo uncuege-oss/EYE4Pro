@@ -70,6 +70,26 @@ public static class SalonSeyirciServisi
                     }));
             }
 
+        // Close exposed sides/back and raised undersides. Treads and risers retain
+        // their categories; closure surfaces are separate for material assignment.
+        var treads = surfaces.Where(p => p.Category == "Seyirci").ToList();
+        foreach (var tread in treads)
+        {
+            var p = tread.Vertices.Select(v => new Point2D(v.X, v.Y)).ToList();
+            double z = tread.Vertices[0].Z;
+            double sign = ClipperAdaptor.IsaretliAlan(p) > 0 ? 1 : -1;
+            if (taban > 1e-6)
+                surfaces.Add(new ProjectSurface(id++, s.Ad + " Alt", "Seyirci-Alt", p.Select(v=>new Point3D(v.X,v.Y,taban)).ToList()));
+            if (z <= taban + 1e-6) continue;
+            for (int i=0;i<p.Count;i++)
+            {
+                var a=p[i];var b=p[(i+1)%p.Count];double dx=b.X-a.X,dy=b.Y-a.Y,len=Math.Sqrt(dx*dx+dy*dy);
+                if(len<1e-9)continue;
+                var outside=new Point2D((a.X+b.X)/2+sign*dy/len*.0002,(a.Y+b.Y)/2-sign*dx/len*.0002);
+                if(treads.Any(other=>!ReferenceEquals(other,tread)&&SalonTasarimServisi.Icinde(outside,other.Vertices.Select(v=>new Point2D(v.X,v.Y)).ToList())))continue;
+                surfaces.Add(new ProjectSurface(id++,s.Ad+" Yan","Seyirci-Yan",new List<Point3D>{new(a.X,a.Y,taban),new(b.X,b.Y,taban),new(b.X,b.Y,z),new(a.X,a.Y,z)}));
+            }
+        }
         return surfaces;
     }
 

@@ -86,7 +86,7 @@ public static class OrtaGerilimHesapServisi
     /// <see cref="JeneratorHesapServisi.Hesapla"/> ile aynı akış/sözleşmeyi izler.
     /// </summary>
     public static void Hesapla(OrtaGerilimSistemi og, Pano anaPano, ElektrikProje proje,
-        ElektrikKutuphaneServisi kutuphane)
+        ElektrikKutuphaneServisi kutuphane, bool anaPanoyaYansit = true)
     {
         og.SebekeHucreXlpeKablosu ??= new OgXlpeKablo();
         og.HucreTrafoXlpeKablosu ??= new OgXlpeKablo();
@@ -94,9 +94,9 @@ public static class OrtaGerilimHesapServisi
         double emniyet = og.EmniyetFaktoru <= 0 ? 1.0 : og.EmniyetFaktoru;
         og.GerekliKVAMin = og.HesaplananYukKVA * emniyet;
 
-        // Trafo seçimi (atanmış değilse otomatik)
+        // Trafo seçimi: kullanıcı sabitlemediyse her hesapta güncel yüke göre yeniden seçilir.
         TrafoTanim? trafo = null;
-        if (!string.IsNullOrEmpty(og.TrafoTanimAd))
+        if (og.TrafoManuel && !string.IsNullOrEmpty(og.TrafoTanimAd))
             trafo = kutuphane.Trafolar.FirstOrDefault(t => t.Ad == og.TrafoTanimAd);
         if (trafo == null)
         {
@@ -130,7 +130,8 @@ public static class OrtaGerilimHesapServisi
 
         // Trafo → ana pano bağlantısı boyutlandırma
         BaglantiHesapla(og.CikisBaglanti, og.TrafoAgAkimA, proje, kutuphane);
-        AnaPanoBaglantisiniYansit(og, anaPano, proje);
+        if (anaPanoyaYansit)
+            AnaPanoBaglantisiniYansit(og, anaPano, proje);
     }
 
     /// <summary>

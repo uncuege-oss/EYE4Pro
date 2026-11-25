@@ -111,14 +111,14 @@
 | 12 | Basit Proje Çiz (Kuvvetli Akım) | Geliştiriliyor | [codex12.md](elektrik/12-basit-proje-ciz/codex12.md) |
 | 13 | Zayıf Akım Tek Hat Şeması | Geliştiriliyor (7 sistem: Data/Kamera/Anons/TV/Yangın/Telefon/Diafon; DXF+SVG+PNG, şema sürümü, kapasite denetimi) | [codex13.md](elektrik/13-zayif-akim-tek-hat/codex13.md) |
 | 14 | Keşif Hazırla | Faz 2 tamamlandı (otomatik metraj + öğrenen/otomatik Poz Atama + Referanslar) | [codex14.md](elektrik/14-kesif-hazirla/codex14.md) |
-| 15 | Çevre Aydınlatma Projesi Hazırla | Planlama | [codex15.md](elektrik/15-cevre-aydinlatma/codex15.md) |
+| 15 | Çevre Aydınlatma Projesi Hazırla | Core + ilk UI akışı mevcut | [codex15.md](elektrik/15-cevre-aydinlatma/codex15.md) |
 | 16 | Zayıf Akım Proje Çiz | Geliştiriliyor | [codex16.md](elektrik/16-zayif-akim-proje-ciz/codex16.md) |
 
 ### Mekanik
 
 | # | Modül Adı | Durum | Codex |
 |---|-----------|-------|-------|
-| 21 | Kanal Hesabı | Başlatıldı | [codex21.md](mekanik/21-kanal-hesabi/codex21.md) |
+| 21 | Kanal Hesabı | Planlı; başlatıcı mevcut, hesap motoru henüz yok | [codex21.md](mekanik/21-kanal-hesabi/codex21.md) |
 
 ### Mimari
 

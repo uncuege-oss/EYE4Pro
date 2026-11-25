@@ -427,12 +427,37 @@ public partial class TekHatSemasiViewModel : INotifyPropertyChanged
         foreach (var pano in Proje.TumPanolar.OrderBy(p => DerinlikBul(p)).Reverse())
         {
             PanoHesapServisi.PanoHesapla(pano, Proje, _kutuphane);
+
+            // UPS çıkışındaki kritik pano hesaplandıktan hemen sonra cihaz girişini çöz. Böylece
+            // üst pano bir sonraki adımda verim kaybı ve akü şarj payı dahil gerçek giriş yükünü görür.
+            var panoUps = Proje.Upsler.FirstOrDefault(u =>
+                string.Equals(u.KritikPanoAd, pano.Ad, StringComparison.OrdinalIgnoreCase));
+            if (panoUps != null)
+            {
+                UpsHesapServisi.Hesapla(panoUps, pano, Proje, _kutuphane);
+                pano.TalepAkimA = panoUps.GirisAkimA;
+                pano.GirisSigortaA = pano.ManuelGirisSigortaA ?? PanoHesapServisi.GirisSigortaHesapla(pano.TalepAkimA);
+                pano.KacakAkimRolesi = pano.KacakAkimRolesiAktif
+                    ? PanoHesapServisi.KacakAkimRolesiSec(pano.PanoTipi, pano.TalepAkimA, _kutuphane)
+                    : null;
+                pano.KacakAkimAkimTrafosu = pano.KacakAkimRolesiAktif
+                    ? PanoHesapServisi.AkimTrafosuSec(pano.KacakAkimRolesi, pano.TalepAkimA, _kutuphane)
+                    : null;
+                pano.UstPanoCikisSigortaA = pano.UstPano == null ? 0
+                    : pano.ManuelUstPanoCikisSigortaA ?? (Proje.SelektiviteAktif
+                        ? PanoHesapServisi.BirUstStandartSigorta(pano.GirisSigortaA)
+                        : pano.GirisSigortaA);
+                if (pano.BaglantiTipi == BaglantiTipi.Busbar)
+                {
+                    pano.CikisKutusuSigortaA = pano.UstPanoCikisSigortaA;
+                    var bb = Proje.TumBusbarlar.FirstOrDefault(b => b.Id == pano.BaglandigiBusbarId);
+                    var kutu = bb?.CikisKutulari.FirstOrDefault(k =>
+                        string.Equals(k.BagliPanoAd, pano.Ad, StringComparison.OrdinalIgnoreCase));
+                    if (kutu != null) kutu.SigortaA = pano.CikisKutusuSigortaA;
+                }
+            }
             KabloHesapServisi.PanoKabloHesapla(pano, Proje);
         }
-
-        // Busbar hesapları (her panonun çıkan busbar hatları)
-        foreach (var bb in Proje.TumBusbarlar)
-            BusbarHesapServisi.Hesapla(bb, Proje, _kutuphane);
 
         // Orta gerilim (OG) — trafo seçimi + akım + bağlantı; kaynak empedansını (Zq+Zt) belirler.
         // Kısa devreden ÖNCE çalışmalı: KisaDevreHesapServisi kaynağı OG trafosundan türetir.
@@ -470,6 +495,15 @@ public partial class TekHatSemasiViewModel : INotifyPropertyChanged
             if (!pano.KompanzasyonElleAyarlandi)
                 PanoHesapServisi.KompanzasyonOtomatikSec(pano, Proje, _kutuphane);
             KabloHesapServisi.PanoKabloHesapla(pano, Proje);
+        }
+
+        // Busbar akımları, kompanzasyon banka akımı ve UPS giriş yükleri kesinleştikten sonra
+        // hesaplanır. Böylece ilk turda 0 A kalan kompanzasyon çıkışları da doğru boyutlanır.
+        foreach (var bb in Proje.TumBusbarlar)
+        {
+            if (bb.KatBolumleri.Count > 0)
+                BusbarYerlesimServisi.Uygula(Proje, bb, bb.KatBolumleri);
+            BusbarHesapServisi.Hesapla(bb, Proje, _kutuphane);
         }
 
         // Kısa devre (Ik3) — kaynaktan aşağı; kesme kapasiteleri bara Ik'sına göre güncellenir.

@@ -8,7 +8,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen"
         Background="#0A1015"
-        Title="Eye4Pro Architecture - Mimari Rapor ve İhracat">
+        Title="Eye4Pro Mimarlık - Mimari Rapor ve İhracat">
 
     <Window.Styles>
         <Style Selector="TextBlock.label">

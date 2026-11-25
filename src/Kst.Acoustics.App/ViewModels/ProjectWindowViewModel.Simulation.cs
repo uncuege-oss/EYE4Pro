@@ -921,8 +921,8 @@ public sealed partial class ProjectWindowViewModel
             GridXMax <= GridXMin || GridYMax <= GridYMin)
             return false;
 
-        var colValue = Math.Round((GridXMax - GridXMin) / GridCellSize) + 1;
-        var rowValue = Math.Round((GridYMax - GridYMin) / GridCellSize) + 1;
+        var colValue = ReceiverGrid.AxisPointCount(GridXMin, GridXMax, GridCellSize);
+        var rowValue = ReceiverGrid.AxisPointCount(GridYMin, GridYMax, GridCellSize);
         if (colValue is < 1 or > int.MaxValue || rowValue is < 1 or > int.MaxValue)
             return false;
         cols = (int)colValue;

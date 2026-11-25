@@ -99,3 +99,9 @@ TemelOturtmaModeli   ← kök: SemaSurum, AraziRevizyon, BinaRevizyon, SifirKotM
 1. Bina kaynağı: M50 `.e4bina.json` mi, mimari M35 kütlesi mi, ikisi de mi? (M60 sonrası netleşecek.)
 2. Kademeli bina kesiti çizimi M60'ın kotlu-kesit altyapısını paylaşmalı.
 3. M61, M60 üretime geçtikten sonra başlar (arazi yüzeyi hazır olmadan oturtma anlamsız).
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Kesit blokları ayak izleriyle liste sırasından değil BlokId üzerinden eşleşiyor (A19).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

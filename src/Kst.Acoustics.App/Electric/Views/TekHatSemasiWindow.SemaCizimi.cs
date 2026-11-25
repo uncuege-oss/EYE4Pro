@@ -31,7 +31,7 @@ public partial class TekHatSemasiWindow
     private const double SameFloorChildYOffset = 52;
     private const double CableLaneGap = 16;
     // OG (orta gerilim) bloğu için kat bantlarının üstünde ayrılan dikey alan (şebeke→hücreler→trafo)
-    private const double OgBandYuksekligi = 220;
+    private const double OgBandYuksekligi = 240;
 
     private static double CableLaneX(double nodeCenterX, int laneIndex)
     {
@@ -43,6 +43,28 @@ public partial class TekHatSemasiWindow
     /// </summary>
     private static string KesitEk(string? kabloKesiti)
         => string.IsNullOrWhiteSpace(kabloKesiti) ? "" : $" • {kabloKesiti.Trim()}";
+
+    // Çizilen besleme kablosu etiketleri (pano → etiket); sağ-tık "Kablo Mesafesini Değiştir"
+    // düzenleyiciyi ilgili etiketin yanında açmak için kullanılır. Her SemaCiz'de yenilenir.
+    private readonly Dictionary<Pano, Border> _kabloEtiketleri = new();
+    private readonly Dictionary<Pano, Action<bool>> _panoSecimGorselleri = new();
+
+    /// <summary>
+    /// Kablo etiketini tıklanabilir yapar: sol tık → kablo metrajı düzenleyicisi.
+    /// e.Handled=true ile şema kaydırma (pan) ve kontrol modundan çıkış tetiklenmez.
+    /// </summary>
+    private void KabloEtiketiniBagla(Border lbl, Pano pano)
+    {
+        _kabloEtiketleri[pano] = lbl;
+        lbl.Cursor = new Cursor(StandardCursorType.Hand);
+        ToolTip.SetTip(lbl, "Kablo metrajını değiştirmek için tıklayın");
+        lbl.PointerPressed += (_, e) =>
+        {
+            if (!e.GetCurrentPoint(lbl).Properties.IsLeftButtonPressed) return;
+            e.Handled = true;
+            KabloMesafeDuzenle(pano, lbl);
+        };
+    }
 
     /// <summary>
     /// Bir yatay kablo parçası için çakışmayan bir Y kanalı seçer. Tercih edilen Y boşsa onu,
@@ -85,7 +107,7 @@ public partial class TekHatSemasiWindow
     {
         if (bb == null) return 0;
         var kutu = bb.CikisKutulari.FirstOrDefault(k => k.BagliPanoAd == child.Ad);
-        return kutu?.PozisyonM ?? 0;
+        return kutu?.KatPozisyonM ?? kutu?.PozisyonM ?? 0;
     }
 
     // Hızlı arka arkaya eklemelerde şemayı her seferinde değil, son işlemden 350 ms sonra bir kez çizer.
@@ -216,7 +238,7 @@ public partial class TekHatSemasiWindow
     private double FloorY(string kat)
     {
         if (_floorStartY.TryGetValue(kat, out double startY))
-            return startY + 30;
+            return startY + 30 + (kat == _ogYerlesimKati ? OgBandYuksekligi : 0);
         // fallback if called before SemaCiz builds the dict
         var katlar = _vm.Proje.Bina?.KatEtiketleri() ?? new System.Collections.Generic.List<string> { "Z" };
         int idx = katlar.IndexOf(kat);
@@ -229,6 +251,8 @@ public partial class TekHatSemasiWindow
         if (SemaCanvas == null) return;
         SemaCanvas.Children.Clear();
         _kabloYatayKanallar.Clear();
+        _kabloEtiketleri.Clear();
+        _panoSecimGorselleri.Clear();
         _icerikMinX = double.MaxValue; _icerikMinY = double.MaxValue;
         _icerikMaxX = double.MinValue; _icerikMaxY = double.MinValue;
 
@@ -263,6 +287,7 @@ public partial class TekHatSemasiWindow
         }
         double yAcc = FloorTopMargin;
         _ogTopY = 0;
+        _ogYerlesimKati = ogKat;
         bool ogBandiYerlesti = false;
         if (ogSistem != null && ogKat == null)
         {
@@ -272,16 +297,18 @@ public partial class TekHatSemasiWindow
         }
         foreach (var kat in katlar)
         {
-            if (ogSistem != null && !ogBandiYerlesti && kat == ogKat)
-            {
-                _ogTopY = yAcc + 8;                   // OG bloğu bu katın üstündeki banda
-                yAcc += OgBandYuksekligi;
-                ogBandiYerlesti = true;
-            }
             _floorStartY[kat] = yAcc;
             int rows = floorMaxRows.GetValueOrDefault(kat, 1);
             // rows == 1 → standart FloorHeight; rows > 1 → genişlet
             double h = Math.Max(FloorHeight, rows * SameFloorChildYOffset + 40);
+            if (ogSistem != null && !ogBandiYerlesti && kat == ogKat)
+            {
+                // Keep the OG chain inside the selected floor band. Panel content starts
+                // below this reserved area, so later panels cannot overlap the transformer.
+                _ogTopY = yAcc + 30;
+                h += OgBandYuksekligi;
+                ogBandiYerlesti = true;
+            }
             _floorActualHeight[kat] = h;
             yAcc += h;
         }
@@ -428,21 +455,81 @@ public partial class TekHatSemasiWindow
         foreach (var c in normalFloorDirect) cols += SubtreeColCount(c);
         foreach (var g in bbGroups)
         {
-            // Busbar grubu: farklı katlardaki çıkışlar aynı X sütununu paylaşır (çakışmazlar),
-            // bu yüzden grup genişliği = en geniş çıkış alt ağacı + 1 busbar kolonu (kompakt).
-            // Aynı kattaki birden fazla çıkış için ek sütun ayrılır.
-            int ayniKatMax = g.GroupBy(c => c.Kat ?? "").Select(grp => grp.Count()).DefaultIfEmpty(1).Max();
+            // Busbar grubu: alt ağaçları hiçbir katta çakışmayan çıkışlar aynı X şeridini paylaşır
+            // (kompakt); grup genişliği = en geniş çıkış alt ağacı × şerit sayısı + 1 busbar kolonu.
+            int seritSayisi = BusbarSeritAta(g).SeritSayisi;
             int enGenis = g.Max(c => SubtreeColCount(c));
-            int groupW = enGenis * ayniKatMax + 1;
+            int groupW = enGenis * seritSayisi + 1;
             cols += groupW;
         }
-        if (sameFloorDirect.Count > 0)
-        {
-            // Aynı kattaki alt panolar yatayda jeneratör hattıyla yarışmasın diye
-            // parent altında dikey istiflenir; sadece en geniş alt ağaç kadar yer ister.
-            cols = Math.Max(cols, sameFloorDirect.Max(SubtreeColCount));
-        }
+        // Aynı kattaki alt panolar parent altında dikey istiflenir ve parent sütununu paylaşır.
+        // Başka kata inen/çıkan ya da busbar besleyen alt ağacı olanlar ise kendi sütun şeridini
+        // alır; aksi halde istifteki kardeşlerin kat-dışı alt panoları aynı X'e düşüp üst üste biner.
+        foreach (var c in sameFloorDirect)
+            if (IstifSeridiGerekir(c)) cols += SubtreeColCount(c);
         return System.Math.Max(1, cols);
+    }
+
+    /// <summary>
+    /// Aynı kattaki istifte duran panonun kendi sütun şeridine ihtiyacı var mı: alt ağacında
+    /// başka katta pano ya da busbar bağlantısı varsa true (bunlar parent sütunu dışına çizilir).
+    /// </summary>
+    private bool IstifSeridiGerekir(Pano node)
+    {
+        foreach (var c in node.AltPanolar)
+        {
+            if (c.BaglantiTipi == BaglantiTipi.Busbar && !string.IsNullOrEmpty(c.BaglandigiBusbarId)) return true;
+            if (c.BaglantiTipi == BaglantiTipi.Kablo)
+            {
+                if (c.Kat != node.Kat) return true;
+                if (IstifSeridiGerekir(c)) return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Panonun ve tüm alt ağacının bulunduğu katlar.</summary>
+    private static void AltAgacKatlari(Pano node, System.Collections.Generic.HashSet<string> katlar)
+    {
+        katlar.Add(node.Kat ?? "Z");
+        foreach (var c in node.AltPanolar) AltAgacKatlari(c, katlar);
+    }
+
+    private int KatSirasi(string? kat)
+    {
+        var katlar = _vm.Proje.Bina?.KatEtiketleri() ?? new System.Collections.Generic.List<string> { "Z" };
+        int idx = katlar.IndexOf(kat ?? "Z");
+        return idx < 0 ? int.MaxValue : idx;
+    }
+
+    /// <summary>
+    /// Busbar çıkışlarını X şeritlerine dağıtır. Alt ağaçları ortak kat içermeyen çıkışlar aynı
+    /// şeridi paylaşır; bir katı paylaşanlar (aynı kattaki çıkışlar ya da başka kata uzanan alt
+    /// ağaçlar) ayrı şeride konur. Sıra kat sırasıdır (yukarıdan aşağı), çizimle aynıdır.
+    /// </summary>
+    private (System.Collections.Generic.List<Pano> Sirali, System.Collections.Generic.Dictionary<Pano, int> Serit, int SeritSayisi)
+        BusbarSeritAta(IEnumerable<Pano> kids)
+    {
+        var sirali = kids.OrderBy(c => KatSirasi(c.Kat)).ToList();
+        var seritKatlari = new System.Collections.Generic.List<System.Collections.Generic.HashSet<string>>();
+        var serit = new System.Collections.Generic.Dictionary<Pano, int>();
+        foreach (var c in sirali)
+        {
+            var katlar = new System.Collections.Generic.HashSet<string>();
+            AltAgacKatlari(c, katlar);
+            int s = seritKatlari.FindIndex(k => !k.Overlaps(katlar));
+            if (s < 0)
+            {
+                seritKatlari.Add(katlar);
+                s = seritKatlari.Count - 1;
+            }
+            else
+            {
+                seritKatlari[s].UnionWith(katlar);
+            }
+            serit[c] = s;
+        }
+        return (sirali, serit, Math.Max(1, seritKatlari.Count));
     }
 
     /// <summary>
@@ -616,13 +703,14 @@ public partial class TekHatSemasiWindow
                 CornerRadius = new Avalonia.CornerRadius(3),
                 Child = new TextBlock
                 {
-                    Text = $"{d.child.UstPanoCikisSigortaA}A • {d.child.KabloMesafeM}m{KesitEk(d.child.KabloKesiti)}",
+                    Text = $"Kablo: {d.child.KabloMesafeM:0.##} m • {d.child.UstPanoCikisSigortaA}A{KesitEk(d.child.KabloKesiti)}",
                     FontSize = 10,
                     Foreground = Brushes.LightGray
                 }
             };
             Canvas.SetLeft(lbl, d.childCx + 4);
             Canvas.SetTop(lbl, d.branchY + (d.yon > 0 ? 2 : -18));
+            KabloEtiketiniBagla(lbl, d.child);
             SemaCanvas.Children.Add(lbl);
 
             DrawNode(d.child, d.childStartX, d.childCx);
@@ -636,12 +724,12 @@ public partial class TekHatSemasiWindow
         foreach (var g in bbGroups)
         {
             var bb = _vm.Proje.TumBusbarlar.FirstOrDefault(b => b.Id == g.Key);
-            int ayniKatMaxG = g.GroupBy(c => c.Kat ?? "").Select(grp => grp.Count()).DefaultIfEmpty(1).Max();
+            var seritAtama = BusbarSeritAta(g);
             int enGenisG = g.Max(c => SubtreeColCount(c));
-            int groupW = enGenisG * ayniKatMaxG + 1;
+            int groupW = enGenisG * seritAtama.SeritSayisi + 1;
             // Busbar X = grup'un sol kenarından + colWidth/2 (ilk sütun busbar için)
             double busbarX = curX + ColWidth / 2.0;
-            var kids = g.OrderBy(c => FloorY(c.Kat ?? "Z")).ToList();
+            var kids = seritAtama.Sirali;
             double topKidY = kids.Min(c => FloorY(c.Kat ?? "Z"));
             double bottomKidY = kids.Max(c => FloorY(c.Kat ?? "Z"));
 
@@ -652,14 +740,11 @@ public partial class TekHatSemasiWindow
 
             double kidBaseX = curX + ColWidth; // busbar sütunu sonrası
             double seritGenislik = enGenisG * ColWidth;
-            var katSerit = new System.Collections.Generic.Dictionary<string, int>();
             var busbarDallari = new System.Collections.Generic.List<(Pano child, double childStartX, double childCx, double childY, double branchY, double childPortY, int yon, int serit)>();
             foreach (var child in kids)
             {
                 int cw = SubtreeColCount(child);
-                string ckat = child.Kat ?? "";
-                int serit = katSerit.TryGetValue(ckat, out int sv) ? sv : 0;
-                katSerit[ckat] = serit + 1;
+                int serit = seritAtama.Serit[child];
                 double childStartX = kidBaseX + serit * seritGenislik;
                 double childCx = childStartX + cw * ColWidth / 2.0;
                 bool ayniKat = child.Kat == node.Kat;
@@ -713,6 +798,13 @@ public partial class TekHatSemasiWindow
                     }
                 };
                 bbLabel.Cursor = new Cursor(StandardCursorType.Hand);
+                bbLabel.PointerPressed += async (_, e) =>
+                {
+                    var nokta = e.GetCurrentPoint(bbLabel);
+                    if (!nokta.Properties.IsLeftButtonPressed) return;
+                    e.Handled = true;
+                    await BusbarYerlesimAc(bb);
+                };
                 bbLabel.ContextMenu = BusbarContextMenu(bb);
                 ToolTip.SetTip(bbLabel, BusbarTooltip(bb)); // fareyle üzerine gelince toplam yük + akım
                 Canvas.SetLeft(bbLabel, busbarX + 8);
@@ -773,13 +865,18 @@ public partial class TekHatSemasiWindow
                     CornerRadius = new Avalonia.CornerRadius(3),
                     Child = new TextBlock
                     {
-                        Text = $"{PozisyonBul(bb, d.child)}m → {d.child.CikisKutusuSigortaA}A • {d.child.KabloMesafeM}m{KesitEk(d.child.KabloKesiti)}",
+                        Text = $"Kablo: {d.child.KabloMesafeM:0.##} m • {d.child.CikisKutusuSigortaA}A{KesitEk(d.child.KabloKesiti)}",
                         FontSize = 9,
                         Foreground = new SolidColorBrush(Color.Parse("#A0E080"))
                     }
                 };
                 Canvas.SetLeft(infoLbl, busbarX + 14);
                 Canvas.SetTop(infoLbl, d.branchY + (d.yon > 0 ? 4 : -18));
+                KabloEtiketiniBagla(infoLbl, d.child);
+                ToolTip.SetTip(infoLbl,
+                    $"Çıkış kutusu → {d.child.Ad}: {d.child.KabloMesafeM:0.##} m kablo\n" +
+                    $"Kutunun kat içi konumu: Kat {d.child.Kat}, {PozisyonBul(bb, d.child):0.##} m\n" +
+                    "Kablo metrajını değiştirmek için tıklayın");
                 SemaCanvas.Children.Add(infoLbl);
 
                 DrawNode(d.child, d.childStartX, d.childCx, d.childY);
@@ -851,8 +948,8 @@ public partial class TekHatSemasiWindow
                 Child = new TextBlock
                 {
                     Text = merkeziKolon
-                        ? "⚡ UPS Kolonu (Ayrı)"
-                        : $"{child.UstPanoCikisSigortaA}A • {child.KabloMesafeM}m{KesitEk(child.KabloKesiti)}",
+                        ? $"⚡ UPS Kolonu • Kablo: {child.KabloMesafeM:0.##} m{KesitEk(child.KabloKesiti)}"
+                        : $"Kablo: {child.KabloMesafeM:0.##} m • {child.UstPanoCikisSigortaA}A{KesitEk(child.KabloKesiti)}",
                     FontSize = 10,
                     Foreground = merkeziKolon
                         ? new SolidColorBrush(Color.Parse("#8AD8E8"))
@@ -861,9 +958,21 @@ public partial class TekHatSemasiWindow
             };
             Canvas.SetLeft(lbl, laneX + 4);
             Canvas.SetTop(lbl, ((cy + 21) + (childY - 21)) / 2.0 - 10);
+            KabloEtiketiniBagla(lbl, child);
             SemaCanvas.Children.Add(lbl);
 
-            double childStartX = childCx - cw * ColWidth / 2.0;
+            // Kutu parent sütununda istiflenir; kat-dışı/busbar alt ağacı olan çocuk ise alt ağacını
+            // kendi şeridine (curX'ten itibaren) yerleştirir — SubtreeColCount ile aynı kural.
+            double childStartX;
+            if (IstifSeridiGerekir(child))
+            {
+                childStartX = curX;
+                curX += cw * ColWidth;
+            }
+            else
+            {
+                childStartX = childCx - cw * ColWidth / 2.0;
+            }
             DrawNode(child, childStartX, childCx, childY);
 
             // Sonraki kardeş, bu çocuğun aynı-kat alt ağacının altından başlasın.
@@ -989,10 +1098,8 @@ public partial class TekHatSemasiWindow
 
         var miKablo = new MenuItem { Header = "Kablo Mesafesini Değiştir" };
         miKablo.Click += (_, _) => {
-            _vm.SeciliPano = node;
-            PanoSeciciGuncelle();
-            SemaCiz();
-            KabloMesafe.Focus(); // Üst bardaki textBox'a odaklar
+            // Etiket şemada çizildiyse düzenleyici onun yanında, yoksa pano kutusunda açılır.
+            KabloMesafeDuzenle(node, _kabloEtiketleri.TryGetValue(node, out var etiket) ? etiket : border);
         };
 
         var miSil = new MenuItem { Header = "Panoyu Sil" };
@@ -1205,16 +1312,47 @@ public partial class TekHatSemasiWindow
         if (jeneratorHedefiOlabilir) ctx.Items.Add(miJenerator);
         ctx.Items.Add(new Separator());
         ctx.Items.Add(miSil);
+        // Menü Avalonia'nın kendi sağ-tık akışıyla açılır. Burada şema yeniden çizilmemeli:
+        // SemaCiz bu Border'ı kanvastan koparır ve menü yerleşim hedefini kaybeder.
+        // e.Handled ayarlanmaz; aksi halde ContextMenu açılmaz.
         border.ContextMenu = ctx;
-
-        border.PointerPressed += (s, e) =>
+        border.ContextRequested += (_, _) =>
         {
-            if (e.GetCurrentPoint(border).Properties.IsLeftButtonPressed)
+            _vm.SeciliPano = node;
+            BagliBilgiGuncelle();
+        };
+
+        _panoSecimGorselleri[node] = secili =>
+        {
+            if (_kontrolModu) return;
+            border.Background = new SolidColorBrush(Color.Parse(secili ? "#3A7A18" : bgColor));
+            border.BorderBrush = new SolidColorBrush(Color.Parse(secili ? "#A0E050" : "#5A7A34"));
+            border.BorderThickness = new Avalonia.Thickness(secili ? 2 : 1);
+            if (stack.Children.FirstOrDefault() is TextBlock adMetni)
+                adMetni.FontWeight = secili ? FontWeight.Bold : FontWeight.Normal;
+        };
+
+        border.PointerPressed += async (s, e) =>
+        {
+            var nokta = e.GetCurrentPoint(border);
+            if (nokta.Properties.IsLeftButtonPressed)
             {
                 _vm.SeciliPano = node;
                 PanoSeciciGuncelle();
-                SemaCiz();
+                TabloGuncelle();
+                foreach (var (pano, guncelle) in _panoSecimGorselleri)
+                    guncelle(pano == node);
                 e.Handled = true; // pano seçimi pan başlatmasın
+                if (e.ClickCount == 2)
+                {
+                    var dlg = new PanoAltPanolarDialog(_vm, node);
+                    if (await dlg.ShowDialog<bool>(this))
+                    {
+                        TabloGuncelle();
+                        PanoSeciciGuncelle();
+                        SemaCiz();
+                    }
+                }
             }
         };
 

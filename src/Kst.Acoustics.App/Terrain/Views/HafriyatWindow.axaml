@@ -1,72 +1,133 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="using:Kst.Acoustics.App.Controls"
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Kst.Acoustics.App.Terrain.Views"
         x:Class="Kst.Acoustics.App.Terrain.Views.HafriyatWindow"
-        Width="1200" Height="800"
-        MinWidth="900" MinHeight="600"
-        CanResize="True"
-        WindowStartupLocation="CenterScreen"
-        Background="#060E0A"
-        Title="EYE4PRO Terrain — M60 Hafriyat Hesapla">
-
-    <Grid RowDefinitions="Auto,*,Auto">
-
-        <!-- Araç çubuğu -->
-        <Border Grid.Row="0" Background="#0A1610" BorderBrush="#143222" BorderThickness="0,0,0,1" Padding="14,10">
-            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <Button Click="DxfYukle_OnClick" Background="#2E7D4F" Foreground="White"
-                        BorderThickness="0" CornerRadius="6" Padding="14,7" FontWeight="SemiBold"
-                        Content="DXF Arazi Yükle"/>
-
-                <Rectangle Width="1" Height="22" Fill="#1E3A28"/>
-
-                <TextBlock Text="Hedef kot (m):" Foreground="#9FD3B4" VerticalAlignment="Center"/>
-                <TextBox x:Name="HedefKotBox" Width="90" Text="0" PlaceholderText="örn. 540"
-                         Background="#0F1C14" Foreground="#DDF5E5" BorderBrush="#2E7D4F"/>
-
-                <TextBlock Text="Kabarma %:" Foreground="#9FD3B4" VerticalAlignment="Center"/>
-                <TextBox x:Name="KabarmaBox" Width="60" Text="25"
-                         Background="#0F1C14" Foreground="#DDF5E5" BorderBrush="#234534"/>
-                <TextBlock Text="Sıkışma %:" Foreground="#9FD3B4" VerticalAlignment="Center"/>
-                <TextBox x:Name="SikismaBox" Width="60" Text="10"
-                         Background="#0F1C14" Foreground="#DDF5E5" BorderBrush="#234534"/>
-
-                <Button Click="Hesapla_OnClick" Background="#1B5E36" Foreground="White"
-                        BorderThickness="0" CornerRadius="6" Padding="14,7" FontWeight="SemiBold"
-                        Content="Hesapla"/>
-                <Button Click="AraziKaydet_OnClick" Background="#16302010" BorderBrush="#2E7D4F"
-                        Foreground="#9FD3B4" CornerRadius="6" Padding="12,7"
-                        Content=".e4arazi Kaydet"/>
+        Width="1380" Height="900" MinWidth="1000" MinHeight="680" CanResize="True"
+        WindowStartupLocation="CenterScreen" Background="#060E0A" Title="EYE4PRO Arazi — M60 Hafriyat Hesapla">
+    <Window.Styles>
+        <Style Selector="Button"><Setter Property="Background" Value="#173C29"/><Setter Property="Foreground" Value="#DDF5E5"/><Setter Property="BorderBrush" Value="#2E7D4F"/><Setter Property="CornerRadius" Value="5"/><Setter Property="Padding" Value="10,7"/></Style>
+        <Style Selector="TextBox"><Setter Property="Background" Value="#0F1C14"/><Setter Property="Foreground" Value="#DDF5E5"/><Setter Property="BorderBrush" Value="#2C4B37"/></Style>
+        <Style Selector="ComboBox"><Setter Property="Background" Value="#10251A"/><Setter Property="Foreground" Value="#DDF5E5"/><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
+        <Style Selector="TextBlock"><Setter Property="Foreground" Value="#B8D9C5"/></Style>
+        <Style Selector="TabItem"><Setter Property="Foreground" Value="#B8D9C5"/></Style>
+    </Window.Styles>
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Border Background="#0A1610" BorderBrush="#143222" BorderThickness="0,0,0,1" Padding="14,9">
+            <WrapPanel x:Name="DosyaAraclari">
+                <Button Click="DxfYukle_OnClick" Content="DWG / DXF Yükle" Margin="0,0,8,0"/>
+                <Button Click="AraziAc_OnClick" Content="Arazi Aç" Margin="0,0,8,0"/>
+                <Button Click="Karsilastir_OnClick" Content="İlk / Son Hâli Karşılaştır" Background="#2E7D4F" Margin="0,0,8,0"/>
+                <Button Click="AraziKaydet_OnClick" Content="Arazi ve Tasarımı Kaydet" Margin="0,0,8,0"/>
+                <Button Click="KotlariKaydet_OnClick" Content="Mevcut Kotları CSV Kaydet" Margin="0,0,8,0"/>
+            </WrapPanel>
+        </Border>
+        <Border Grid.Row="1" Padding="16,9" Background="#10241A">
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="DosyaText" Text="ARAZİ TASARIMI" FontSize="16" FontWeight="SemiBold" Foreground="#80D8A4"/>
+                <TextBlock x:Name="OzetText" Text="Bölge çiz → hedef kot ver → kenarlara şev / dik kesim ata → tasarımı incele" TextWrapping="Wrap" FontSize="12"/>
             </StackPanel>
         </Border>
-
-        <!-- 3D önizleme + rapor -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,360">
-            <controls:GeometryPreviewControl x:Name="Onizleme3D"
-                                             Grid.Column="0"
-                                             Projection="Isometric3D"
-                                             UnitLabel="m"/>
-
-            <Border Grid.Column="1" Background="#0A1610" BorderBrush="#143222" BorderThickness="1,0,0,0">
-                <DockPanel LastChildFill="True" Margin="14">
-                    <TextBlock DockPanel.Dock="Top" Text="Hafriyat Raporu"
-                               Foreground="#7BD3A0" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                    <TextBox x:Name="RaporText" IsReadOnly="True" AcceptsReturn="True"
-                             TextWrapping="Wrap" FontFamily="Consolas,Menlo,monospace" FontSize="12"
-                             Background="#0F1C14" Foreground="#DDF5E5" BorderBrush="#1E3A28"
-                             Text="DXF arazi dosyası yükleyin, hedef kot girin ve Hesapla'ya basın."/>
-                </DockPanel>
+        <Grid Grid.Row="2" ColumnDefinitions="*,385">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <WrapPanel x:Name="PlanAraclari" Margin="10,8,6,0">
+                    <Button Content="+ Bölge Çiz" Click="SinirCiz_OnClick" Background="#2E7D4F" Margin="0,0,5,5"/>
+                    <Button Content="+ Dikdörtgen" Click="Dikdortgen_OnClick" Margin="0,0,5,5"/>
+                    <Button Content="Tamamla" Click="SinirTamamla_OnClick" Margin="0,0,5,5"/>
+                    <Button Content="İptal" Click="SinirIptal_OnClick" Margin="0,0,5,5"/>
+                    <Button x:Name="GeriAlButton" Content="↶ Geri Al" Click="GeriAl_OnClick" Margin="0,0,5,5"/>
+                    <Button x:Name="IleriAlButton" Content="↷ İleri Al" Click="IleriAl_OnClick" Margin="0,0,5,5"/>
+                    <Button Content="Sığdır" Click="Sigdir_OnClick" Margin="0,0,5,5"/>
+                </WrapPanel>
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="12,2,12,6">
+                    <TextBlock Text="Görünüm" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <ComboBox x:Name="YuzeyGorunumBox" Grid.Column="1" SelectionChanged="GorunumDegisti" SelectedIndex="0" MaxWidth="240" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="Mevcut arazi"/><ComboBoxItem Content="Tasarım yüzeyi"/><ComboBoxItem Content="Yarma / dolgu"/>
+                    </ComboBox>
+                    <TextBlock x:Name="OnizlemeBilgiText" Grid.Column="2" Text="Mevcut arazi" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0" MaxWidth="300" TextWrapping="Wrap"/>
+                </Grid>
+                <TabControl x:Name="GorunumSekmeleri" Grid.Row="2" Background="#091811">
+                    <TabItem Header="Kot Planı"><local:AraziPlanControl x:Name="Plan"/></TabItem>
+                    <TabItem Header="3B Arazi"><local:Arazi3DControl x:Name="Onizleme3D"/></TabItem>
+                </TabControl>
+                <TextBlock x:Name="KonumText" Grid.Row="3" Text="Plan üzerinde bölgeye veya kenarına tıklayarak seçin." FontSize="11" Margin="12,7"/>
+            </Grid>
+            <Border Grid.Column="1" Background="#0A1610" BorderBrush="#143222" BorderThickness="1,0,0,0" Padding="13">
+                <ScrollViewer>
+                    <StackPanel Spacing="9">
+                        <StackPanel x:Name="TasarimPanel" Spacing="9">
+                            <TextBlock Text="TASARIM BÖLGELERİ" FontSize="14" FontWeight="SemiBold" Foreground="#7BD3A0"/>
+                            <TextBlock Text="Her bölgenin kotu bağımsızdır. Bölge dışındaki arazi, şev dışında korunur." FontSize="11" TextWrapping="Wrap"/>
+                            <ListBox x:Name="BolgeListesi" Height="115" Background="#102019" Foreground="#DDF5E5" SelectionChanged="BolgeSecimiDegisti"/>
+                            <WrapPanel>
+                                <Button Content="Bölgeyi Sil" Click="BolgeSil_OnClick" Margin="0,0,5,0"/>
+                                <Button Content="↑ Öncelik" Click="Yukari_OnClick" Margin="0,0,5,0"/>
+                                <Button Content="↓ Öncelik" Click="Asagi_OnClick"/>
+                            </WrapPanel>
+                            <TextBlock x:Name="BolgeBilgiText" Text="Başlamak için + Bölge Çiz veya + Dikdörtgen seçin." TextWrapping="Wrap" Foreground="#E2C786" FontSize="12"/>
+                            <StackPanel x:Name="BolgeFormu" Spacing="8" IsEnabled="False">
+                                <TextBox x:Name="BolgeAdiBox" PlaceholderText="Bölge adı" TextChanged="FormDegisti"/>
+                                <TextBlock Text="Hedef kot (m)"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox x:Name="HedefKotBox" PlaceholderText="Örn. 1002.50" TextChanged="FormDegisti"/>
+                                    <Button Grid.Column="1" Content="Araziden Kot Al" Click="KotSec_OnClick" Margin="7,0,0,0"/>
+                                </Grid>
+                                <TextBlock Text="Bölgenin varsayılan kenar davranışı"/>
+                                <ComboBox x:Name="KenarTipiBox" SelectedIndex="0" SelectionChanged="FormSecimiDegisti">
+                                    <ComboBoxItem Content="Dik kesim"/><ComboBoxItem Content="Mevcut araziye şevle bağla"/>
+                                </ComboBox>
+                                <Grid ColumnDefinitions="*,*" >
+                                    <StackPanel Spacing="4" Margin="0,0,7,0">
+                                        <TextBlock Text="Şev: 1 düşey / yatay" FontSize="11"/>
+                                        <TextBox x:Name="SevOraniBox" Text="1.5" TextChanged="FormDegisti"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="Azami şev mesafesi (m)" FontSize="11"/>
+                                        <TextBox x:Name="SevMesafeBox" Text="50" TextChanged="FormDegisti"/>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="Örnek: 1,5 değeri, 1 m düşey fark için 1,5 m yatay mesafedir." TextWrapping="Wrap" FontSize="11" Foreground="#779887"/>
+                                <Expander x:Name="KenarPanel" Header="Tek kenara özel ayar" IsExpanded="False" Foreground="#B8D9C5">
+                                    <StackPanel Spacing="6">
+                                        <ComboBox x:Name="KenarListesi" SelectionChanged="KenarSecimiDegisti"/>
+                                        <ComboBox x:Name="TekKenarTipiBox" SelectedIndex="0" SelectionChanged="FormSecimiDegisti">
+                                            <ComboBoxItem Content="Bölgenin ayarını kullan"/><ComboBoxItem Content="Bu kenarda dik kesim"/><ComboBoxItem Content="Bu kenarda şev"/>
+                                        </ComboBox>
+                                        <TextBox x:Name="TekKenarOraniBox" Text="1.5" PlaceholderText="Bu kenarın yatay/düşey oranı" TextChanged="FormDegisti"/>
+                                        <TextBlock Text="Planda kenara tıklayabilir veya listeden seçebilirsiniz. Turuncu: dik · kesik yeşil: şev." TextWrapping="Wrap" FontSize="11" Foreground="#779887"/>
+                                    </StackPanel>
+                                </Expander>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Button x:Name="UygulaButton" Content="Bölgeyi Uygula ve Önizle" Click="BolgeUygula_OnClick" Background="#2E7D4F" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="Vazgeç" Click="FormVazgec_OnClick" Margin="6,0,0,0"/>
+                                </Grid>
+                                <TextBlock x:Name="FormDurumText" Text="" TextWrapping="Wrap" FontSize="11" Foreground="#E2C786"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Text="Şevler çakışırsa listedeki üst bölge önceliklidir. Platform içleri birbirinin üzerine gelemez." TextWrapping="Wrap" FontSize="11" Foreground="#779887"/>
+                        <Expander Header="Hesap ayarları" IsExpanded="False" Foreground="#B8D9C5">
+                            <StackPanel x:Name="HesapAyarlari" Spacing="7">
+                                <TextBlock Text="Hacim hesabı ızgarası (m)"/><TextBox x:Name="GridBox" TextChanged="HesapAyariDegisti"/>
+                                <Grid ColumnDefinitions="*,*">
+                                    <StackPanel Spacing="4" Margin="0,0,7,0"><TextBlock Text="Kabarma (%)"/><TextBox x:Name="KabarmaBox" Text="25" TextChanged="HesapAyariDegisti"/></StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Sıkışma (%)"/><TextBox x:Name="SikismaBox" Text="10" TextChanged="HesapAyariDegisti"/></StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Expander>
+                        <Button x:Name="HesaplaButton" Content="Tüm Bölgelerin Hafriyatını Hesapla" Click="Hesapla_OnClick" Background="#2E7D4F" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                        <TextBlock x:Name="SonucDurumText" Text="Önce arazi dosyasını yükleyin." TextWrapping="Wrap" Foreground="#EDCE86" FontSize="12"/>
+                        <Expander Header="Hafriyat raporu ve kontrol notları" Foreground="#B8D9C5" IsExpanded="True">
+                            <TextBox x:Name="RaporText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="120" FontSize="12" Text="Bölge tasarımı oluşturulduğunda kontrol notları burada görünür."/>
+                        </Expander>
+                        <Expander Header="Kaynak arazi bilgileri" Foreground="#B8D9C5">
+                            <TextBox x:Name="ImportText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="100" FontSize="11"/>
+                        </Expander>
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
-
-        <!-- Durum çubuğu -->
-        <Border Grid.Row="2" Background="#070D0A" BorderBrush="#143222" BorderThickness="0,1,0,0" Padding="14,8">
+        <Border Grid.Row="3" Background="#070D0A" BorderBrush="#143222" BorderThickness="0,1,0,0" Padding="14,8">
             <Grid ColumnDefinitions="*,Auto">
-                <TextBlock x:Name="DurumText" Foreground="#6FB78E" FontSize="12"
-                           VerticalAlignment="Center" Text="Hazır."/>
-                <Button Grid.Column="1" Content="← Terrain Modül Merkezi" Click="Geri_OnClick"
-                        Background="#1B2A1F" Foreground="#9FD3B4" BorderThickness="0"
-                        CornerRadius="6" Padding="12,6"/>
+                <TextBlock x:Name="DurumText" Text="Hazır." FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0"/>
+                <Button Grid.Column="1" Content="← Modül Merkezi" Click="Geri_OnClick"/>
             </Grid>
         </Border>
     </Grid>

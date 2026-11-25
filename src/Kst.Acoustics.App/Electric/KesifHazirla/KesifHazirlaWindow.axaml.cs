@@ -14,6 +14,17 @@ public partial class KesifHazirlaWindow : Window
     private DataGridColumn? _colMiktar;
     private DataGridColumn? _colSonGuncelleme;
     private string _kaydedilenProjeParmakIzi = "";
+    private bool _kayitSuruyor;
+    private bool _dosyaAciliyor;
+    private KesifProjeDegisiklikIzleyici? _degisiklikIzleyici;
+    private bool _kayitDurumuGuncellemesiBekliyor;
+
+    private bool BelgeIslemiSuruyor()
+    {
+        if (!_kayitSuruyor && !_dosyaAciliyor) return false;
+        ViewModel.DurumMesaji = "Dosya işlemi sürüyor; tamamlanmasını bekleyin.";
+        return true;
+    }
 
     public KesifHazirlaWindow()
     {
@@ -27,11 +38,8 @@ public partial class KesifHazirlaWindow : Window
         _colSonGuncelleme = dgPozKutuphanesi.Columns.FirstOrDefault(c => c.SortMemberPath == nameof(KesifPoz.SonGuncellemeTarihi));
 
         GuncelleSonGuncellemeKolonu();
-        ViewModel.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(KesifHazirlaViewModel.OzelPozModuAktif))
-                GuncelleSonGuncellemeKolonu();
-        };
+        ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        ProjeDegisiklikleriniIzle();
 
         // Kullanıcının elle ayarladığı sütun genişliklerini hatırla (AppData).
         Opened += (_, _) =>
@@ -41,14 +49,51 @@ public partial class KesifHazirlaWindow : Window
         };
         Closing += Window_Closing;
         KeyDown += Window_KeyDown;
+        Closed += (_, _) =>
+        {
+            _degisiklikIzleyici?.Dispose();
+            ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        };
         KayitDurumunuTemizle();
     }
+
+    private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(KesifHazirlaViewModel.OzelPozModuAktif)) GuncelleSonGuncellemeKolonu();
+        if (e.PropertyName == nameof(KesifHazirlaViewModel.Proje)) ProjeDegisiklikleriniIzle();
+    }
+
+    private void ProjeDegisiklikleriniIzle()
+    {
+        _degisiklikIzleyici?.Dispose();
+        _degisiklikIzleyici = new KesifProjeDegisiklikIzleyici(ViewModel.Proje);
+        _degisiklikIzleyici.Degisti += (_, _) =>
+        {
+            txtKayitDurumu.IsVisible = true;
+            if (_kayitDurumuGuncellemesiBekliyor) return;
+            _kayitDurumuGuncellemesiBekliyor = true;
+            // Toplu metraj/kütüphane işlemlerinde her bildirim için büyük proje JSON'unu üretme.
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                _kayitDurumuGuncellemesiBekliyor = false;
+                KayitDurumunuGuncelle();
+            }, Avalonia.Threading.DispatcherPriority.Background);
+        };
+    }
+
+    private void KayitDurumunuGuncelle() => txtKayitDurumu.IsVisible = DegisiklikVarMi();
 
     private bool _cikisOnaylandi;
     private bool _launcheriAc;
 
     private async void Window_Closing(object? sender, WindowClosingEventArgs e)
     {
+        if (BelgeIslemiSuruyor())
+        {
+            e.Cancel = true;
+            _launcheriAc = false;
+            return;
+        }
         if (_cikisOnaylandi)
         {
             // Gerçekten kapanıyor: sütun genişliklerini kaydet.
@@ -93,10 +138,9 @@ public partial class KesifHazirlaWindow : Window
     {
         if (string.IsNullOrWhiteSpace(_acikDosyaYolu))
         {
-            await FarkliKaydetAsync();
-            return !string.IsNullOrWhiteSpace(_acikDosyaYolu);
+            return await FarkliKaydetAsync() && !DegisiklikVarMi();
         }
-        return await DosyayaKaydetAsync(_acikDosyaYolu);
+        return await DosyayaKaydetAsync(_acikDosyaYolu) && !DegisiklikVarMi();
     }
 
     /// <summary>Elektrik modül menüsünü (launcher) mevcut pencerenin bulunduğu ekranda açar (çift monitör).</summary>
@@ -126,6 +170,7 @@ public partial class KesifHazirlaWindow : Window
             return;
 
         e.Handled = true;
+        if (!ViewModel.TabloDuzenlemeyeAcikMi(ViewModel.SeciliTablo, altlariDahil: true)) return;
         var onay = await OnayWindow.Goster(this, "Tablo Sil",
             $"'{ViewModel.SeciliTablo.Ad}' tablosu (ve varsa alt tabloları/satırları) silinecek. Onaylıyor musunuz?");
         if (onay && ViewModel.TabloSilCommand.CanExecute(null))
@@ -145,6 +190,7 @@ public partial class KesifHazirlaWindow : Window
     {
         if (ViewModel.SeciliSatir is null)
             return;
+        if (!ViewModel.TabloDuzenlemeyeAcikMi(ViewModel.SeciliTablo)) return;
 
         var ad = string.IsNullOrWhiteSpace(ViewModel.SeciliSatir.BirimAdi)
             ? ViewModel.SeciliSatir.PozNo
@@ -163,6 +209,7 @@ public partial class KesifHazirlaWindow : Window
 
     private async void Yeni_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        if (BelgeIslemiSuruyor()) return;
         if (!await DegisiklikleriKoruAsync(
                 "Yeni Proje",
                 "Yeni proje oluşturulursa mevcut kaydedilmemiş değişiklikler kaybolacak.",
@@ -177,6 +224,7 @@ public partial class KesifHazirlaWindow : Window
 
     private async void Ac_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        if (BelgeIslemiSuruyor()) return;
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Keşif dosyası aç",
@@ -188,6 +236,8 @@ public partial class KesifHazirlaWindow : Window
         if (string.IsNullOrWhiteSpace(path))
             return;
 
+        if (BelgeIslemiSuruyor()) return;
+
         if (!await DegisiklikleriKoruAsync(
                 "Başka Proje Aç",
                 "Başka bir proje açılırsa mevcut kaydedilmemiş değişiklikler kaybolacak.",
@@ -197,6 +247,7 @@ public partial class KesifHazirlaWindow : Window
 
         try
         {
+            _dosyaAciliyor = true;
             var proje = await Task.Run(() => KesifJsonServisi.Ac(path));
             ViewModel.ProjeYukle(proje);
             _acikDosyaYolu = path;
@@ -206,6 +257,7 @@ public partial class KesifHazirlaWindow : Window
         {
             ViewModel.DurumMesaji = $"Keşif dosyası açılamadı: {ex.Message}";
         }
+        finally { _dosyaAciliyor = false; }
     }
 
     private async void Kaydet_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -224,6 +276,7 @@ public partial class KesifHazirlaWindow : Window
 
     private async Task<bool> FarkliKaydetAsync()
     {
+        if (BelgeIslemiSuruyor()) return false;
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = "Keşif dosyasını farklı kaydet",
@@ -250,11 +303,17 @@ public partial class KesifHazirlaWindow : Window
 
     private async Task<bool> DosyayaKaydetAsync(string path)
     {
+        if (BelgeIslemiSuruyor()) return false;
+        var proje = ViewModel.Proje;
+        _kayitSuruyor = true;
         try
         {
-            await KesifJsonServisi.KaydetAsync(ViewModel.Proje, path);
-            KayitDurumunuTemizle();
-            ViewModel.DurumMesaji = $"Keşif dosyası kaydedildi: {Path.GetFileName(path)}";
+            var kaydedilenParmakIzi = await KesifJsonServisi.KaydetAsync(proje, path);
+            if (!ReferenceEquals(proje, ViewModel.Proje)) return false;
+            _kaydedilenProjeParmakIzi = kaydedilenParmakIzi;
+            KayitDurumunuGuncelle();
+            ViewModel.DurumMesaji = $"Keşif dosyası kaydedildi: {Path.GetFileName(path)}"
+                + (DegisiklikVarMi() ? ". Kayıt sırasında yapılan yeni değişiklikler için tekrar kaydedin." : "");
             return true;
         }
         catch (Exception ex)
@@ -262,6 +321,7 @@ public partial class KesifHazirlaWindow : Window
             ViewModel.DurumMesaji = $"Keşif dosyası kaydedilemedi: {ex.Message}";
             return false;
         }
+        finally { _kayitSuruyor = false; KayitDurumunuGuncelle(); }
     }
 
     private async void ExcelIceAktar_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -340,6 +400,11 @@ public partial class KesifHazirlaWindow : Window
         return ad.Replace(' ', '_');
     }
 
+    private void Grid_BeginningEdit(object? sender, DataGridBeginningEditEventArgs e)
+    {
+        if (ViewModel.SeciliTabloSaltOkunur) e.Cancel = true;
+    }
+
     private void Grid_CellEditEnded(object? sender, DataGridCellEditEndedEventArgs e)
         => ViewModel.HesaplariYenile();
 
@@ -354,7 +419,7 @@ public partial class KesifHazirlaWindow : Window
         }
     }
 
-    private void OzelPozGuncelle_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OzelPozlar_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (ViewModel.SeciliPoz is not null && !ViewModel.SeciliPoz.ListePozuMu)
         {
@@ -444,7 +509,10 @@ public partial class KesifHazirlaWindow : Window
             StringComparison.Ordinal);
 
     private void KayitDurumunuTemizle()
-        => _kaydedilenProjeParmakIzi = KesifJsonServisi.ParmakIziOlustur(ViewModel.Proje);
+    {
+        _kaydedilenProjeParmakIzi = KesifJsonServisi.ParmakIziOlustur(ViewModel.Proje);
+        KayitDurumunuGuncelle();
+    }
 
     private async Task<bool> DegisiklikleriKoruAsync(
         string baslik,
@@ -471,18 +539,37 @@ public partial class KesifHazirlaWindow : Window
             ViewModel.SeciliTablo = tablo;
     }
 
+    private void Tamamlandi_DoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+        => e.Handled = true; // Tike çift tıklamak tabloyu yeniden adlandırma penceresini açmasın.
+
+    private void Tamamlandi_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not CheckBox { DataContext: KesifTablosu tablo } tik) return;
+        var tamamlandi = tik.IsChecked == true;
+        // Model henüz değişmedi (OneWay): açık hücre düzenlemesini kilit devreye girmeden bitir.
+        if (tamamlandi && (!dgSatirlar.CommitEdit(DataGridEditingUnit.Cell, true) ||
+                          !dgSatirlar.CommitEdit(DataGridEditingUnit.Row, true)))
+            ViewModel.DurumMesaji = "Tamamlandı işaretlemeden önce hücredeki geçersiz değeri düzeltin.";
+        else
+            ViewModel.TabloTamamlanmaDurumuAyarla(tablo, tamamlandi);
+        tik.SetCurrentValue(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, tablo.TamamlandiMi);
+        e.Handled = true;
+    }
+
     private async void ListBox_DoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
         if (ViewModel.SeciliTablo is null)
             return;
 
-        var renameWindow = new RenameTableWindow(ViewModel.SeciliTablo.Ad);
+        var tablo = ViewModel.SeciliTablo;
+        if (!ViewModel.TabloDuzenlemeyeAcikMi(tablo)) return;
+
+        var renameWindow = new RenameTableWindow(tablo.Ad);
         await renameWindow.ShowDialog(this);
 
         if (!string.IsNullOrWhiteSpace(renameWindow.Result))
         {
-            ViewModel.SeciliTablo.Ad = renameWindow.Result;
-            ViewModel.HesaplariYenile();
+            ViewModel.TabloAdiniDegistir(tablo, renameWindow.Result);
         }
     }
 }

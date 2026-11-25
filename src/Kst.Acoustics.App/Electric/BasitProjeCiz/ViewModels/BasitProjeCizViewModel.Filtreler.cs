@@ -107,7 +107,7 @@ public partial class BasitProjeCizViewModel
                 liste = liste.Where(e => UygunMuTip(e, ElemanFiltreTip));
             }
 
-            return liste.ToList();
+            return liste.Where(AsamadaDuzenlenebilir).ToList();
         }
     }
 

@@ -153,14 +153,14 @@ DXF çıktısı:
 - netDxf ile katmanlar: `M11-PANO / M11-KABLO / M11-SEMBOL / M11-METIN / M11-BUSBAR / M11-JEN`.
 - IEC 60617 tarzı semboller: giriş şalteri, sigorta dikdörtgeni, busbar, jeneratör dairesi (G), transfer (ATS).
 - Her pano kutusunda ad/kW/giriş sigortası/Ik; her linyede no/cihaz/faz/kesit/kesme kapasitesi etiketi. **Linye etiketi tüm linye özelliklerini yansıtır:** cihaz tipi (sigorta "16A/B" ↔ "TMŞ"), faz `FazAtamasiGoster` ("RST"/"R"/"S"/"T"), kontaktör (`K{A}A`) ve darbe kesici (`DK{A}A`) işaretleri. Alt panoya giden **çıkış etiketleri** de cihaz tipi (TMŞ) + kesme kapasitesini gösterir (`CikisEtiket`, kablo/busbar kutusu).
-- UI: üst çubukta "DXF Dışa Aktar" butonu → `StorageProvider` SaveFilePicker (`*.dxf`).
+- UI: üst çubukta "Dışa Aktar ▾ → DXF çizimi..." → `StorageProvider` SaveFilePicker (`*.dxf`).
 
 Excel pano raporu:
 - `TekHatSemasiExcelServisi.RaporOlustur(proje, hedefDosya)` tek çalışma kitabında her pano için ayrı sayfa üretir.
 - Sayfa adı pano adından gelir; Excel'in 31 karakter sınırı, yasak karakterleri ve çakışan adlar otomatik yönetilir.
 - Her sayfada pano giriş bilgileri ile linye/alt pano çıkışları 14 sütunlu, filtrelenebilir tabloda yer alır: pano ve üst pano adı, giriş kablosu/mesafesi/sigortası/KAR; linye no veya alt pano/yük; çıkış sigortası/tipi/kesme kapasitesi; çıkış kablosu/mesafesi/açıklaması.
 - Busbar bağlı panolarda busbar ve çıkış kutusu bilgisi; kontrol panolarında buton ataması, damar sayısı ve sinyal kablosu metrajı rapora yansır.
-- UI: üst çubukta "Excel Dışa Aktar" butonu → `StorageProvider` SaveFilePicker (`*.xlsx`).
+- UI: üst çubukta "Dışa Aktar ▾ → Excel raporu..." → `StorageProvider` SaveFilePicker (`*.xlsx`).
 
 ---
 
@@ -493,3 +493,51 @@ Son bilinen genel hedef:
 6. Kütüphane değişikliği için `ElektrikKutuphaneServisi` ve `KutuphaneWindow` alanlarını kontrol et.
 7. M12 aktarımını etkileyen değişikliklerde `.e4p11` round-trip testini koru.
 8. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+
+---
+
+## 17. 2026-09-07 M11 Hata Düzeltmeleri
+
+- Monofaze besleme en yüklü faza göre boyutlanır.
+- UPS giriş kayıpları üst besleme zincirine yansır; otomatik UPS yük değiştikçe yeniden seçilir.
+- Kompanzasyon kesinleştikten sonra busbar yeniden hesaplanır; busbar diversiteli talebi kullanır.
+- Sigorta tavanını aşan gerçek talep kablo seçiminde korunur.
+- Busbar bağlantıları pano ağacında döngü oluşturamaz.
+- Excel aktarımı mevcut linyelere ekler ve metin ondalık ayraçlarını kültürden bağımsız okur.
+- Pano adları benzersizdir; ana pano tekildir ve adı sabittir; UPS/transfer türleri genel pano düzenlemesinde korunur.
+- OG önizlemesi ana panoyu değiştirmez.
+- Linye kopyası ekipman ve manuel koruma seçimlerini taşır.
+- DXF UPS beslemesi seri topolojide çizilir.
+
+Doğrulama: çözüm build 0 hata/0 uyarı; eklenen 13/13 M11 regresyonu geçti. Tam özel test paketinde yalnız M11 dışındaki malzeme kütüphanesi erişim testi `Access to the path is denied` hatası verdi.
+
+---
+
+## 18. 2026-10-04 Üst Çubuk Sadeleştirme
+
+- Başlık çubuğu tek satırdır: başlık + proje adı + kaydedilmedi rozeti | Selektivite, `✓ Kontrol`, `Ayarlar ▾` | `Dosya ▾` (Yeni/Aç/Kaydet/Farklı Kaydet), `Kaydet`, `Dışa Aktar ▾` (Excel raporu/DXF), `Kütüphane`, `Modüller`.
+- Gerilim düşümü (segment/toplam) ve UPS topolojisi + Merkezi UPS Kur/Kaldır `Ayarlar ▾` açılır panelindedir; kontrol adları (`GerilimDususBox`, `ToplamGerilimDususBox`, `UpsTopolojiCombo`, `MerkeziUpsKurBtn`) korunmuştur.
+- Pano çubuğu tek `WrapPanel`dir (Yeni pano | Busbar/Jeneratör/OG/Bina | Seçili pano); geniş ekranda tek satır, darda alta sarar. `PanoMenuToggleBtn` tümünü gizler.
+- Seçili panoya Excel linye aktarımı ayrı panel değildir; `Linye Ekle` başlığındaki `Excel ▾` menüsündedir (şablon oluştur / seçili panoya aktar). Pano sağ-tık "Excelden Aktar" de korunur.
+- Üst çubuktaki `Kablo (m)`/`Ata` kaldırıldı. Kablo metrajı şemadaki besleme kablosu etiketine (`16A • 60m • 4x2,5 mm²`, busbar kutu-pano etiketi dahil) sol tıkla değiştirilir: açılan düzenleyicide mevcut metraj hazır gelir, Enter/Uygula kaydeder (`KabloMesafeKullaniciAyarladi=true`), Esc kapatır. Pano sağ-tık "Kablo Mesafesini Değiştir" aynı düzenleyiciyi açar (`KabloMesafeDuzenle`).
+
+---
+
+## 19. 2026-10-13 Busbar Kat ve Çıkış Yerleşimi
+
+Şema besleme etiketleri: pano→pano ve busbar çıkış kutusu→pano bağlantılarında kablo metrajı `Kablo: … m` biçiminde başta gösterilir; sigorta ve kesit devamında yer alır. Merkezi UPS kolonunda da metraj görünür ve etiket tıklanarak düzenlenebilir. Busbar kutusunun kat içi konumu kablo metrajından ayrı olarak araç ipucunda gösterilir.
+
+Pano çift tıklama: şemadaki pano kutusuna çift tıklanınca `PanoAltPanolarDialog` açılır. Yalnız doğrudan alt panolar, toplam kW/kVAr güçleri, besleme kablo metrajları ve düzenlenebilir eşzamanlılık katsayıları (ks) gösterilir. Katsayı 0'dan büyük ve en fazla 1 olmalıdır. Metrajlar ve katsayılar birlikte doğrulandıktan sonra topluca kaydedilir ve tüm hesaplar yenilenir; busbar beslemede kutu→pano kablosu güncellenir. İptal değişiklik yapmaz. Tek tıklama seçimi kutuları yeniden oluşturmadan görsel vurguyu günceller; böylece çift tıklama hedefi korunur.
+
+- Şemadaki busbar adına sol tıklanınca yalnız ilgili busbar, çıkış kutuları ve bu kutulara doğrudan bağlı ilk panoların bulunduğu `BusbarYerlesimDialog` açılır.
+- Her bina katı için o kattaki busbar uzunluğu; her çıkış kutusu için yalnız kendi katının başlangıcından ölçülen `KatPozisyonM` girilir.
+- Hesaplarda kullanılan `PozisyonM`, besleyen panonun katından hedef kata kadar olan kat uzunlukları ile kat içi konum toplanarak otomatik üretilir. `ToplamUzunlukM`, kat uzunluklarının toplamıdır.
+- Yeni pano busbara bağlanırken “üst panodan / önceki kutudan” seçimi gösterilmez; yalnız panonun bulunduğu kattaki çıkış konumu girilir. Tanımlı kat uzunluğu aşılırsa kayıt reddedilir.
+- Kat uzunlukları `BusbarHatti.KatBolumleri`, yerel çıkış konumu `BusbarCikisKutusu.KatPozisyonM` alanlarında `.e4p11` ile saklanır; eski projelerde alanlar yoksa mevcut mutlak pozisyon davranışı korunur.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Linye koruma hesabının 630 A sınırında kalması düzeltildi; büyük akım listesi 6300 A dahil genişletildi (A09).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.

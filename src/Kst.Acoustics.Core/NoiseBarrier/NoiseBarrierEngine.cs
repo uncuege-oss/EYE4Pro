@@ -466,7 +466,7 @@ public class NoiseBarrierEngine
     {
         _project.ValidationWarnings.Clear();
 
-        if (_project.Sources.Count == 0)
+        if (!_project.Sources.Any(source => source.IsEnabled))
             _project.ValidationWarnings.Add("Etkin kaynak bulunmuyor.");
 
         if (barrierPairs.Count == 0)

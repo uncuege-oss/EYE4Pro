@@ -30,6 +30,7 @@ public partial class TekHatSemasiWindow : Window
     // OG (trafo) bloğunun çizileceği üst Y (SemaCiz'de hesaplanır): Trafo Katı'na göre en üstte
     // veya seçilen katın üstündeki ayrılmış bantta.
     private double _ogTopY;
+    private string? _ogYerlesimKati;
 
     // Şema kanvası zoom/pan durumu
     private readonly ScaleTransform _semaScale = new();
@@ -57,6 +58,7 @@ public partial class TekHatSemasiWindow : Window
     private bool _kontrolModu;
     private bool _karUiYukleniyor = true;
     private string _kaydedilenProjeParmakIzi = "";
+    private readonly DispatcherTimer _kayitGostergesiTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _kapanisOnaylandi;
     private bool _launcheriAc;
 
@@ -72,7 +74,11 @@ public partial class TekHatSemasiWindow : Window
         _karUiYukleniyor = false;
         _kaydedilenProjeParmakIzi = ProjeParmakIziOlustur();
         Closing += Window_Closing;
+        _kayitGostergesiTimer.Tick += (_, _) => KayitGostergesiniGuncelle();
+        _kayitGostergesiTimer.Start();
+        Closed += (_, _) => _kayitGostergesiTimer.Stop();
         KeyDown += Window_KeyDown;
+        AddHandler(KeyDownEvent, Window_LinyePanoKisayolu, Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
         Opened += (_, _) =>
         {

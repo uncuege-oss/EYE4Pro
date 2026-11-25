@@ -99,7 +99,7 @@
         <Border DockPanel.Dock="Bottom" Background="#0A140B" BorderBrush="#1A3018"
                 BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,10,0,0"
                 x:CompileBindings="False"
-                IsVisible="{Binding SeciliSatirAktif}">
+                IsVisible="{Binding SeciliSatirAktif}" IsEnabled="{Binding MahalDuzenlemeAktif}">
             <StackPanel Spacing="5">
                 
                 <!-- GENEL AYARLAR (Satır Seçiliyse) -->
@@ -108,12 +108,15 @@
                     <TextBlock Grid.Column="0" Text="GENEL Ayarlar (Tüm Odalar):" Classes="lbl" FontWeight="Bold" Foreground="#DDEED2"/>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
                         <TextBlock Classes="lbl" Text="Yerleşim Tipi:"/>
+                        <TextBlock Classes="lbl" Text="{Binding $parent[Window].KumandaYerlesimKurali}"
+                                   IsVisible="{Binding $parent[Window].AnahtarAdimi}"/>
                         <ComboBox ItemsSource="{Binding $parent[Window].YerlesimTipleri}"
+                                  IsVisible="{Binding !$parent[Window].AnahtarAdimi}"
                                   SelectedItem="{Binding YerlesimTipi, Mode=TwoWay}"
                                   SelectionChanged="AyarCombo_SelectionChanged"
                                   Width="110" Height="26" FontSize="11"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6">
+                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" IsVisible="{Binding !$parent[Window].AnahtarAdimi}">
                         <TextBlock Classes="lbl" Text="Montaj:"/>
                         <ComboBox ItemsSource="{Binding $parent[Window].MontajTipleri}"
                                   SelectedItem="{Binding MontajTipi, Mode=TwoWay}"
@@ -128,7 +131,7 @@
                                        ToolTip.Tip="Tüm odalar için varsayılan güç. Oda-özel ayar varsa onu ezer."
                                        ValueChanged="GelenGucWDegisti"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="6">
+                    <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="6" IsVisible="{Binding !$parent[Window].AnahtarAdimi}">
                         <TextBlock Classes="lbl" Text="Grid X:"/>
                         <NumericUpDown Value="{Binding GridAraligiM, Mode=TwoWay}"
                                        Minimum="0.1" Maximum="50" Increment="0.5"
@@ -145,7 +148,7 @@
                                        LostFocus="GridAlanLostFocus"/>
                         <TextBlock Classes="lbl" Text="m"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="6">
+                    <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="6" IsVisible="{Binding !$parent[Window].AnahtarAdimi}">
                         <TextBlock Classes="lbl" Text="Duvar aralığı:"/>
                         <NumericUpDown Value="{Binding DuvarAraligiM, Mode=TwoWay}"
                                        Minimum="0.1" Maximum="50" Increment="0.5"
@@ -175,12 +178,15 @@
                                 IsVisible="{Binding !GenelAyarKullan}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Classes="lbl" Text="Yerleşim Tipi:"/>
+                            <TextBlock Classes="lbl" Text="{Binding $parent[Window].KumandaYerlesimKurali}"
+                                       IsVisible="{Binding $parent[Window].AnahtarAdimi}"/>
                             <ComboBox ItemsSource="{Binding $parent[Window].YerlesimTipleri}"
+                                      IsVisible="{Binding !$parent[Window].AnahtarAdimi}"
                                       SelectedItem="{Binding YerlesimTipi, Mode=TwoWay}"
                                       SelectionChanged="AyarCombo_SelectionChanged"
                                       Width="110" Height="26" FontSize="11"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !$parent[Window].AnahtarAdimi}">
                             <TextBlock Classes="lbl" Text="Grid X:"/>
                             <NumericUpDown Value="{Binding GridAraligiM, Mode=TwoWay}"
                                            Minimum="0.1" Maximum="50" Increment="0.5"
@@ -197,7 +203,7 @@
                                            LostFocus="GridAlanLostFocus"/>
                             <TextBlock Classes="lbl" Text="m"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !$parent[Window].AnahtarAdimi}">
                             <TextBlock Classes="lbl" Text="Duvar aralığı:"/>
                             <NumericUpDown Value="{Binding DuvarAraligiM, Mode=TwoWay}"
                                            Minimum="0.1" Maximum="50" Increment="0.5"

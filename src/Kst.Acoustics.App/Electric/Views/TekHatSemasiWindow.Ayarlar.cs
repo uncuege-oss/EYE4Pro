@@ -147,6 +147,9 @@ public partial class TekHatSemasiWindow
     {
         var ctx = new ContextMenu();
 
+        var miYerlesim = new MenuItem { Header = "Kat ve Çıkış Yerleşimi" };
+        miYerlesim.Click += async (_, _) => await BusbarYerlesimAc(bb);
+
         var miDuzenle = new MenuItem { Header = "Busbarı Düzenle" };
         miDuzenle.Click += async (_, _) => await BusbarDuzenleAc(bb);
 
@@ -161,10 +164,23 @@ public partial class TekHatSemasiWindow
             PanoOzetText.Text = $"✓ '{bb.Ad}' busbar hattı silindi; bağlı panolar kablo bağlantısına çevrildi.";
         };
 
+        ctx.Items.Add(miYerlesim);
         ctx.Items.Add(miDuzenle);
         ctx.Items.Add(new Separator());
         ctx.Items.Add(miSil);
         return ctx;
+    }
+
+    private async Task BusbarYerlesimAc(BusbarHatti bb)
+    {
+        var dlg = new BusbarYerlesimDialog(_vm, bb);
+        bool kaydedildi = await dlg.ShowDialog<bool>(this);
+        if (!kaydedildi) return;
+
+        TabloGuncelle();
+        PanoSeciciGuncelle();
+        SemaCiz();
+        PanoOzetText.Text = $"✓ '{bb.Ad}' kat ve çıkış yerleşimi güncellendi.";
     }
 
     private async Task BusbarDuzenleAc(BusbarHatti bb)
@@ -189,7 +205,7 @@ public partial class TekHatSemasiWindow
         var kutu = bb.CikisKutulari.FirstOrDefault(k => k.BagliPanoAd == pano.Ad);
         PanoOzetText.Text = kutu == null
             ? $"✓ '{pano.Ad}' busbar bağlantısı güncellendi."
-            : $"✓ '{pano.Ad}' çıkış kutusu {kutu.PozisyonM:0.##} m konumuna ayarlandı.";
+            : $"✓ '{pano.Ad}' çıkış kutusu {pano.Kat} katında {(kutu.KatPozisyonM ?? kutu.PozisyonM):0.##} m konumuna ayarlandı.";
     }
 
     // === PROJE İŞLEMLERİ ===
@@ -489,7 +505,18 @@ public partial class TekHatSemasiWindow
         => !string.Equals(_kaydedilenProjeParmakIzi, ProjeParmakIziOlustur(), StringComparison.Ordinal);
 
     private void KayitDurumunuTemizle()
-        => _kaydedilenProjeParmakIzi = ProjeParmakIziOlustur();
+    {
+        _kaydedilenProjeParmakIzi = ProjeParmakIziOlustur();
+        KayitGostergesiniGuncelle();
+    }
+
+    // Sağ üstteki "Kaydedilmedi" rozeti. Değişiklik yapılan yer çok olduğundan her işleme bağlamak
+    // yerine kayıt parmak izi periyodik karşılaştırılır (_kayitGostergesiTimer).
+    private void KayitGostergesiniGuncelle()
+    {
+        if (KaydedilmediRozet == null) return;
+        KaydedilmediRozet.IsVisible = DegisiklikVarMi();
+    }
 
     private string ProjeParmakIziOlustur()
         => JsonSerializer.Serialize(_vm.Proje, _jsonOpts);

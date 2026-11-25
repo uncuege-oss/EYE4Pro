@@ -389,14 +389,17 @@ public static class MahalListesiServisi
             .Concat(kutuphane.Prizler)
             .Concat(kutuphane.Klimalar);
 
-        var eslesen = tumu.FirstOrDefault(t =>
-            BasitProjeCizKutuphaneServisi.TipBlokAdindan(t.BlokAdi) == tip);
+        var eslesen = tumu.FirstOrDefault(t => BasitProjeCizKutuphaneServisi.TanimTipi(t) == tip);
         if (eslesen is not null) return eslesen;
 
         return BasitProjeCizKutuphaneServisi.ZayifAkimTanim(tip) ?? kutuphane.BulManuelTanim(tip);
     }
 
     // ─── 4) Yerleşim ön-tahmini (M5) ──────────────────────────────────────
+
+    public static bool KullaniciAdediGerekir(BpcElemanTipi tip, string yerlesim) =>
+        yerlesim is "Adet" or "Açıklık Yanı" or "Homojen Duvar" ||
+        (yerlesim == "Duvar aralıklı" && BasitProjeCizKabloServisi.ElemanPrizMi(tip));
 
     /// <summary>
     /// Bir hücrenin YERLEŞTİR'de kaç eleman üreteceğini tahmin eder. Grid ve
@@ -413,10 +416,7 @@ public static class MahalListesiServisi
 
         var (yerlesim, _, gridM, duvarM) = satir.EfektifAyarlar(oda.Id);
         var ayar = satir.HucreGetirVeyaOlustur(oda.Id);
-        bool priz = BasitProjeCizKabloServisi.ElemanPrizMi(satir.Tip);
-
-        // Adet, Açıklık Yanı, Homojen Duvar ve priz+Duvar aralıklı → kullanıcı adedi
-        if (yerlesim is "Adet" or "Açıklık Yanı" or "Homojen Duvar" || (priz && yerlesim == "Duvar aralıklı"))
+        if (KullaniciAdediGerekir(satir.Tip, yerlesim))
             return Math.Max(0, ayar.Adet);
 
         const double armaturDuvarMin = 0.50;
@@ -448,11 +448,13 @@ public static class MahalListesiServisi
     /// Katın tahmini toplam gücü (W) — pano yükü öngörüsü. Sembol gücü
     /// kütüphaneden, oda-özel güç varsa hücreden okunur.
     public static double KatTahminiGucW(
-        BasitProjeKat kat, BasitProjeCizKutuphaneServisi kutuphane, BasitProjeCizGeometriServisi geometri)
+        BasitProjeKat kat, BasitProjeCizKutuphaneServisi kutuphane, BasitProjeCizGeometriServisi geometri,
+        Func<BpcElemanTipi, bool>? tipFiltresi = null)
     {
         double toplam = 0;
         foreach (var satir in kat.MahalListesi)
         {
+            if (tipFiltresi != null && !tipFiltresi(satir.Tip)) continue;
             var tanim = satir.ArmatürTanimId is null
                 ? null
                 : BasitProjeCizOtomatikYerlestirServisi.TanimBul(satir.ArmatürTanimId, kutuphane);
@@ -556,13 +558,15 @@ public static class MahalListesiServisi
     }
 
     /// Kattaki mahal listesini şablona dönüştürür (yalnız aktif hücreler saklanır).
-    public static MahalSablonu SablonaDonustur(BasitProjeKat kat, string ad, string? aciklama = null)
+    public static MahalSablonu SablonaDonustur(BasitProjeKat kat, string ad, string? aciklama = null,
+        Func<BpcElemanTipi, bool>? tipFiltresi = null)
     {
         var sablon = new MahalSablonu { Ad = ad, Aciklama = aciklama };
         var odaAdById = kat.Odalar.ToDictionary(o => o.Id, o => o.Ad);
 
         foreach (var satir in kat.MahalListesi)
         {
+            if (tipFiltresi != null && !tipFiltresi(satir.Tip)) continue;
             var ss = new SablonSatir
             {
                 Tip = satir.Tip,
@@ -590,7 +594,8 @@ public static class MahalListesiServisi
     /// Şablonu kata uygular. Oda eşleme ADA göredir; eşleşmeyen oda atlanır.
     /// Kullanıcının aktif ettiği hücre ezilmez (KattanKopyala ile aynı sözleşme).
     /// </summary>
-    public static KopyalamaSonucu SablonUygula(MahalSablonu sablon, BasitProjeKat kat)
+    public static KopyalamaSonucu SablonUygula(MahalSablonu sablon, BasitProjeKat kat,
+        Func<BpcElemanTipi, bool>? tipFiltresi = null)
     {
         var odaByAd = new Dictionary<string, BasitProjeOda>();
         foreach (var o in kat.Odalar)
@@ -605,6 +610,7 @@ public static class MahalListesiServisi
 
         foreach (var ss in sablon.Satirlar)
         {
+            if (tipFiltresi != null && !tipFiltresi(ss.Tip)) continue;
             var satir = kat.MahalListesi.FirstOrDefault(s =>
                 (!string.IsNullOrEmpty(ss.ArmatürTanimId) && s.ArmatürTanimId == ss.ArmatürTanimId) ||
                 (string.IsNullOrEmpty(ss.ArmatürTanimId) && string.IsNullOrEmpty(s.ArmatürTanimId) && s.Tip == ss.Tip));

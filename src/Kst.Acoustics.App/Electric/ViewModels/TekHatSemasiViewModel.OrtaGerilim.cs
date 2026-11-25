@@ -29,7 +29,8 @@ public partial class TekHatSemasiViewModel
             AnaPanoAd = anaPano.Ad,
             KoskTipi = koskTipi,
             EmniyetFaktoru = emniyetFaktoru,
-            TrafoTanimAd = trafoTanim?.Ad ?? ""
+            TrafoTanimAd = trafoTanim?.Ad ?? "",
+            TrafoManuel = trafoTanim != null
         };
         Proje.OrtaGerilim = og;
         TumunuHesapla();
@@ -60,6 +61,7 @@ public partial class TekHatSemasiViewModel
     {
         if (Proje.OrtaGerilim == null) return;
         Proje.OrtaGerilim.TrafoTanimAd = trafo?.Ad ?? "";
+        Proje.OrtaGerilim.TrafoManuel = trafo != null;
         TumunuHesapla();
         OnPropertyChanged(nameof(AktifOrtaGerilim));
     }

@@ -17,7 +17,7 @@ public enum SalonCizimTipi
 
 /// Salon eskizindeki tekil 2D öğe. Metre tabanlı koordinatlar.
 /// Daire/oval gibi eğriler 3D üretim ve DXF ihracatı anında çokgene fasetlenir.
-public class SalonCizimOgesi : ISalonCizimOgesi
+public partial class SalonCizimOgesi : ISalonCizimOgesi
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
 
@@ -67,7 +67,7 @@ public class SalonCizimOgesi : ISalonCizimOgesi
         {
             SalonCizimTipi.Daire => DaireyiFasetle(daireKenar),
             SalonCizimTipi.Dikdortgen => Noktalar.ToList(),
-            SalonCizimTipi.Polyline when Kapali => Noktalar.ToList(),
+            SalonCizimTipi.Polyline when Kapali => SinirNoktalari(daireKenar),
             _ => new List<Point2D>()
         };
     }
@@ -157,10 +157,11 @@ public class SalonCizimOgesi : ISalonCizimOgesi
             }
 
             case SalonCizimTipi.Polyline:
-                for (int i = 0; i + 1 < Noktalar.Count; i++)
-                    yield return (Noktalar[i], Noktalar[i + 1]);
-                if (Kapali && Noktalar.Count > 2)
-                    yield return (Noktalar[^1], Noktalar[0]);
+                var sinir = SinirNoktalari(daireKenar);
+                for (int i = 0; i + 1 < sinir.Count; i++)
+                    yield return (sinir[i], sinir[i + 1]);
+                if (Kapali && sinir.Count > 2)
+                    yield return (sinir[^1], sinir[0]);
                 break;
 
             case SalonCizimTipi.Dikdortgen:

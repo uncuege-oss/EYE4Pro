@@ -271,3 +271,9 @@ Son bilinen genel hedef:
 5. Bariyer formülü veya trafik modeli değişirse regresyon testi ekle.
 6. Malzeme kütüphanesi değişirse Excel round-trip davranışını kontrol et.
 7. Görünür UI metinlerinde Türkçe karakter kontrolü yap.
+
+## 5 Kasım 2026 — sıralı modül denetimi
+
+Bütün kaynaklar kapalıyken etkin kaynak yok uyarısı veriliyor (A05).
+
+Ayrıntılı hata listesi ve doğrulama: depo kökündeki `modul-denetimi-2026-11-05.md`.
